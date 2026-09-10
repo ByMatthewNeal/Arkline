@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
+import { useRef, useState } from 'react';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ArrowDown, ArrowDownRight, ArrowUpRight, ArrowUp, ArrowRight, BarChart3, Smile, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { DefineTerm } from '@/components/ui/define-term';
@@ -43,10 +43,95 @@ const CATEGORIES: { title: string; icon: typeof BarChart3; members: string[] }[]
 
 const money = (v?: number) => v == null ? '—' : `$${Math.round(v).toLocaleString()}`;
 
+/**
+ * Score-history chart with scrub. Lives in its own component so the
+ * per-mousemove state updates re-render ONLY this card — scrubbing used to
+ * re-render the whole drawer (gauge + 12-row breakdown) and sputtered.
+ */
+function ScoreHistoryCard({ hist }: { hist: ArkLineScoreHistoryPoint[] }) {
+  const [active, setActive] = useState<ArkLineScoreHistoryPoint | null>(null);
+  const activeDateRef = useRef<string | null>(null);
+
+  const labelFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fullFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  const scrubTo = (pt: ArkLineScoreHistoryPoint | null) => {
+    const date = pt?.date ?? null;
+    // Only update when the hovered day actually changes — mousemove fires
+    // per pixel, but there are far fewer days than pixels.
+    if (date === activeDateRef.current) return;
+    activeDateRef.current = date;
+    setActive(pt);
+  };
+
+  return (
+    <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-ark-text-tertiary">Score History</span>
+        {active && (
+          <button onClick={() => scrubTo(null)} className="text-xs font-semibold text-ark-info">Reset</button>
+        )}
+      </div>
+
+      {active ? (
+        <div className="mt-2">
+          <p className="text-xs text-ark-text-tertiary">{fullFmt(active.date)}</p>
+          <div className="mt-0.5 flex items-center gap-2">
+            <span className="fig text-2xl font-bold text-ark-text">{active.score}</span>
+            <span className="rounded px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${bandColor(active.score)}1F`, color: bandColor(active.score) }}>{active.tier}</span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-ark-text-disabled">
+            <span>BTC <span className="fig font-semibold text-ark-text-secondary">{money(active.btcPrice)}</span></span>
+            <span>S&amp;P <span className="fig font-semibold text-ark-text-secondary">{money(active.sp500Price)}</span></span>
+            <span>NDX <span className="fig font-semibold text-ark-text-secondary">{money(active.nasdaqPrice)}</span></span>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-1 text-xs text-ark-text-disabled">Touch the chart to view historical scores</p>
+      )}
+
+      <div className="mt-3 h-44 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={hist}
+            margin={{ top: 6, right: 4, bottom: 0, left: 4 }}
+            onMouseMove={(s) => {
+              const st = s as { activeLabel?: string; activeTooltipIndex?: number; activePayload?: { payload?: ArkLineScoreHistoryPoint }[] };
+              let pt = st.activePayload?.[0]?.payload;
+              if (!pt && st.activeLabel != null) pt = hist.find((h) => h.date === st.activeLabel);
+              if (!pt && st.activeTooltipIndex != null && st.activeTooltipIndex >= 0) pt = hist[st.activeTooltipIndex];
+              if (pt) scrubTo(pt);
+            }}
+            onMouseLeave={() => scrubTo(null)}
+          >
+            <defs>
+              <linearGradient id="ark-score-hist" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--ark-info)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="var(--ark-info)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis
+              dataKey="date" tickLine={false} axisLine={false}
+              ticks={hist.length ? [hist[0].date, hist[hist.length - 1].date] : []}
+              tickFormatter={labelFmt}
+              tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }}
+              interval="preserveStartEnd"
+            />
+            <YAxis domain={['dataMin - 5', 'dataMax + 5']} hide />
+            {/* The Tooltip cursor draws the tracking line — no ReferenceLine,
+                which forced a full chart re-layout on every mousemove. */}
+            <Tooltip cursor={{ stroke: 'var(--ark-info)', strokeDasharray: '3 3' }} content={() => null} isAnimationActive={false} />
+            <Area type="monotone" dataKey="score" stroke="var(--ark-info)" strokeWidth={2} fill="url(#ark-score-hist)" activeDot={{ r: 4, fill: 'var(--ark-info)' }} dot={false} isAnimationActive={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 export function ArkLineScore() {
   const { data, isLoading } = useArkLineScore();
   const { data: history } = useArkLineScoreHistory();
-  const [active, setActive] = useState<ArkLineScoreHistoryPoint | null>(null);
 
   if (isLoading || !data) {
     return (
@@ -66,9 +151,6 @@ export function ArkLineScore() {
   const offset = C * (1 - score / 100);
 
   const hist = history ?? [];
-  const labelFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const fullFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-
   const compByName = (n: string): ArkLineScoreComponent | undefined => components.find((c) => c.name === n);
   const ungrouped = components.filter((c) => !CATEGORIES.some((cat) => cat.members.includes(c.name)));
 
@@ -120,69 +202,8 @@ export function ArkLineScore() {
         </div>
       </div>
 
-      {/* ── Score History ── */}
-      {hist.length > 1 && (
-        <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ark-text-tertiary">Score History</span>
-            {active && (
-              <button onClick={() => setActive(null)} className="text-xs font-semibold text-ark-info">Reset</button>
-            )}
-          </div>
-
-          {active ? (
-            <div className="mt-2">
-              <p className="text-xs text-ark-text-tertiary">{fullFmt(active.date)}</p>
-              <div className="mt-0.5 flex items-center gap-2">
-                <span className="fig text-2xl font-bold text-ark-text">{active.score}</span>
-                <span className="rounded px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${bandColor(active.score)}1F`, color: bandColor(active.score) }}>{active.tier}</span>
-              </div>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-ark-text-disabled">
-                <span>BTC <span className="fig font-semibold text-ark-text-secondary">{money(active.btcPrice)}</span></span>
-                <span>S&amp;P <span className="fig font-semibold text-ark-text-secondary">{money(active.sp500Price)}</span></span>
-                <span>NDX <span className="fig font-semibold text-ark-text-secondary">{money(active.nasdaqPrice)}</span></span>
-              </div>
-            </div>
-          ) : (
-            <p className="mt-1 text-xs text-ark-text-disabled">Touch the chart to view historical scores</p>
-          )}
-
-          <div className="mt-3 h-44 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={hist}
-                margin={{ top: 6, right: 4, bottom: 0, left: 4 }}
-                onMouseMove={(s) => {
-                  const st = s as { activeLabel?: string; activeTooltipIndex?: number; activePayload?: { payload?: ArkLineScoreHistoryPoint }[] };
-                  let pt = st.activePayload?.[0]?.payload;
-                  if (!pt && st.activeLabel != null) pt = hist.find((h) => h.date === st.activeLabel);
-                  if (!pt && st.activeTooltipIndex != null && st.activeTooltipIndex >= 0) pt = hist[st.activeTooltipIndex];
-                  if (pt) setActive(pt);
-                }}
-                onMouseLeave={() => setActive(null)}
-              >
-                <defs>
-                  <linearGradient id="ark-score-hist" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--ark-info)" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="var(--ark-info)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date" tickLine={false} axisLine={false}
-                  ticks={hist.length ? [hist[0].date, hist[hist.length - 1].date] : []}
-                  tickFormatter={labelFmt}
-                  tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }}
-                  interval="preserveStartEnd"
-                />
-                <YAxis domain={['dataMin - 5', 'dataMax + 5']} hide />
-                <Tooltip cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3' }} content={() => null} />
-                {active && <ReferenceLine x={active.date} stroke="var(--ark-info)" strokeWidth={1} />}
-                <Area type="monotone" dataKey="score" stroke="var(--ark-info)" strokeWidth={2} fill="url(#ark-score-hist)" activeDot={{ r: 4, fill: 'var(--ark-info)' }} dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      {/* ── Score History (isolated so scrubbing never re-renders the gauge/breakdown) ── */}
+      {hist.length > 1 && <ScoreHistoryCard hist={hist} />}
 
       {/* ── Component Breakdown ── */}
       <div className="space-y-5">
