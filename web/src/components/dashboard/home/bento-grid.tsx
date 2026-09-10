@@ -1160,15 +1160,23 @@ function makeMacroTile(cfg: {
               </span>
             </div>
 
+            {/* Chart fills the flexible middle instead of floating at the top */}
             {spark.length > 1 && (
-              <div className="my-2 h-8">
-                <Spark data={spark} color={lvl.color} className="h-full" />
+              <div className="relative my-2 min-h-8 flex-1">
+                <Spark data={spark} color={lvl.color} className="h-full min-h-8" />
+                {/* Period range, tucked into the chart's corners */}
+                <span className="fig absolute right-0 top-0 text-[9px] text-ark-text-disabled">
+                  H {cfg.prefix}{Math.max(...spark).toFixed(cfg.decimals)}
+                </span>
+                <span className="fig absolute bottom-0 right-0 text-[9px] text-ark-text-disabled">
+                  L {cfg.prefix}{Math.min(...spark).toFixed(cfg.decimals)}
+                </span>
               </div>
             )}
 
             <div className="mt-auto flex items-center justify-between">
               <span className="text-[10px] text-ark-text-disabled">{cfg.subtitle}</span>
-              <span className="text-[11px] font-semibold" style={{ color: lvl.color }}>{lvl.label}</span>
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: `${lvl.color}1F`, color: lvl.color }}>{lvl.label}</span>
             </div>
           </div>
         )}
