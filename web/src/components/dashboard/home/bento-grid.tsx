@@ -2089,6 +2089,48 @@ function PortfolioHero() {
 }
 
 /* ── Daily Briefing hero ── (pinned full-width at the top, like the iOS app) */
+/** Right-hand rail of the briefing hero: the day's vitals at a glance.
+ *  Every hook here is already used elsewhere on the page, so the data
+ *  comes straight from the react-query cache. */
+function VitalsRail() {
+  const { data: assets } = useCryptoAssets(1);
+  const { data: fg } = useFearGreedDetail();
+  const { data: score } = useArkLineScore();
+  const { data: rotation } = useRotationSignal();
+
+  const btc = (assets ?? []).find((a) => a.id === 'bitcoin');
+  const btcUp = (btc?.price_change_percentage_24h ?? 0) >= 0;
+  const fgColor = fg == null ? undefined : fg.value < 25 ? 'var(--ark-error)' : fg.value < 45 ? '#F97316' : fg.value < 56 ? 'var(--ark-warning)' : fg.value < 76 ? '#65A30D' : 'var(--ark-success)';
+  const scoreColor = score == null ? undefined : score.score < 20 ? '#2563EB' : score.score < 40 ? 'var(--ark-info)' : score.score < 60 ? 'var(--ark-text-tertiary)' : score.score < 80 ? 'var(--ark-warning)' : 'var(--ark-error)';
+  const rot = rotation?.rotation_score ?? null;
+  const rotFavors = rot == null ? null : rot < 0 ? 'Crypto' : rot > 0 ? 'Equities' : 'Neutral';
+  const rotColor = rot == null ? undefined : rot < 0 ? 'var(--ark-primary)' : rot > 0 ? 'var(--ark-violet)' : 'var(--ark-text-tertiary)';
+
+  const rows: { label: string; value: string; sub?: string; color?: string; subColor?: string }[] = [];
+  if (btc) rows.push({ label: 'Bitcoin', value: formatCurrency(btc.current_price), sub: formatPercent(btc.price_change_percentage_24h ?? 0), subColor: btcUp ? 'var(--ark-success)' : 'var(--ark-error)' });
+  if (fg) rows.push({ label: 'Fear & Greed', value: String(fg.value), sub: fg.classification, color: fgColor, subColor: fgColor });
+  if (score) rows.push({ label: 'ArkLine Score', value: String(score.score), sub: score.tier ?? score.level ?? '', color: scoreColor, subColor: scoreColor });
+  if (rotFavors) rows.push({ label: 'Rotation', value: `→ ${rotFavors}`, color: rotColor });
+  if (!rows.length) return null;
+
+  return (
+    <div className="hidden lg:block lg:border-l lg:border-ark-divider/60 lg:pl-6">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Today&apos;s vitals</p>
+      <div className="mt-2.5 space-y-3">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-baseline justify-between gap-3">
+            <span className="text-[11px] text-ark-text-tertiary">{r.label}</span>
+            <span className="text-right">
+              <span className="fig text-sm font-bold" style={{ color: r.color ?? 'var(--ark-text)' }}>{r.value}</span>
+              {r.sub && <span className="fig ml-1.5 text-[10px] font-semibold" style={{ color: r.subColor }}>{r.sub}</span>}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BriefingHero({ greetingLine, date }: { greetingLine: string; date: string }) {
   const { data: briefing, isLoading } = useMarketBriefing();
   const { data: positioning } = useCryptoPositioning();
@@ -2163,6 +2205,7 @@ function BriefingHero({ greetingLine, date }: { greetingLine: string; date: stri
             <Skeleton className="h-4 w-5/6" />
           </div>
         ) : sections.length ? (
+          <div className="lg:grid lg:grid-cols-[1fr_240px] lg:gap-6">
           <div>
             <p suppressHydrationWarning className="text-sm font-medium text-ark-text-secondary">{greetingLine}</p>
             {expanded ? (
@@ -2185,6 +2228,8 @@ function BriefingHero({ greetingLine, date }: { greetingLine: string; date: stri
                 <span className="mt-2 inline-block text-[11px] font-medium text-ark-primary">Read full briefing →</span>
               </>
             )}
+          </div>
+          <VitalsRail />
           </div>
         ) : (
           <p className="text-sm text-ark-text-tertiary">No briefing available yet.</p>
