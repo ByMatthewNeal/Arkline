@@ -2040,28 +2040,25 @@ function PortfolioHero() {
               <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none tracking-tight text-ark-text sm:text-[40px]">
                 <HeroValue value={displayValue} blurred={hideBalance} />
               </p>
-              <span
-                className={cn(
-                  'fig mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold transition-colors',
-                  isUp ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error',
-                  hideBalance && 'blur-sm select-none',
-                )}
-              >
-                {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                {formatCurrency(Math.abs(displayChange))} ({formatPercent(displayChangePct)})
-              </span>
-              <div className="mt-4 flex items-center gap-3 text-[11px] text-ark-text-tertiary">
+              {/* One line tells the whole change story: move + period (or scrub date).
+                  Plain colored text instead of a pill — quieter, and it sits on the
+                  same rhythm as the rows above and below it. */}
+              <p className={cn('fig mt-2.5 flex items-center gap-1.5 text-sm font-semibold', hideBalance && 'blur-sm select-none')}>
+                <span className={cn('flex items-center gap-1', isUp ? 'text-ark-success' : 'text-ark-error')}>
+                  {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                  {formatCurrency(Math.abs(displayChange))} ({formatPercent(displayChangePct)})
+                </span>
+                <span className="font-normal text-ark-text-disabled">·</span>
                 {scrubDateLabel ? (
-                  <span className="fig font-semibold text-ark-text-secondary">{scrubDateLabel}</span>
+                  <span className="fig font-medium text-ark-text-secondary">{scrubDateLabel}</span>
                 ) : (
-                  <>
-                    <span><span className="font-semibold text-ark-text-secondary">{assetCount}</span> assets</span>
-                    <span className="text-ark-text-disabled">·</span>
-                    <span className="capitalize">{PERIOD_SUFFIX[period]}</span>
-                  </>
+                  <span className="font-medium capitalize text-ark-text-tertiary">{PERIOD_SUFFIX[period]}</span>
                 )}
+              </p>
+              <div className="mt-2.5 flex items-center gap-2 text-[11px] text-ark-text-tertiary">
+                <span><span className="font-semibold text-ark-text-secondary">{assetCount}</span> assets</span>
                 <span className="text-ark-text-disabled">·</span>
-                <Link href="/dashboard/portfolio" className="font-medium text-ark-primary hover:text-ark-accent-light">View details →</Link>
+                <Link href="/dashboard/portfolio" className="font-medium text-ark-text-tertiary underline-offset-2 transition-colors hover:text-ark-primary hover:underline">View details →</Link>
               </div>
             </div>
             {/* Chart: scrub to explore — baseline marks period start */}
