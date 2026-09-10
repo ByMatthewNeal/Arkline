@@ -1779,14 +1779,15 @@ function FedWatchTile({ onOpen }: { onOpen: () => void }) {
                         <div className="h-full bg-ark-text-tertiary" style={{ width: `${m.hold_probability}%` }} />
                         <div className="h-full bg-ark-error" style={{ width: `${m.hike_probability}%` }} />
                       </div>
+                      {/* All three numbers inline — no legend decoding needed */}
+                      <div className="fig mt-1 flex items-center justify-between text-[9px] font-semibold">
+                        <span className={m.cut_probability > 0 ? 'text-ark-success' : 'text-ark-text-disabled'}>Cut {m.cut_probability}%</span>
+                        <span className={m.hold_probability > 0 ? 'text-ark-text-tertiary' : 'text-ark-text-disabled'}>Hold {m.hold_probability}%</span>
+                        <span className={m.hike_probability > 0 ? 'text-ark-error' : 'text-ark-text-disabled'}>Hike {m.hike_probability}%</span>
+                      </div>
                     </div>
                   );
                 })}
-              </div>
-              <div className="mt-1.5 flex items-center gap-3 text-[8px] font-semibold uppercase tracking-wider text-ark-text-disabled">
-                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-ark-success" /> Cut</span>
-                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-ark-text-tertiary" /> Hold</span>
-                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-ark-error" /> Hike</span>
               </div>
             </>
           )}

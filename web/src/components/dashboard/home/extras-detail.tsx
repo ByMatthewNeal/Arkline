@@ -152,23 +152,44 @@ export function FedWatchDetail() {
   return (
     <div className="space-y-5 pb-4">
       <div className="space-y-3">
-        {meetings.map((m) => (
-          <div key={m.meeting_date} className="rounded-xl border border-ark-divider p-3.5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
+        {meetings.map((m) => {
+          // Lead with the market's verdict — the number the user came for.
+          const outcomes = [
+            { label: 'Cut', pct: m.cut_probability, color: 'var(--ark-success)' },
+            { label: 'Hold', pct: m.hold_probability, color: 'var(--ark-text-tertiary)' },
+            { label: 'Hike', pct: m.hike_probability, color: 'var(--ark-error)' },
+          ];
+          const top = [...outcomes].sort((a, b) => b.pct - a.pct)[0];
+          return (
+            <div key={m.meeting_date} className="rounded-xl border border-ark-divider p-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
+                <span className="fig rounded-full px-2.5 py-1 text-xs font-bold" style={{ backgroundColor: `${top.color}1F`, color: top.color }}>
+                  {top.label} {top.pct}%
+                </span>
+              </div>
+
+              {/* The three numbers, big and scannable */}
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {outcomes.map((o) => (
+                  <div key={o.label} className={cn('rounded-lg px-2 py-2 text-center', o.label === top.label ? 'bg-ark-fill-secondary/70' : 'bg-ark-fill-secondary/30')}>
+                    <p className="fig text-lg font-bold leading-none" style={{ color: o.pct > 0 ? o.color : 'var(--ark-text-disabled)' }}>{o.pct}%</p>
+                    <p className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{o.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Distribution bar with the % printed on segments wide enough to hold it */}
+              <div className="relative mt-2 flex h-4 overflow-hidden rounded-full bg-ark-fill-secondary">
+                {outcomes.map((o) => (
+                  <div key={o.label} className="flex h-full items-center justify-center" style={{ width: `${o.pct}%`, backgroundColor: o.color }}>
+                    {o.pct >= 12 && <span className="text-[9px] font-bold text-white/90">{o.pct}%</span>}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-ark-fill-secondary">
-              <div className="h-full bg-ark-success" style={{ width: `${m.cut_probability}%` }} />
-              <div className="h-full bg-ark-text-tertiary" style={{ width: `${m.hold_probability}%` }} />
-              <div className="h-full bg-ark-error" style={{ width: `${m.hike_probability}%` }} />
-            </div>
-            <div className="mt-1.5 flex justify-between text-[11px]">
-              <span className="text-ark-success">Cut {m.cut_probability}%</span>
-              <span className="text-ark-text-tertiary">Hold {m.hold_probability}%</span>
-              <span className="text-ark-error">Hike {m.hike_probability}%</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <Info title="About this data" items={[
         { label: 'What', text: 'Estimated probabilities for upcoming FOMC rate decisions.' },
