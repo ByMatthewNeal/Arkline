@@ -300,7 +300,7 @@ export function Tile({ onClick, accentColor, className = '', children }: {
   return (
     <GlassCard
       hover
-      className={`cursor-pointer relative overflow-hidden p-3.5 flex flex-col justify-between h-full ${className}`}
+      className={`cursor-pointer relative overflow-hidden p-3.5 flex flex-col justify-between h-full transition-colors duration-300 hover:border-ark-primary/25 ${className}`}
       whileHover={{ scale: 1.008 }}
       onPointerDownCapture={(e) => { downRef.current = { x: e.clientX, y: e.clientY }; movedRef.current = false; }}
       onPointerMoveCapture={(e) => {
@@ -312,6 +312,8 @@ export function Tile({ onClick, accentColor, className = '', children }: {
         onClick();
       }}
     >
+      {/* Brand-blue hover wash — a whisper of Arkline blue across the whole tile */}
+      <div className="pointer-events-none absolute -inset-px rounded-2xl bg-ark-primary/[0.04] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       {accentColor && (
         <div
           className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
