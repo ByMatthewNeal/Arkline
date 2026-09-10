@@ -1411,20 +1411,44 @@ function RotationTile({ onOpen }: { onOpen: () => void }) {
           <div className="mt-1 flex items-baseline gap-2">
             <span className="font-[family-name:var(--font-urbanist)] text-2xl font-bold leading-none" style={{ color }}>→ {favors}</span>
           </div>
-          <div className="mt-2 flex items-center gap-3 text-[10px]">
-            <span className="text-ark-text-disabled">BTC 30d <span className={cn('fig font-semibold', (data.btc_30d_return ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(data.btc_30d_return ?? 0)}</span></span>
-            <span className="text-ark-text-disabled">SPY 30d <span className={cn('fig font-semibold', (data.spy_30d_return ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(data.spy_30d_return ?? 0)}</span></span>
+
+          {/* Crypto ↔ Equities scale — where the lean sits, at a glance */}
+          <div className="mt-3">
+            <div className="flex justify-between text-[8px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
+              <span>Crypto</span><span>Equities</span>
+            </div>
+            <div className="relative mt-1 h-1.5 rounded-full bg-gradient-to-r from-ark-primary via-ark-text-disabled/40 to-ark-violet">
+              <div
+                className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ark-card shadow"
+                style={{ left: `${Math.min(96, Math.max(4, ((score + 100) / 200) * 100))}%`, backgroundColor: color }}
+              />
+            </div>
           </div>
+
+          <div className="mt-2.5 flex items-center gap-2">
+            {([['BTC 30d', data.btc_30d_return ?? 0], ['SPY 30d', data.spy_30d_return ?? 0]] as const).map(([label, v]) => (
+              <span key={label} className={cn('fig rounded-md px-1.5 py-0.5 text-[10px] font-semibold', v >= 0 ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>
+                {label} {formatPercent(v)}
+              </span>
+            ))}
+          </div>
+
           {data.sectors.length > 0 && (
-            <div className="mt-2">
+            <div className="mt-2 flex flex-1 flex-col justify-end">
               <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Top Sectors</p>
-              <div className="mt-1 space-y-0.5">
-                {data.sectors.map((s) => (
-                  <div key={s.name} className="flex items-center justify-between text-[10px]">
-                    <span className="truncate text-ark-text-secondary">{s.name}</span>
-                    <span className="fig font-semibold text-ark-success">{formatPercent(s.return_30d)}</span>
-                  </div>
-                ))}
+              <div className="mt-1 space-y-1">
+                {data.sectors.map((s) => {
+                  const maxRet = Math.max(...data.sectors.map((x) => Math.abs(x.return_30d)), 1);
+                  return (
+                    <div key={s.name} className="flex items-center gap-2 text-[10px]">
+                      <span className="w-32 truncate text-ark-text-secondary">{s.name}</span>
+                      <div className="h-1 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
+                        <div className="h-full rounded-full bg-ark-success/70" style={{ width: `${(Math.abs(s.return_30d) / maxRet) * 100}%` }} />
+                      </div>
+                      <span className="fig w-12 text-right font-semibold text-ark-success">{formatPercent(s.return_30d)}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1734,21 +1758,37 @@ function FedWatchTile({ onOpen }: { onOpen: () => void }) {
               <p className="mt-0.5 text-[10px] text-ark-text-disabled">Updates when the market-extras job runs</p>
             </div>
           ) : (
-            <div className="mt-2 space-y-2">
-              {meetings.slice(0, 3).map((m) => (
-                <div key={m.meeting_date}>
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
-                    <span className="text-ark-text-disabled">cut {m.cut_probability}% · hold {m.hold_probability}%</span>
-                  </div>
-                  <div className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-ark-fill-secondary">
-                    <div className="h-full bg-ark-success" style={{ width: `${m.cut_probability}%` }} />
-                    <div className="h-full bg-ark-text-tertiary" style={{ width: `${m.hold_probability}%` }} />
-                    <div className="h-full bg-ark-error" style={{ width: `${m.hike_probability}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="mt-2 flex flex-1 flex-col justify-evenly gap-1.5">
+                {meetings.slice(0, 3).map((m) => {
+                  // Market's most-likely outcome for the meeting
+                  const outcomes = [
+                    { label: 'Cut', pct: m.cut_probability, cls: 'bg-ark-success/10 text-ark-success' },
+                    { label: 'Hold', pct: m.hold_probability, cls: 'bg-ark-fill-secondary text-ark-text-secondary' },
+                    { label: 'Hike', pct: m.hike_probability, cls: 'bg-ark-error/10 text-ark-error' },
+                  ].sort((a, b) => b.pct - a.pct);
+                  const top = outcomes[0];
+                  return (
+                    <div key={m.meeting_date} className="rounded-lg bg-ark-fill-secondary/40 px-2.5 py-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
+                        <span className={cn('fig rounded-md px-1.5 py-0.5 text-[9px] font-bold', top.cls)}>{top.label} {top.pct}%</span>
+                      </div>
+                      <div className="mt-1.5 flex h-1.5 gap-px overflow-hidden rounded-full bg-ark-fill-secondary">
+                        <div className="h-full bg-ark-success" style={{ width: `${m.cut_probability}%` }} />
+                        <div className="h-full bg-ark-text-tertiary" style={{ width: `${m.hold_probability}%` }} />
+                        <div className="h-full bg-ark-error" style={{ width: `${m.hike_probability}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-1.5 flex items-center gap-3 text-[8px] font-semibold uppercase tracking-wider text-ark-text-disabled">
+                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-ark-success" /> Cut</span>
+                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-ark-text-tertiary" /> Hold</span>
+                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-ark-error" /> Hike</span>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -1780,18 +1820,28 @@ function LearnTile() {
       <div className="mt-1.5 flex flex-1 flex-col justify-between">
         {mounted && next ? (
           <>
-            <div>
+            {/* Next-lesson card carries the tile instead of floating text */}
+            <div className="mt-1 flex-1 rounded-xl border border-ark-info/20 bg-ark-info/[0.04] p-3">
               <p className="text-[10px] font-medium uppercase tracking-wider text-ark-info">
                 {done === 0 ? 'Start your path' : 'Up next'}
               </p>
-              <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-ark-text">{next.title}</p>
-              {trail && <p className="mt-0.5 text-[11px] text-ark-text-tertiary">{trail.navTitle}</p>}
+              <p className="mt-1 line-clamp-2 font-[family-name:var(--font-urbanist)] text-base font-bold text-ark-text">{next.title}</p>
+              {trail && (
+                <p className="mt-1 flex items-center gap-1.5 text-[11px] text-ark-text-tertiary">
+                  {trail.navTitle}
+                  <span className="rounded-full bg-ark-fill-secondary px-1.5 py-0.5 text-[9px] font-semibold capitalize text-ark-text-tertiary">{trail.difficulty}</span>
+                </p>
+              )}
             </div>
-            <div>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-ark-fill-secondary">
-                <div className="h-full rounded-full bg-ark-info" style={{ width: `${pct}%` }} />
+            <div className="mt-2.5">
+              <div className="flex items-center justify-between text-[10px] text-ark-text-tertiary">
+                <span>{done} of {total} lessons</span>
+                <span className="fig font-semibold text-ark-info">{pct}%</span>
               </div>
-              <p className="mt-1 text-[10px] text-ark-text-tertiary">{done} of {total} lessons</p>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ark-fill-secondary">
+                <div className="h-full rounded-full bg-ark-info transition-all duration-500" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="mt-1.5 text-right text-[9px] font-semibold text-ark-info/80">Continue learning →</p>
             </div>
           </>
         ) : mounted && !next ? (
