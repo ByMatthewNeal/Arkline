@@ -37,6 +37,8 @@ export interface ModelPortfolioNav {
   nav: number;
   allocations: Record<string, AllocationDetail | number>;
   btc_signal: string | null;
+  btc_risk_category: string | null;
+  gold_signal: string | null;
   macro_regime: string | null;
   signal_context: MetalSignalContext | null;
 }
@@ -47,6 +49,7 @@ export interface ModelPortfolioTrade {
   trigger: string;
   from_allocation: Record<string, number>;
   to_allocation: Record<string, number>;
+  market_context: { headlines?: string[]; events?: string[] } | null;
 }
 
 export interface BenchmarkNavPoint {
@@ -77,11 +80,11 @@ export async function fetchModelPortfolios(): Promise<ModelPortfolio[]> {
   }));
 }
 
-export async function fetchModelPortfolioNav(portfolioId: string, limit = 365): Promise<ModelPortfolioNav[]> {
+export async function fetchModelPortfolioNav(portfolioId: string, limit = 3000): Promise<ModelPortfolioNav[]> {
   if (!isSupabaseConfigured()) return [];
   const { data, error } = await getSupabase()
     .from('model_portfolio_nav')
-    .select('nav_date, nav, allocations, btc_signal, macro_regime, signal_context')
+    .select('nav_date, nav, allocations, btc_signal, btc_risk_category, gold_signal, macro_regime, signal_context')
     .eq('portfolio_id', portfolioId)
     .order('nav_date', { ascending: false })
     .limit(limit);
@@ -89,7 +92,7 @@ export async function fetchModelPortfolioNav(portfolioId: string, limit = 365): 
   return (data as ModelPortfolioNav[]).slice().reverse();
 }
 
-export async function fetchBenchmarkNav(limit = 365): Promise<BenchmarkNavPoint[]> {
+export async function fetchBenchmarkNav(limit = 3000): Promise<BenchmarkNavPoint[]> {
   if (!isSupabaseConfigured()) return [];
   const { data, error } = await getSupabase()
     .from('benchmark_nav')
@@ -104,7 +107,7 @@ export async function fetchModelPortfolioTrades(portfolioId: string, limit = 100
   if (!isSupabaseConfigured()) return [];
   const { data, error } = await getSupabase()
     .from('model_portfolio_trades')
-    .select('id, trade_date, trigger, from_allocation, to_allocation')
+    .select('id, trade_date, trigger, from_allocation, to_allocation, market_context')
     .eq('portfolio_id', portfolioId)
     .order('trade_date', { ascending: false })
     .limit(limit);

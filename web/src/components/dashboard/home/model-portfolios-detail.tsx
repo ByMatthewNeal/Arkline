@@ -11,7 +11,7 @@
 
 import { useMemo, useState } from 'react';
 import { Area, AreaChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
-import { BellRing, Check, ArrowUpRight, ArrowDownRight, Circle, CheckCircle2 } from 'lucide-react';
+import { BellRing, Check, ArrowUpRight, ArrowDownRight, Circle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { Badge, Skeleton, useToast } from '@/components/ui';
 import {
   useModelPortfolios,
@@ -24,9 +24,12 @@ import {
 import { allocPct, buildPositionHistory, type AllocationDetail } from '@/lib/api/model-portfolios';
 import { formatPercent, cn } from '@/lib/utils/format';
 
-const RANGES = ['1M', '3M', '6M', '1Y'] as const;
+const RANGES = ['1M', '3M', '6M', '1Y', 'ALL'] as const;
 type Range = (typeof RANGES)[number];
-const RANGE_DAYS: Record<Range, number> = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365 };
+const RANGE_DAYS: Record<Range, number> = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 100000 };
+
+/** Tab label: "Arkline Equity Core" → "Equity Core" (iOS picker names). */
+const tabLabel = (name: string) => name.replace(/^Arkline\s+/i, '');
 
 /** Friendly names for the metals book's synthetic tickers. */
 const ASSET_LABEL: Record<string, string> = { GOLD: 'Gold', CASH: 'Cash' };
@@ -59,6 +62,7 @@ export function ModelPortfoliosDetail() {
   const [range, setRange] = useState<Range>('3M');
   const [scrubIdx, setScrubIdx] = useState<number | null>(null);
   const [historyTab, setHistoryTab] = useState<'positions' | 'rebalances'>('positions');
+  const [expandedTrade, setExpandedTrade] = useState<string | null>(null);
   const toast = useToast();
 
   const active = portfolios?.find((p) => p.id === selectedId) ?? portfolios?.[0];
@@ -115,9 +119,21 @@ export function ModelPortfoliosDetail() {
   const headerCaption = scrubbed
     ? new Date(scrubbed.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : range;
+  // Open-position P&L per ticker (iOS shows +3.3% next to each holding).
+  const openPnl = new Map(positions.filter((p) => p.exitedDate == null && p.pnlPct != null).map((p) => [p.ticker, p.pnlPct as number]));
   const allocations = latest
     ? Object.entries(latest.allocations ?? {})
-        .map(([asset, v]) => ({ asset, pct: allocPct(v) }))
+        .map(([asset, v]) => {
+          const detail = v && typeof v === 'object' ? (v as AllocationDetail) : null;
+          const pct = allocPct(v);
+          return {
+            asset,
+            pct,
+            entry: detail?.entry_price && detail.entry_price > 0 ? detail.entry_price : null,
+            value: detail?.value && detail.value > 0 ? detail.value : (latest.nav * pct) / 100,
+            pnl: openPnl.get(asset) ?? null,
+          };
+        })
         .filter((a) => a.pct > 0.01)
         .sort((a, b) => b.pct - a.pct)
     : [];
@@ -154,11 +170,11 @@ export function ModelPortfoliosDetail() {
             key={p.id}
             onClick={() => setSelectedId(p.id)}
             className={cn(
-              'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition-colors',
+              'flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
               p.id === active.id ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text',
             )}
           >
-            {p.strategy}
+            {tabLabel(p.name)}
             {followed === p.strategy && <Check className="h-3 w-3" />}
           </button>
         ))}
@@ -199,6 +215,48 @@ export function ModelPortfoliosDetail() {
           {isFollowed ? <Check className="h-3.5 w-3.5" /> : <BellRing className="h-3.5 w-3.5" />}
           {isFollowed ? 'Following' : 'Follow'}
         </button>
+      </div>
+
+      {/* NAV headline + since-returns (iOS strategy header) */}
+      {(() => {
+        const series = nav ?? [];
+        const last = series[series.length - 1];
+        if (!last) return null;
+        const inception = active.starting_nav > 0 ? ((last.nav - active.starting_nav) / active.starting_nav) * 100 : null;
+        const janISO = `${new Date(last.nav_date + 'T00:00:00').getFullYear()}-01-01`;
+        const janPoint = series.find((p) => p.nav_date >= janISO);
+        const ytd = janPoint ? ((last.nav - janPoint.nav) / janPoint.nav) * 100 : null;
+        const firstYear = series[0] ? new Date(series[0].nav_date + 'T00:00:00').getFullYear() : null;
+        return (
+          <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4 text-center">
+            <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold text-ark-text">
+              ${last.nav.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className="mt-0.5 text-[11px] text-ark-text-tertiary">as of {fmtDate(last.nav_date)}</p>
+            <div className="mt-2.5 flex items-center justify-center gap-8">
+              {inception != null && firstYear != null && (
+                <div>
+                  <p className="text-[10px] text-ark-text-tertiary">Since Jan {firstYear}</p>
+                  <p className={cn('fig text-sm font-bold', inception >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(inception)}</p>
+                </div>
+              )}
+              {ytd != null && (
+                <div>
+                  <p className="text-[10px] text-ark-text-tertiary">Since Jan {new Date(last.nav_date + 'T00:00:00').getFullYear()}</p>
+                  <p className={cn('fig text-sm font-bold', ytd >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(ytd)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Hypothetical-model disclaimer (iOS parity, prominent) */}
+      <div className="rounded-2xl border border-ark-warning/30 bg-ark-warning/5 p-3.5">
+        <p className="text-xs font-bold text-ark-text">ⓘ Hypothetical model portfolio, not investment advice</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-ark-text-secondary">
+          AI-generated systematic strategy for educational and informational purposes only. Performance shown is simulated, not actual — history before launch is backtested. Past performance does not guarantee future results. Always do your own research and consult a licensed financial advisor before making investment decisions.
+        </p>
       </div>
 
       {/* NAV vs SPY */}
@@ -296,18 +354,68 @@ export function ModelPortfoliosDetail() {
         </div>
       )}
 
+      {/* Strategy Signals (iOS parity): the inputs driving the book right now */}
+      {!isMetals && latest && (latest.macro_regime || latest.btc_risk_category || latest.btc_signal) && (
+        <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Strategy Signals</p>
+          <div className="grid grid-cols-2 gap-3">
+            {latest.macro_regime && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-ark-text-tertiary">Macro Regime</p>
+                <p className={cn('mt-0.5 text-sm font-bold', latest.macro_regime.toLowerCase().includes('risk-on') ? 'text-ark-success' : latest.macro_regime.toLowerCase().includes('risk-off') ? 'text-ark-error' : 'text-ark-text')}>{latest.macro_regime}</p>
+              </div>
+            )}
+            {latest.btc_risk_category && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-ark-text-tertiary">BTC Risk</p>
+                <p className="mt-0.5 text-sm font-bold capitalize text-ark-text">{latest.btc_risk_category}</p>
+              </div>
+            )}
+          </div>
+          {latest.btc_signal && (() => {
+            const s = latest.btc_signal.toLowerCase();
+            const bull = s.includes('bull');
+            const bear = s.includes('bear');
+            const c = bull ? 'var(--ark-success)' : bear ? 'var(--ark-error)' : 'var(--ark-warning)';
+            const fill = bull ? 78 : bear ? 22 : 50;
+            return (
+              <div className="mt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] uppercase tracking-wide text-ark-text-tertiary">BTC Trend</p>
+                  <p className="text-xs font-bold capitalize" style={{ color: c }}>{latest.btc_signal.replace(/_/g, ' ')}</p>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ark-fill-secondary">
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${fill}%`, backgroundColor: c }} />
+                </div>
+                <p className="mt-1 text-[10px]" style={{ color: c }}>
+                  {bull ? 'Bullish, crypto deployment active' : bear ? 'Bearish, defensive positioning' : 'Neutral, holding current allocation'}
+                </p>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Current allocations */}
       {allocations.length > 0 && (
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Current allocation</p>
           <div className="space-y-1.5">
             {allocations.map((a) => (
-              <div key={a.asset} className="flex items-center gap-3">
-                <span className="w-14 shrink-0 text-sm font-semibold text-ark-text">{assetLabel(a.asset)}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
-                  <div className="h-full rounded-full bg-ark-primary/70" style={{ width: `${Math.min(100, a.pct)}%` }} />
+              <div key={a.asset} className="rounded-xl bg-ark-fill-secondary/30 px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <span className="w-14 shrink-0 text-sm font-semibold text-ark-text">{assetLabel(a.asset)}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
+                    <div className="h-full rounded-full bg-ark-primary/70" style={{ width: `${Math.min(100, a.pct)}%` }} />
+                  </div>
+                  <span className="fig w-12 shrink-0 text-right text-xs font-semibold text-ark-text">{a.pct.toFixed(1)}%</span>
                 </div>
-                <span className="fig w-12 shrink-0 text-right text-xs font-medium text-ark-text-secondary">{a.pct.toFixed(1)}%</span>
+                {/* Entry / P&L / value — iOS Current Allocation detail */}
+                <div className="mt-1 flex items-center gap-3 pl-[68px] text-[10px] text-ark-text-tertiary">
+                  {a.entry != null && <span>Entry <span className="fig font-semibold text-ark-text-secondary">${a.entry.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></span>}
+                  {a.pnl != null && <span className={cn('fig font-semibold', a.pnl >= 0 ? 'text-ark-success' : 'text-ark-error')}>{a.pnl >= 0 ? '+' : ''}{a.pnl.toFixed(1)}%</span>}
+                  <span className="fig ml-auto font-semibold text-ark-text-secondary">${a.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -405,21 +513,45 @@ export function ModelPortfoliosDetail() {
                 }))
                 .filter((c) => Math.abs(c.to - c.from) > 0.05)
                 .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from));
+              const headlines = t.market_context?.headlines ?? [];
+              const isExpanded = expandedTrade === t.id;
+              const allocChips = Object.entries(t.to_allocation ?? {})
+                .map(([asset, pct]) => ({ asset, pct: Number(pct) }))
+                .filter((c) => c.pct > 0.5)
+                .sort((a, b) => b.pct - a.pct);
               return (
                 <div key={t.id} className="rounded-xl border border-ark-divider p-3">
-                  <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setExpandedTrade(isExpanded ? null : t.id)}
+                    className="flex w-full items-center justify-between gap-2 text-left"
+                  >
                     <p className="text-xs font-semibold text-ark-text">
                       {new Date(t.trade_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
-                    <Badge variant="default">{t.trigger}</Badge>
-                  </div>
+                    <span className="flex items-center gap-2">
+                      <Badge variant={changes.length > 0 ? 'info' : 'default'}>{changes.length > 0 ? t.trigger : 'No changes'}</Badge>
+                      <ChevronDown className={cn('h-3.5 w-3.5 text-ark-text-tertiary transition-transform', isExpanded && 'rotate-180')} />
+                    </span>
+                  </button>
+
+                  {/* Day's allocation snapshot (iOS Trade Log chips) */}
+                  {allocChips.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {allocChips.map((c) => (
+                        <span key={c.asset} className="fig rounded-full bg-ark-fill-secondary px-2 py-0.5 text-[10px] font-semibold text-ark-text-secondary">
+                          {assetLabel(c.asset)}: {c.pct.toFixed(0)}%
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   {changes.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {changes.slice(0, 6).map((c) => {
                         const up = c.to >= c.from;
                         return (
                           <div key={c.asset} className="flex items-center gap-2 text-xs">
-                            <span className="w-14 font-medium text-ark-text">{c.asset}</span>
+                            <span className="w-14 font-medium text-ark-text">{assetLabel(c.asset)}</span>
                             <span className="fig text-ark-text-disabled">{c.from.toFixed(1)}%</span>
                             {up ? <ArrowUpRight className="h-3 w-3 text-ark-success" /> : <ArrowDownRight className="h-3 w-3 text-ark-error" />}
                             <span className="fig font-semibold text-ark-text">{c.to.toFixed(1)}%</span>
@@ -430,6 +562,21 @@ export function ModelPortfoliosDetail() {
                         );
                       })}
                     </div>
+                  )}
+
+                  {/* What was moving markets that day (iOS expanded log) */}
+                  {isExpanded && headlines.length > 0 && (
+                    <div className="mt-2.5 border-t border-ark-divider/60 pt-2">
+                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-ark-text-tertiary">Headlines</p>
+                      <ul className="space-y-1">
+                        {headlines.slice(0, 5).map((h, i) => (
+                          <li key={i} className="text-[11px] leading-relaxed text-ark-text-secondary">· {h}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {isExpanded && headlines.length === 0 && (
+                    <p className="mt-2 text-[10px] text-ark-text-disabled">No market context recorded for this day.</p>
                   )}
                 </div>
               );
