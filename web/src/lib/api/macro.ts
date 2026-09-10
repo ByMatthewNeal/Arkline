@@ -303,16 +303,44 @@ const REGIME_TEXT: Record<string, string> = {
   'Risk-Off Inflation': 'Weak growth with sticky inflation (stagflation). Historically the toughest backdrop for risk assets.',
 };
 
+/** Server-side Global Liquidity Index (BIS + FRED composite) — the SAME cache
+ * the iOS app reads, with pre-computed monthly changes and signal. Using it
+ * keeps both liquidity rows identical across platforms. */
+interface GliPayload {
+  signal?: string; // 'expanding' | 'contracting' | 'neutral'
+  changes?: { monthly?: number | null; annual?: number | null };
+  us_net_liquidity_t?: number;
+  composite_liquidity_t?: number;
+  history?: { period: string; composite_t?: number; us_net_liquidity_t?: number }[];
+}
+
+async function fetchGlobalLiquidityIndex(): Promise<GliPayload | null> {
+  const { data, error } = await getSupabase()
+    .from('market_data_cache')
+    .select('data')
+    .eq('key', 'global_liquidity_index')
+    .maybeSingle();
+  if (error || !data) return null;
+  let v: unknown = (data as { data: unknown }).data;
+  if (typeof v === 'string') {
+    try { v = JSON.parse(v); } catch { return null; }
+  }
+  return v as GliPayload;
+}
+
 export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> {
   if (!isSupabaseConfigured()) return null;
   const supabase = getSupabase();
   const keys = ['vix', 'dxy', 'net_liquidity', 'global_m2'];
-  const { data, error } = await supabase
-    .from('indicator_snapshots')
-    .select('indicator, value, recorded_date')
-    .in('indicator', keys)
-    .gte('recorded_date', daysAgoISO(40))
-    .order('recorded_date', { ascending: true });
+  const [{ data, error }, gli] = await Promise.all([
+    supabase
+      .from('indicator_snapshots')
+      .select('indicator, value, recorded_date')
+      .in('indicator', keys)
+      .gte('recorded_date', daysAgoISO(40))
+      .order('recorded_date', { ascending: true }),
+    fetchGlobalLiquidityIndex(),
+  ]);
   if (error || !data?.length) return null;
 
   const byInd = new Map<string, { value: number; date: string }[]>();
@@ -337,13 +365,29 @@ export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> 
   const cbLiq = latestOf('global_m2');
   if (!vix || !dxy || !netLiq || !cbLiq) return null;
 
-  // Monthly change for the CB Liquidity signal (iOS uses a 30-day window).
-  // Series is ascending, so scan from the end for the closest point ≤ 30d ago.
+  // Snapshot-derived monthly change — fallback only, when the GLI cache is empty.
   const cbSeries = byInd.get('global_m2') ?? [];
   const monthAgo = [...cbSeries].reverse().find((p) => p.date <= daysAgoISO(30)) ?? cbSeries[0];
-  const cbLiqMonthlyPct = monthAgo && monthAgo.value !== 0
+  const cbLiqMonthlyFallback = monthAgo && monthAgo.value !== 0
     ? ((cbLiq.value - monthAgo.value) / monthAgo.value) * 100
     : 0;
+
+  // ── Liquidity rows from the GLI cache (identical to iOS) ──
+  // iOS shows changes.monthly for BOTH liquidity rows and takes the signal
+  // verbatim; values are the composite/net-liquidity trillions from the index.
+  const gliMonthly = gli?.changes?.monthly ?? null;
+  const netLiqValue = gli?.us_net_liquidity_t != null ? gli.us_net_liquidity_t * 1e12 : netLiq.value;
+  const cbLiqValue = gli?.composite_liquidity_t != null ? gli.composite_liquidity_t * 1e12 : cbLiq.value;
+  const netLiqChange = gliMonthly ?? netLiq.changePct;
+  const cbLiqChange = gliMonthly ?? cbLiqMonthlyFallback;
+  const cbSignal: 'expanding' | 'contracting' | 'neutral' =
+    gli?.signal === 'expanding' || gli?.signal === 'contracting' || gli?.signal === 'neutral'
+      ? gli.signal
+      : cbLiqChange > 0.3 ? 'expanding' : cbLiqChange < -0.3 ? 'contracting' : 'neutral';
+  // Monthly GLI history for smooth sparklines (snapshot series has revision cliffs)
+  const gliHist = gli?.history ?? [];
+  const netSpark = gliHist.map((h) => h.us_net_liquidity_t).filter((v): v is number => v != null).map((v) => v * 1e12);
+  const cbSpark = gliHist.map((h) => h.composite_t).filter((v): v is number => v != null).map((v) => v * 1e12);
 
   const indicators: MacroDashIndicator[] = [
     {
@@ -361,26 +405,24 @@ export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> 
       sparkline: dxy.sparkline,
     },
     {
-      key: 'netLiquidity', label: 'US Net Liquidity', value: netLiq.value,
-      formattedValue: `$${(netLiq.value / 1e12).toFixed(1)}T`, changePct: netLiq.changePct,
-      signal: netLiq.changePct >= 0 ? 'bullish' : 'bearish',
-      signalLabel: netLiq.changePct >= 0 ? 'Bullish' : 'Bearish',
-      sparkline: netLiq.sparkline,
+      key: 'netLiquidity', label: 'US Net Liquidity', value: netLiqValue,
+      formattedValue: `$${(netLiqValue / 1e12).toFixed(1)}T`, changePct: netLiqChange,
+      signal: netLiqChange >= 0 ? 'bullish' : 'bearish',
+      signalLabel: netLiqChange >= 0 ? 'Bullish' : 'Bearish',
+      sparkline: netSpark.length > 2 ? netSpark : netLiq.sparkline,
     },
     {
-      key: 'cbLiquidity', label: 'CB Liquidity', value: cbLiq.value,
-      formattedValue: `$${(cbLiq.value / 1e12).toFixed(1)}T`, changePct: cbLiqMonthlyPct,
-      // iOS Global Liquidity signal: MONTHLY change with a ±0.3% neutral band —
-      // a WoW zero-threshold flips to "Contracting" on noise the app calls Expanding.
-      signal: cbLiqMonthlyPct > 0.3 ? 'expanding' : cbLiqMonthlyPct < -0.3 ? 'contracting' : 'neutral',
-      signalLabel: cbLiqMonthlyPct > 0.3 ? 'Expanding' : cbLiqMonthlyPct < -0.3 ? 'Contracting' : 'Neutral',
-      sparkline: cbLiq.sparkline,
+      key: 'cbLiquidity', label: 'CB Liquidity', value: cbLiqValue,
+      formattedValue: `$${(cbLiqValue / 1e12).toFixed(1)}T`, changePct: cbLiqChange,
+      signal: cbSignal,
+      signalLabel: cbSignal === 'expanding' ? 'Expanding' : cbSignal === 'contracting' ? 'Contracting' : 'Neutral',
+      sparkline: cbSpark.length > 2 ? cbSpark : cbLiq.sparkline,
     },
   ];
 
-  const bullishCount = [vix.value < 20, dxy.value < 100, netLiq.changePct >= 0].filter(Boolean).length;
+  const bullishCount = [vix.value < 20, dxy.value < 100, netLiqChange >= 0].filter(Boolean).length;
   const riskOn = bullishCount >= 2;
-  const easing = cbLiqMonthlyPct >= 0; // expanding liquidity ≈ disinflationary/easing
+  const easing = cbLiqChange >= 0; // expanding liquidity ≈ disinflationary/easing
   const regimeLabel = `${riskOn ? 'Risk-On' : 'Risk-Off'} ${easing ? 'Disinflation' : 'Inflation'}`;
   const insight = riskOn
     ? 'Macro indicators are aligned to the upside. Low fear, a weakening or stable dollar, and growing liquidity have historically supported risk assets like BTC.'
