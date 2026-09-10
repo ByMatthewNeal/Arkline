@@ -947,7 +947,7 @@ function DCATile({ onOpen }: { onOpen: () => void }) {
 
           {totalMonthly > 0 && (
             <div className="mt-1.5">
-              <span className="fig font-[family-name:var(--font-urbanist)] text-xl font-bold text-ark-text">~{formatCurrency(totalMonthly)}</span>
+              <span className="fig font-[family-name:var(--font-urbanist)] text-xl font-bold text-ark-text">{formatCurrency(totalMonthly)}</span>
               <span className="text-[10px] text-ark-text-disabled">/mo committed</span>
             </div>
           )}
@@ -2067,10 +2067,12 @@ function PortfolioHero() {
               {/* One line tells the whole change story: move + period (or scrub date).
                   Plain colored text instead of a pill — quieter, and it sits on the
                   same rhythm as the rows above and below it. */}
-              <p className={cn('fig mt-2.5 flex items-center gap-1.5 text-sm font-semibold', hideBalance && 'blur-sm select-none')}>
+              {/* Privacy mode hides dollar AMOUNTS only — the % move stays visible */}
+              <p className="fig mt-2.5 flex items-center gap-1.5 text-sm font-semibold">
                 <span className={cn('flex items-center gap-1', isUp ? 'text-ark-success' : 'text-ark-error')}>
                   {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                  {formatCurrency(Math.abs(displayChange))} ({formatPercent(displayChangePct)})
+                  <span className={cn(hideBalance && 'blur-sm select-none')}>{formatCurrency(Math.abs(displayChange))}</span>
+                  ({formatPercent(displayChangePct)})
                 </span>
                 <span className="font-normal text-ark-text-disabled">·</span>
                 {scrubDateLabel ? (
