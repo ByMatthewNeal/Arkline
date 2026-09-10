@@ -628,25 +628,45 @@ function MacroTile({ onOpen }: { onOpen: () => void }) {
             </span>
           </div>
 
-          {/* 3 columns: VIX / DXY / CB Liq */}
-          <div className="mt-3 flex flex-1 items-stretch rounded-xl bg-ark-fill-secondary/40">
-            {cols.map((ind, i) => (
-              <div key={ind.key} className={cn('flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2', i > 0 && 'border-l border-ark-divider/60')}>
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{ind.key === 'cbLiquidity' ? 'CB Liq' : ind.label}</span>
-                <span className="flex items-center gap-1 text-[12px] font-bold" style={{ color: sigDot(ind.signal) }}>
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: sigDot(ind.signal) }} />{ind.signalLabel}
-                </span>
-                {ind.sparkline.length > 1 && <div className="h-6 w-full px-1"><Spark data={ind.sparkline} color={sigDot(ind.signal)} className="h-6" /></div>}
-                <span className="fig text-sm font-bold text-ark-text">{ind.formattedValue.replace('$', '').replace('T', 'T')}</span>
-              </div>
-            ))}
+          {/* 3 stat cards: VIX / DXY / CB Liq — each color-tinted by its signal */}
+          <div className="mt-3 grid flex-1 grid-cols-3 gap-2">
+            {cols.map((ind) => {
+              const c = sigDot(ind.signal);
+              const spark = ind.sparkline;
+              const delta = spark.length > 1 && spark[0] !== 0 ? ((spark[spark.length - 1] - spark[0]) / Math.abs(spark[0])) * 100 : null;
+              return (
+                <div
+                  key={ind.key}
+                  className="flex flex-col rounded-xl border p-2.5"
+                  style={{ borderColor: `${c}26`, backgroundColor: `${c}08` }}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{ind.key === 'cbLiquidity' ? 'CB Liq' : ind.label}</span>
+                    <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ backgroundColor: `${c}1F`, color: c }}>{ind.signalLabel}</span>
+                  </div>
+                  <div className="mt-1.5 flex items-baseline gap-1.5">
+                    <span className="fig font-[family-name:var(--font-urbanist)] text-xl font-bold text-ark-text">{ind.formattedValue.replace('$', '')}</span>
+                    {delta != null && Math.abs(delta) >= 0.05 && (
+                      <span className={cn('fig text-[9px] font-semibold', delta >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+                        {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  {spark.length > 1 && (
+                    <div className="mt-auto min-h-8 flex-1 pt-1.5">
+                      <Spark data={spark} color={c} className="h-full min-h-8" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Regime footer */}
-          <div className="mt-2 flex items-center gap-2 rounded-xl bg-ark-fill-secondary/40 px-3 py-2">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: regimeColor }} />
+          {/* Regime footer — accent bar + tinted background carry the verdict */}
+          <div className="mt-2 flex items-center gap-2.5 overflow-hidden rounded-xl px-3 py-2" style={{ backgroundColor: `${regimeColor}0D` }}>
+            <span className="h-6 w-1 shrink-0 rounded-full" style={{ backgroundColor: regimeColor }} />
             <span className="shrink-0 text-[12px] font-bold" style={{ color: regimeColor }}>{data.regimeLabel}</span>
-            <span className="truncate text-[11px] text-ark-text-disabled">{data.regimeDescription}</span>
+            <span className="truncate text-[11px] text-ark-text-tertiary">{data.regimeDescription}</span>
             <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 text-ark-text-disabled" />
           </div>
         </div>
