@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ArrowDown, ArrowDownRight, ArrowUpRight, ArrowUp, ArrowRight, BarChart3, Smile, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
@@ -48,21 +48,66 @@ const money = (v?: number) => v == null ? '—' : `$${Math.round(v).toLocaleStri
  * per-mousemove state updates re-render ONLY this card — scrubbing used to
  * re-render the whole drawer (gauge + 12-row breakdown) and sputtered.
  */
+const labelFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const fullFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+/**
+ * The chart alone, memoized: its props (`hist` from the react-query cache and
+ * a stable callback) never change while scrubbing, so React skips it entirely
+ * on every scrub update. Only the readout above re-renders.
+ */
+const HistoryChart = memo(function HistoryChart({ hist, onScrub }: {
+  hist: ArkLineScoreHistoryPoint[];
+  onScrub: (pt: ArkLineScoreHistoryPoint | null) => void;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart
+        data={hist}
+        margin={{ top: 6, right: 4, bottom: 0, left: 4 }}
+        onMouseMove={(s) => {
+          const st = s as { activeLabel?: string; activeTooltipIndex?: number; activePayload?: { payload?: ArkLineScoreHistoryPoint }[] };
+          let pt = st.activePayload?.[0]?.payload;
+          if (!pt && st.activeLabel != null) pt = hist.find((h) => h.date === st.activeLabel);
+          if (!pt && st.activeTooltipIndex != null && st.activeTooltipIndex >= 0) pt = hist[st.activeTooltipIndex];
+          if (pt) onScrub(pt);
+        }}
+        onMouseLeave={() => onScrub(null)}
+      >
+        <defs>
+          <linearGradient id="ark-score-hist" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--ark-info)" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="var(--ark-info)" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <XAxis
+          dataKey="date" tickLine={false} axisLine={false}
+          ticks={hist.length ? [hist[0].date, hist[hist.length - 1].date] : []}
+          tickFormatter={labelFmt}
+          tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }}
+          interval="preserveStartEnd"
+        />
+        <YAxis domain={['dataMin - 5', 'dataMax + 5']} hide />
+        {/* The Tooltip cursor draws the tracking line; the activeDot marks the point. */}
+        <Tooltip cursor={{ stroke: 'var(--ark-info)', strokeDasharray: '3 3' }} content={() => null} isAnimationActive={false} />
+        <Area type="monotone" dataKey="score" stroke="var(--ark-info)" strokeWidth={2} fill="url(#ark-score-hist)" activeDot={{ r: 4, fill: 'var(--ark-info)' }} dot={false} isAnimationActive={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+});
+
 function ScoreHistoryCard({ hist }: { hist: ArkLineScoreHistoryPoint[] }) {
   const [active, setActive] = useState<ArkLineScoreHistoryPoint | null>(null);
   const activeDateRef = useRef<string | null>(null);
 
-  const labelFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const fullFmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-
-  const scrubTo = (pt: ArkLineScoreHistoryPoint | null) => {
+  const scrubTo = useCallback((pt: ArkLineScoreHistoryPoint | null) => {
     const date = pt?.date ?? null;
     // Only update when the hovered day actually changes — mousemove fires
     // per pixel, but there are far fewer days than pixels.
     if (date === activeDateRef.current) return;
     activeDateRef.current = date;
     setActive(pt);
-  };
+  }, []);
 
   return (
     <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
@@ -73,57 +118,30 @@ function ScoreHistoryCard({ hist }: { hist: ArkLineScoreHistoryPoint[] }) {
         )}
       </div>
 
-      {active ? (
-        <div className="mt-2">
-          <p className="text-xs text-ark-text-tertiary">{fullFmt(active.date)}</p>
-          <div className="mt-0.5 flex items-center gap-2">
-            <span className="fig text-2xl font-bold text-ark-text">{active.score}</span>
-            <span className="rounded px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${bandColor(active.score)}1F`, color: bandColor(active.score) }}>{active.tier}</span>
-          </div>
-          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-ark-text-disabled">
-            <span>BTC <span className="fig font-semibold text-ark-text-secondary">{money(active.btcPrice)}</span></span>
-            <span>S&amp;P <span className="fig font-semibold text-ark-text-secondary">{money(active.sp500Price)}</span></span>
-            <span>NDX <span className="fig font-semibold text-ark-text-secondary">{money(active.nasdaqPrice)}</span></span>
-          </div>
-        </div>
-      ) : (
-        <p className="mt-1 text-xs text-ark-text-disabled">Touch the chart to view historical scores</p>
-      )}
+      {/* Fixed-height readout: swapping hint ⇄ stats must NOT change the card's
+          height, or ResponsiveContainer re-measures and re-lays-out the chart
+          on every hover enter/leave (the main source of the sputter). */}
+      <div className="mt-2 h-[74px]">
+        {active ? (
+          <>
+            <p className="text-xs text-ark-text-tertiary">{fullFmt(active.date)}</p>
+            <div className="mt-0.5 flex items-center gap-2">
+              <span className="fig text-2xl font-bold text-ark-text">{active.score}</span>
+              <span className="rounded px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${bandColor(active.score)}1F`, color: bandColor(active.score) }}>{active.tier}</span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-ark-text-disabled">
+              <span>BTC <span className="fig font-semibold text-ark-text-secondary">{money(active.btcPrice)}</span></span>
+              <span>S&amp;P <span className="fig font-semibold text-ark-text-secondary">{money(active.sp500Price)}</span></span>
+              <span>NDX <span className="fig font-semibold text-ark-text-secondary">{money(active.nasdaqPrice)}</span></span>
+            </div>
+          </>
+        ) : (
+          <p className="text-xs text-ark-text-disabled">Touch the chart to view historical scores</p>
+        )}
+      </div>
 
       <div className="mt-3 h-44 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={hist}
-            margin={{ top: 6, right: 4, bottom: 0, left: 4 }}
-            onMouseMove={(s) => {
-              const st = s as { activeLabel?: string; activeTooltipIndex?: number; activePayload?: { payload?: ArkLineScoreHistoryPoint }[] };
-              let pt = st.activePayload?.[0]?.payload;
-              if (!pt && st.activeLabel != null) pt = hist.find((h) => h.date === st.activeLabel);
-              if (!pt && st.activeTooltipIndex != null && st.activeTooltipIndex >= 0) pt = hist[st.activeTooltipIndex];
-              if (pt) scrubTo(pt);
-            }}
-            onMouseLeave={() => scrubTo(null)}
-          >
-            <defs>
-              <linearGradient id="ark-score-hist" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--ark-info)" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="var(--ark-info)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="date" tickLine={false} axisLine={false}
-              ticks={hist.length ? [hist[0].date, hist[hist.length - 1].date] : []}
-              tickFormatter={labelFmt}
-              tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }}
-              interval="preserveStartEnd"
-            />
-            <YAxis domain={['dataMin - 5', 'dataMax + 5']} hide />
-            {/* The Tooltip cursor draws the tracking line — no ReferenceLine,
-                which forced a full chart re-layout on every mousemove. */}
-            <Tooltip cursor={{ stroke: 'var(--ark-info)', strokeDasharray: '3 3' }} content={() => null} isAnimationActive={false} />
-            <Area type="monotone" dataKey="score" stroke="var(--ark-info)" strokeWidth={2} fill="url(#ark-score-hist)" activeDot={{ r: 4, fill: 'var(--ark-info)' }} dot={false} isAnimationActive={false} />
-          </AreaChart>
-        </ResponsiveContainer>
+        <HistoryChart hist={hist} onScrub={scrubTo} />
       </div>
     </div>
   );
