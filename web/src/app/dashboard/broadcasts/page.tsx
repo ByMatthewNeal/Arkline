@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock, MessagesSquare, BookOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
-import { fetchBroadcasts, recordBroadcastImpression, type Broadcast } from '@/lib/api/broadcasts';
+import { fetchBroadcasts, recordBroadcastImpression, recordBroadcastOpen, type Broadcast } from '@/lib/api/broadcasts';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useBroadcastSocial } from '@/lib/hooks/use-broadcast-social';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -41,6 +41,17 @@ function matchesDate(b: Broadcast, filter: DateFilter): boolean {
 function BroadcastCard({ b, social, uid }: { b: Broadcast; social: Social; uid?: string }) {
   const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const openRecorded = useRef(false);
+
+  // Open (read) tracking: expanding the card counts as reading it, same as
+  // iOS opening the detail. Feeds broadcast_reads → view_count + Seen-by.
+  const toggleExpanded = () => {
+    if (!expanded && !openRecorded.current) {
+      openRecorded.current = true;
+      void recordBroadcastOpen(b.id);
+    }
+    setExpanded((v) => !v);
+  };
   const preview = previewText(b.content).split('\n').filter(Boolean).slice(0, 3);
   const when = b.published_at ?? b.created_at;
   const liked = social.isReacted(b.id);
@@ -70,7 +81,7 @@ function BroadcastCard({ b, social, uid }: { b: Broadcast; social: Social; uid?:
     <GlassCard
       ref={cardRef}
       className={cn('relative cursor-pointer overflow-hidden transition-shadow hover:shadow-md', b.is_pinned && 'border-ark-primary/30')}
-      onClick={() => setExpanded((v) => !v)}
+      onClick={toggleExpanded}
     >
       {b.is_pinned && <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/60 to-transparent" />}
       <div className="flex items-start justify-between gap-3">

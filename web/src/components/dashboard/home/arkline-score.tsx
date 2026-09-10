@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
 import { ArrowDown, ArrowDownRight, ArrowUpRight, ArrowUp, ArrowRight, BarChart3, Smile, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
+import { DefineTerm } from '@/components/ui/define-term';
 import { useArkLineScore, useArkLineScoreHistory } from '@/lib/hooks/use-market';
 import type { ArkLineScoreComponent, ArkLineScoreHistoryPoint } from '@/types';
 
@@ -227,7 +228,11 @@ function ComponentRow({ c }: { c: ArkLineScoreComponent }) {
         <SignalArrow signal={c.signal} className="h-4 w-4" color={color} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-ark-text">{c.name}</p>
+        {/* Every score input resolves by term/alias (iOS 853172c parity) —
+            renders plain text if the dictionary has no entry for the name. */}
+        <p className="truncate text-sm font-semibold text-ark-text">
+          <DefineTerm termKey={c.name} screen="arkline_score" variant="underline">{c.name}</DefineTerm>
+        </p>
         <p className="text-[11px] text-ark-text-disabled">{c.weight}% weight</p>
       </div>
       <div className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-ark-fill-secondary">

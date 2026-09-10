@@ -32,6 +32,7 @@ const factorLabels: Record<RiskFactorType, string> = {
   'Funding Rate': 'Funding Rate',
   'Fear & Greed': 'Fear & Greed',
   'Macro Risk': 'Macro Risk',
+  'Oil Risk': 'Oil Risk',
 };
 
 // Dictionary slugs per risk factor. Slugs with no dictionary row yet render
@@ -44,6 +45,7 @@ const factorSlugs: Record<RiskFactorType, string> = {
   'Funding Rate': 'funding-rate',
   'Fear & Greed': 'fear-greed-index',
   'Macro Risk': 'macro-risk',
+  'Oil Risk': 'wti-crude-oil',
 };
 
 export function AssetRiskLevel() {

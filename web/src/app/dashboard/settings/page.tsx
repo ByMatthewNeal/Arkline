@@ -11,7 +11,7 @@ import { deleteAccountData } from '@/lib/api/account';
 import { setPreferredCurrency } from '@/lib/utils/format';
 import { subscribeToPush, unsubscribeFromPush, isPushSupported, isPushConfigured } from '@/lib/push';
 import { FeatureRequestModal } from '@/components/dashboard/shared/feature-request';
-import type { NotificationSettings } from '@/types';
+import type { NotificationPreferences } from '@/types';
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF'] as const;
 
@@ -21,14 +21,60 @@ const themeOptions = [
   { value: 'system' as const, label: 'System', icon: Monitor },
 ];
 
-const defaultNotifications: NotificationSettings = {
-  push_enabled: true,
-  email_enabled: false,
-  dca_reminders: true,
-  extreme_moves: true,
-  sentiment_shifts: false,
-  insights: true,
-};
+/**
+ * UI state for server push gating. Mirrors iOS NotificationsDetailView:
+ * `signals` is the parent for the four signal sub-toggles; the full
+ * notification_preferences map is derived from this on save.
+ */
+interface PrefsState {
+  signals: boolean;
+  signalT1Hit: boolean;
+  signalStopLoss: boolean;
+  signalRunnerClose: boolean;
+  signalExpiry: boolean;
+  modelPortfolio: boolean;
+  breadth: boolean;
+  rotation: boolean;
+  qps: boolean;
+  briefings: boolean;
+  broadcast: boolean;
+}
+
+/** Server semantics: a missing key means enabled. */
+function prefsFromProfile(p?: Partial<NotificationPreferences>): PrefsState {
+  const on = (k: keyof NotificationPreferences) => p?.[k] !== false;
+  return {
+    signals: on('signal_new'),
+    signalT1Hit: on('signal_t1_hit'),
+    signalStopLoss: on('signal_stop_loss'),
+    signalRunnerClose: on('signal_runner_close'),
+    signalExpiry: on('signal_expiry'),
+    modelPortfolio: on('model_portfolio_rebalance'),
+    breadth: on('breadth_crossover'),
+    rotation: on('rotation_regime_change'),
+    qps: on('qps_change'),
+    briefings: on('briefings'),
+    broadcast: on('broadcast'),
+  };
+}
+
+/** Authoritative, complete write — same shape iOS's syncSignalPreferences() sends. */
+function prefsToMap(s: PrefsState): NotificationPreferences {
+  return {
+    signal_new: s.signals,
+    signal_proximity: s.signals,
+    signal_t1_hit: s.signals && s.signalT1Hit,
+    signal_stop_loss: s.signals && s.signalStopLoss,
+    signal_runner_close: s.signals && s.signalRunnerClose,
+    signal_expiry: s.signals && s.signalExpiry,
+    model_portfolio_rebalance: s.modelPortfolio,
+    breadth_crossover: s.breadth,
+    rotation_regime_change: s.rotation,
+    qps_change: s.qps,
+    briefings: s.briefings,
+    broadcast: s.broadcast,
+  };
+}
 
 function ToggleRow({
   label,
@@ -72,9 +118,8 @@ export default function SettingsPage() {
   const { profile } = useAuth();
   const { theme, setTheme } = useTheme();
   const [currency, setCurrency] = useState(profile?.preferred_currency ?? 'USD');
-  const [notifications, setNotifications] = useState<NotificationSettings>(
-    profile?.notifications ?? defaultNotifications,
-  );
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [prefs, setPrefs] = useState<PrefsState>(() => prefsFromProfile(profile?.notification_preferences));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -82,14 +127,14 @@ export default function SettingsPage() {
   const [featureRequestOpen, setFeatureRequestOpen] = useState(false);
   const toast = useToast();
 
-  const updateNotification = (key: keyof NotificationSettings, value: boolean) => {
-    setNotifications((prev) => ({ ...prev, [key]: value }));
+  const updatePref = (key: keyof PrefsState, value: boolean) => {
+    setPrefs((prev) => ({ ...prev, [key]: value }));
   };
 
   // Master push toggle actually subscribes/unsubscribes this browser
   // (stored in user_devices, platform 'web' — the APNs equivalent).
   const handlePushToggle = async (on: boolean) => {
-    updateNotification('push_enabled', on);
+    setPushEnabled(on);
     if (!profile) return;
     if (on) {
       if (!isPushSupported()) {
@@ -104,7 +149,7 @@ export default function SettingsPage() {
         const result = await subscribeToPush(profile.id);
         if (result === 'subscribed') toast.success('Push notifications enabled for this browser');
         else if (result === 'denied') {
-          updateNotification('push_enabled', false);
+          setPushEnabled(false);
           toast.error('Notifications are blocked — allow them in your browser settings.');
         }
       } catch {
@@ -126,7 +171,8 @@ export default function SettingsPage() {
         .from('profiles')
         .update({
           preferred_currency: currency,
-          notifications,
+          // Server push gating — the column send-broadcast-notification reads.
+          notification_preferences: prefsToMap(prefs),
           dark_mode: theme,
         })
         .eq('id', profile.id);
@@ -224,41 +270,64 @@ export default function SettingsPage() {
         <div className="divide-y divide-ark-divider">
           <ToggleRow
             label="Push Notifications"
-            description="Browser push notifications for alerts"
-            checked={notifications.push_enabled}
+            description="Enable browser push on this device"
+            checked={pushEnabled}
             onChange={handlePushToggle}
           />
           <ToggleRow
-            label="Email Notifications"
-            description="Email alerts for important events"
-            checked={notifications.email_enabled}
-            onChange={(v) => updateNotification('email_enabled', v)}
+            label="Trade Signals"
+            description="New setups, entry-zone proximity, and outcome alerts"
+            checked={prefs.signals}
+            onChange={(v) => updatePref('signals', v)}
+          />
+          {prefs.signals && (
+            <div className="ml-4 divide-y divide-ark-divider/60 border-l-2 border-ark-divider pl-4">
+              <ToggleRow label="Target 1 hit" description="When a signal reaches T1" checked={prefs.signalT1Hit} onChange={(v) => updatePref('signalT1Hit', v)} />
+              <ToggleRow label="Stop loss" description="When a signal is stopped out" checked={prefs.signalStopLoss} onChange={(v) => updatePref('signalStopLoss', v)} />
+              <ToggleRow label="Runner close" description="When a trailing runner closes" checked={prefs.signalRunnerClose} onChange={(v) => updatePref('signalRunnerClose', v)} />
+              <ToggleRow label="Expiry" description="When a signal expires" checked={prefs.signalExpiry} onChange={(v) => updatePref('signalExpiry', v)} />
+            </div>
+          )}
+          <ToggleRow
+            label="Model Portfolio Rebalances"
+            description="When a strategy you follow rebalances"
+            checked={prefs.modelPortfolio}
+            onChange={(v) => updatePref('modelPortfolio', v)}
           />
           <ToggleRow
-            label="DCA Reminders"
-            description="Notify when it's time to DCA"
-            checked={notifications.dca_reminders}
-            onChange={(v) => updateNotification('dca_reminders', v)}
+            label="Market Breadth Crossovers"
+            description="EMA breadth crossover alerts"
+            checked={prefs.breadth}
+            onChange={(v) => updatePref('breadth', v)}
           />
           <ToggleRow
-            label="Extreme Moves"
-            description="Alert on large price swings"
-            checked={notifications.extreme_moves}
-            onChange={(v) => updateNotification('extreme_moves', v)}
+            label="Rotation Regime Shifts"
+            description="Crypto ↔ equities rotation changes"
+            checked={prefs.rotation}
+            onChange={(v) => updatePref('rotation', v)}
           />
           <ToggleRow
-            label="Sentiment Shifts"
-            description="Fear & Greed zone changes"
-            checked={notifications.sentiment_shifts}
-            onChange={(v) => updateNotification('sentiment_shifts', v)}
+            label="Positioning Changes"
+            description="Daily positioning (QPS) signal changes"
+            checked={prefs.qps}
+            onChange={(v) => updatePref('qps', v)}
           />
           <ToggleRow
-            label="AI Insights"
-            description="Daily AI-generated briefing notifications"
-            checked={notifications.insights}
-            onChange={(v) => updateNotification('insights', v)}
+            label="Daily Briefings"
+            description="Morning AI market briefing"
+            checked={prefs.briefings}
+            onChange={(v) => updatePref('briefings', v)}
+          />
+          <ToggleRow
+            label="Insights & Broadcasts"
+            description="New insights published in the Insights tab"
+            checked={prefs.broadcast}
+            onChange={(v) => updatePref('broadcast', v)}
           />
         </div>
+        <p className="mt-2 text-[11px] text-ark-text-tertiary">
+          These preferences apply to pushes on all your devices, including the iOS app. Remember to save.
+        </p>
       </GlassCard>
 
       {/* Resources */}
@@ -285,7 +354,7 @@ export default function SettingsPage() {
           </Link>
           <button onClick={() => setFeatureRequestOpen(true)} className="flex w-full items-center gap-3 py-3 text-left transition-colors hover:opacity-80">
             <Lightbulb className="h-4 w-4 text-ark-warning" />
-            <div className="flex-1"><p className="text-sm font-medium text-ark-text">Request a Feature</p><p className="text-xs text-ark-text-disabled">Tell us what to build next</p></div>
+            <div className="flex-1"><p className="text-sm font-medium text-ark-text">Request a Feature / Report a Bug</p><p className="text-xs text-ark-text-disabled">Tell us what to build next — or what broke</p></div>
             <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
           </button>
         </div>

@@ -36,6 +36,7 @@ export function FeatureRequestModal({ open, onClose }: { open: boolean; onClose:
   const { authUser, profile } = useAuth();
   const toast = useToast();
 
+  const [requestType, setRequestType] = useState<'feature' | 'bug'>('feature');
   const [category, setCategory] = useState<string>('other');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -57,12 +58,18 @@ export function FeatureRequestModal({ open, onClose }: { open: boolean; onClose:
         author_id: authUser.id,
         author_email: authUser.email ?? profile?.email ?? null,
         status: 'pending',
+        // Same triage metadata iOS sends — bugs land typed and diagnosable
+        // in the shared admin inbox.
+        request_type: requestType,
+        app_version: 'web',
+        device_info: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 250) : null,
       });
       if (error) throw error;
-      toast.success('Request submitted — thanks for the idea!');
+      toast.success(requestType === 'bug' ? 'Bug report submitted — thanks for flagging it!' : 'Request submitted — thanks for the idea!');
       setTitle('');
       setDescription('');
       setCategory('other');
+      setRequestType('feature');
       onClose();
     } catch {
       toast.error('Could not submit your request. Please try again.');
@@ -92,7 +99,9 @@ export function FeatureRequestModal({ open, onClose }: { open: boolean; onClose:
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ark-warning/10">
                   <Lightbulb className="h-4 w-4 text-ark-warning" />
                 </div>
-                <h3 className="font-[family-name:var(--font-urbanist)] text-base font-semibold text-ark-text">Request a feature</h3>
+                <h3 className="font-[family-name:var(--font-urbanist)] text-base font-semibold text-ark-text">
+                  {requestType === 'bug' ? 'Report a bug' : 'Request a feature'}
+                </h3>
               </div>
               <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary">
                 <X className="h-4 w-4" />
@@ -100,6 +109,24 @@ export function FeatureRequestModal({ open, onClose }: { open: boolean; onClose:
             </div>
 
             <div className="mt-4 space-y-4">
+              {/* Feature vs bug — shared inbox, one pipeline (matches iOS) */}
+              <div className="flex rounded-xl bg-ark-fill-secondary/60 p-1">
+                {([['feature', 'Feature idea'], ['bug', 'Bug report']] as const).map(([t, label]) => (
+                  <button
+                    key={t}
+                    onClick={() => setRequestType(t)}
+                    className={cn(
+                      'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                      requestType === t
+                        ? t === 'bug' ? 'bg-ark-error text-white shadow-sm' : 'bg-ark-primary text-white shadow-sm'
+                        : 'text-ark-text-tertiary hover:text-ark-text',
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               <div>
                 <p className="mb-1.5 text-xs font-semibold text-ark-text-secondary">Category</p>
                 <div className="flex flex-wrap gap-1.5">

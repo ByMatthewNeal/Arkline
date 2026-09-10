@@ -30,6 +30,27 @@ export interface NotificationSettings {
   insights: boolean;
 }
 
+/**
+ * Server-side push gating — `profiles.notification_preferences`.
+ * This is the column `send-broadcast-notification` filters on (a MISSING key
+ * is treated as enabled), and the same key set iOS's notifications screen
+ * writes. Written in full on save so toggles never clobber one another.
+ */
+export interface NotificationPreferences {
+  signal_new: boolean;
+  signal_proximity: boolean;
+  signal_t1_hit: boolean;
+  signal_stop_loss: boolean;
+  signal_runner_close: boolean;
+  signal_expiry: boolean;
+  model_portfolio_rebalance: boolean;
+  breadth_crossover: boolean;
+  rotation_regime_change: boolean;
+  qps_change: boolean;
+  briefings: boolean;
+  broadcast: boolean;
+}
+
 export interface DashboardLayouts {
   home?: import('react-grid-layout').ResponsiveLayouts;
   market?: import('react-grid-layout').ResponsiveLayouts;
@@ -50,6 +71,7 @@ export interface User {
   risk_coins: string[];
   dark_mode: string;
   notifications?: NotificationSettings;
+  notification_preferences?: Partial<NotificationPreferences>;
   dashboard_layouts?: DashboardLayouts;
   passcode_hash?: string;
   face_id_enabled: boolean;

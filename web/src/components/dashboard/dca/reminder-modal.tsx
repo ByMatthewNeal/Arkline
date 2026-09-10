@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Banknote } from 'lucide-react';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { useCreateReminder, useUpdateReminder } from '@/lib/hooks/use-dca-mutations';
@@ -24,9 +24,11 @@ interface Props {
   /** Prefill for a fresh reminder (e.g. from the Investment Budget calculator). */
   initialAmount?: number;
   initialFrequency?: string;
+  /** Opens the Investment Budget calculator (iOS "Work out your budget" link). */
+  onOpenBudget?: () => void;
 }
 
-export function ReminderModal({ open, onClose, editing, initialAmount, initialFrequency }: Props) {
+export function ReminderModal({ open, onClose, editing, initialAmount, initialFrequency, onOpenBudget }: Props) {
   const { data: assets } = useCryptoAssets(1);
   const create = useCreateReminder();
   const update = useUpdateReminder();
@@ -120,6 +122,11 @@ export function ReminderModal({ open, onClose, editing, initialAmount, initialFr
           <label className="mb-1.5 block text-xs font-semibold text-ark-text-secondary">Amount per purchase (USD)</label>
           <input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100.00"
             className="w-full rounded-xl border border-ark-divider bg-ark-fill-secondary/40 px-3 py-2.5 text-sm text-ark-text outline-none focus:border-ark-info" />
+          {onOpenBudget && !editing && (
+            <button type="button" onClick={onOpenBudget} className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-ark-info transition-colors hover:text-ark-primary">
+              <Banknote className="h-3.5 w-3.5" /> Not sure how much? Work out your budget
+            </button>
+          )}
         </div>
 
         {/* Frequency */}

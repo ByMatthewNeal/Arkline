@@ -59,6 +59,18 @@ export async function recordBroadcastImpression(broadcastId: string, userId: str
   await supabase.from('broadcast_impressions').insert({ broadcast_id: broadcastId, user_id: userId });
 }
 
+/**
+ * Record an OPEN (expanded read) — same RPC iOS calls. Inserts a deduped
+ * `broadcast_reads` row; a trigger recomputes `view_count` as distinct
+ * readers, and the admin Seen-by list is built from these rows. Without this,
+ * web reads never appear in the reader list.
+ */
+export async function recordBroadcastOpen(broadcastId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = createClient();
+  await supabase.rpc('increment_view_count', { broadcast_uuid: broadcastId });
+}
+
 /** Published broadcasts, pinned first then newest. */
 export async function fetchBroadcasts(): Promise<Broadcast[]> {
   if (!isSupabaseConfigured()) return [];

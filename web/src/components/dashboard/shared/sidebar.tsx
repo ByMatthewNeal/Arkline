@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { cn } from '@/lib/utils/format';
@@ -36,6 +37,12 @@ const mainNav = [
 const utilNav = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   { label: 'Profile', href: '/dashboard/profile', icon: User },
+];
+
+// Visible to role === 'admin' only (RLS + admin-gated edge functions enforce
+// server-side; hiding it here is just navigation hygiene).
+const adminNav = [
+  { label: 'Admin', href: '/dashboard/admin', icon: ShieldCheck },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
@@ -101,6 +108,20 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           )}
           {utilNav.map(renderNavItem)}
         </div>
+
+        {profile?.role === 'admin' && (
+          <>
+            <div className="my-4 border-t border-ark-divider" />
+            <div className="space-y-1">
+              {!collapsed && (
+                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
+                  Manage
+                </p>
+              )}
+              {adminNav.map(renderNavItem)}
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Bottom */}

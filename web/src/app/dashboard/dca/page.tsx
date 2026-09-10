@@ -17,12 +17,14 @@ import {
   Loader2,
 } from 'lucide-react';
 import { GlassCard, Skeleton, ConfirmDialog, useToast } from '@/components/ui';
+import { DefineTerm } from '@/components/ui/define-term';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDCAReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { formatCurrency, formatRelativeTime } from '@/lib/utils/format';
 import { ReminderModal } from '@/components/dashboard/dca/reminder-modal';
+import { BudgetCalculatorDrawer } from '@/components/dashboard/portfolio/budget-calculator';
 import { PlanWizard } from '@/components/dashboard/dca/plan-wizard';
 import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { useLogInvestment, useUpdateReminder, useDeleteReminder } from '@/lib/hooks/use-dca-mutations';
@@ -41,6 +43,11 @@ export default function DCAPage() {
   const isDemo = !isSupabaseConfigured();
   const [showCompleted, setShowCompleted] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; editing: DCAReminder | null }>({ open: false, editing: null });
+  // Budget calculator handoff (iOS CreateDCASheet parity): the modal's
+  // "work out your budget" link opens the drawer; picking a pace feeds the
+  // monthly amount back into the reminder form.
+  const [budgetOpen, setBudgetOpen] = useState(false);
+  const [budgetAmount, setBudgetAmount] = useState<number | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<DCAReminder | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const toast = useToast();
@@ -81,7 +88,7 @@ export default function DCAPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">
-            DCA Reminders
+            <DefineTerm termKey="dca" screen="dca_list" variant="underline">DCA Reminders</DefineTerm>
           </h1>
           <p className="mt-1 text-sm text-ark-text-tertiary">
             Dollar-cost average into your favorite assets
@@ -107,7 +114,19 @@ export default function DCAPage() {
         </div>
       </div>
 
-      <ReminderModal open={modal.open} onClose={() => setModal((m) => ({ ...m, open: false }))} editing={modal.editing} />
+      <ReminderModal
+        open={modal.open}
+        onClose={() => { setModal((m) => ({ ...m, open: false })); setBudgetAmount(undefined); }}
+        editing={modal.editing}
+        initialAmount={budgetAmount}
+        initialFrequency={budgetAmount != null ? 'monthly' : undefined}
+        onOpenBudget={() => setBudgetOpen(true)}
+      />
+      <BudgetCalculatorDrawer
+        open={budgetOpen}
+        onClose={() => setBudgetOpen(false)}
+        onSetupDca={(amt) => { setBudgetOpen(false); setBudgetAmount(amt); setModal({ open: true, editing: null }); }}
+      />
       <PlanWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
 
       <ConfirmDialog

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChevronRight, ChevronLeft, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
+import { DefineTerm } from '@/components/ui/define-term';
 import { useRiskLevels, useIndicatorHistory, useBtcMultiFactor } from '@/lib/hooks/use-market';
 import { RISK_BANDS, riskBandFor } from '@/lib/risk/multi-factor';
 import { cn } from '@/lib/utils/format';
@@ -171,7 +172,7 @@ function MultiFactorSection() {
     <div className="space-y-3">
       {/* Regression → Composite comparison (iOS "Multi-Factor BTC Risk" card) */}
       <div className="rounded-xl border border-ark-divider p-4 text-center">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Multi-Factor BTC Risk</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary"><DefineTerm termKey="risk-levels" screen="risk_levels_detail" variant="underline">Multi-Factor BTC Risk</DefineTerm></p>
         <p className="fig mt-1 font-[family-name:var(--font-urbanist)] text-3xl font-bold" style={{ color: compBand.color }}>
           {data.composite.toFixed(3)}
         </p>

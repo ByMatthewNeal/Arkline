@@ -1,6 +1,7 @@
 'use client';
 
 import { Activity, ArrowUpRight, DollarSign, Equal, TrendingDown } from 'lucide-react';
+import { DefineTerm } from '@/components/ui/define-term';
 import { GlassCard, Skeleton } from '@/components/ui';
 import { useMomentumMap } from '@/lib/hooks/use-market';
 import { cn } from '@/lib/utils/format';
@@ -123,7 +124,7 @@ export function MomentumMap() {
 
       {/* How it works */}
       <GlassCard className="p-6">
-        <h3 className="mb-3 text-sm font-semibold text-ark-text">How the Momentum Map Works</h3>
+        <h3 className="mb-3 text-sm font-semibold text-ark-text"><DefineTerm termKey="momentum-map" screen="momentum_map" variant="underline">How the Momentum Map Works</DefineTerm></h3>
         <ul className="space-y-2.5 text-sm leading-relaxed text-ark-text-tertiary">
           <li className="flex gap-2"><span className="text-ark-primary">•</span>Each asset is read on two pairs — its USD pair (e.g. SOL/USD) and its BTC pair (e.g. SOL/BTC) — each classified bullish, neutral, or bearish.</li>
           <li className="flex gap-2"><span className="text-ark-primary">•</span>True momentum = both pairs bullish. The strongest moves happen when an asset is rising in dollars and gaining on Bitcoin at once.</li>

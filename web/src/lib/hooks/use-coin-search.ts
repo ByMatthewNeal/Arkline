@@ -26,7 +26,9 @@ async function searchCoins(query: string): Promise<CoinSearchResult[]> {
   const { data: searchData, error } = await supabase.functions.invoke('api-proxy', {
     body: { service: 'coingecko', path: '/search', queryItems: { query } },
   });
-  if (error) return [];
+  // Throw so the UI can show an error state — a failed search must not look
+  // like "no matches" (which nudges users into unpriced custom tickers).
+  if (error) throw new Error('Search is unavailable right now.');
 
   const coins = ((searchData as SearchResponse)?.coins ?? [])
     .slice(0, 6)

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -14,7 +14,8 @@ import {
   Lightbulb,
   Sparkles,
 } from 'lucide-react';
-import { TRAILS, LESSONS, type Lesson } from '@/lib/learn/content';
+import { TRAILS, type Lesson } from '@/lib/learn/content';
+import { useTrailLessons } from '@/lib/learn/db';
 import { markComplete, firstIncompleteIndex } from '@/lib/learn/progress';
 import { useCompletedSet } from '@/lib/learn/hooks';
 import { cn } from '@/lib/utils/format';
@@ -48,23 +49,28 @@ export default function TrailPage() {
   const params = useParams<{ trail: string }>();
   const trailKey = params.trail;
   const trail = TRAILS.find((t) => t.key === trailKey);
-  const lessons = useMemo(
-    () => (LESSONS[trailKey] ?? []).slice().sort((a, b) => a.position - b.position),
-    [trailKey],
-  );
+  // Seed shown instantly; published trail_lessons rows (edited in the iOS
+  // admin Trail editor) overlay by position once fetched.
+  const { data } = useTrailLessons(trailKey);
+  const lessons = useMemo(() => data ?? [], [data]);
 
   const done = useCompletedSet(trailKey);
   const [mode, setMode] = useState<'list' | 'reader'>('list');
   const [index, setIndex] = useState(0);
 
   // Arriving from the "Continue" card (?open=1) drops straight into the next
-  // incomplete lesson instead of the list.
+  // incomplete lesson instead of the list. Consumed once — the DB-overlay
+  // refetch must not yank the user back into the reader later.
+  const openConsumed = useRef(false);
   useEffect(() => {
-    if (typeof window === 'undefined' || lessons.length === 0) return;
-    if (new URLSearchParams(window.location.search).get('open') === '1') {
+    if (typeof window === 'undefined' || lessons.length === 0 || openConsumed.current) return;
+    if (new URLSearchParams(window.location.search).get('open') !== '1') return;
+    openConsumed.current = true;
+    const id = requestAnimationFrame(() => {
       setIndex(firstIncompleteIndex(lessons.map((l) => l.position), trailKey));
       setMode('reader');
-    }
+    });
+    return () => cancelAnimationFrame(id);
   }, [trailKey, lessons]);
 
   if (!trail || lessons.length === 0) {

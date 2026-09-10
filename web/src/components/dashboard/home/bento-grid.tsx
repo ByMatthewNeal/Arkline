@@ -2134,7 +2134,8 @@ function BriefingHero({ greetingLine, date }: { greetingLine: string; date: stri
             ) : (
               <>
                 {tldr?.title && <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-ark-primary">{tldr.title}</p>}
-                <p className="mt-1 max-w-4xl text-sm leading-relaxed text-ark-text line-clamp-3">{tldr?.body}</p>
+                {/* Full TLDR, never truncated — iOS deliberately removed the clamp (077056e). */}
+                <p className="mt-1 max-w-4xl text-sm leading-relaxed text-ark-text">{tldr?.body}</p>
                 <span className="mt-2 inline-block text-[11px] font-medium text-ark-primary">Read full briefing →</span>
               </>
             )}

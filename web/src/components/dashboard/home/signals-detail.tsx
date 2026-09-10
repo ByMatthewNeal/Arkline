@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
+import { DefineTerm } from '@/components/ui/define-term';
 import { cn, formatPercent } from '@/lib/utils/format';
 import { useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck } from '@/lib/hooks/use-market';
 import { Spark } from '@/components/dashboard/shared/bento-primitives';
@@ -81,7 +82,7 @@ export function RotationDetail() {
     <div className="space-y-6 pb-4">
       <div className="flex flex-col items-center gap-1 pt-2">
         <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold" style={{ color }}>→ {favors}</span>
-        <span className="text-xs text-ark-text-disabled">Rotation score {score > 0 ? '+' : ''}{score}</span>
+        <span className="text-xs text-ark-text-disabled"><DefineTerm termKey="rotation-signal" screen="rotation_detail" variant="underline">Rotation score</DefineTerm> {score > 0 ? '+' : ''}{score}</span>
       </div>
 
       {/* Crypto ↔ Equities scale */}

@@ -69,7 +69,7 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
   }, [search, assets]);
 
   // Long-tail coins beyond the cached top-100 (live CoinGecko search).
-  const { data: remoteResults, isFetching: searchingRemote } = useCoinSearch(type === 'buy' ? search : '');
+  const { data: remoteResults, isFetching: searchingRemote, isError: searchFailed } = useCoinSearch(type === 'buy' ? search : '');
   const extraResults = useMemo(() => {
     const localSymbols = new Set(results.map((r) => r.symbol.toLowerCase()));
     return (remoteResults ?? []).filter((r) => !localSymbols.has(r.symbol.toLowerCase())).slice(0, 4);
@@ -169,11 +169,21 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
                 {searchingRemote && search.trim().length >= 2 && (
                   <p className="mt-1 px-1 text-[11px] text-ark-text-disabled">Searching all coins…</p>
                 )}
-                {search.trim() && results.length === 0 && extraResults.length === 0 && !searchingRemote && (
-                  <button onClick={() => pickAsset(search.trim(), search.trim().toUpperCase(), 'crypto')}
-                    className="mt-1 w-full rounded-xl border border-dashed border-ark-divider px-3 py-2 text-left text-xs text-ark-text-secondary hover:bg-ark-fill-secondary">
-                    Use &ldquo;{search.trim().toUpperCase()}&rdquo; as a custom ticker
-                  </button>
+                {/* A failed search must read as an error, never as "no matches" —
+                    otherwise users get nudged into unpriced custom tickers. */}
+                {searchFailed && search.trim().length >= 2 && !searchingRemote && (
+                  <p className="mt-1 rounded-xl border border-ark-error/20 bg-ark-error/5 px-3 py-2 text-xs text-ark-error">
+                    Search is unavailable right now — check your connection and try again.
+                  </p>
+                )}
+                {search.trim() && results.length === 0 && extraResults.length === 0 && !searchingRemote && !searchFailed && (
+                  <>
+                    <p className="mt-1 px-1 text-[11px] text-ark-text-disabled">No matches for &ldquo;{search.trim()}&rdquo;.</p>
+                    <button onClick={() => pickAsset(search.trim(), search.trim().toUpperCase(), 'crypto')}
+                      className="mt-1 w-full rounded-xl border border-dashed border-ark-divider px-3 py-2 text-left text-xs text-ark-text-secondary hover:bg-ark-fill-secondary">
+                      Use &ldquo;{search.trim().toUpperCase()}&rdquo; as a custom ticker
+                    </button>
+                  </>
                 )}
               </div>
             )}

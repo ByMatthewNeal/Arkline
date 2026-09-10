@@ -151,7 +151,8 @@ export type RiskFactorType =
   | 'Bull Market Bands'
   | 'Funding Rate'
   | 'Fear & Greed'
-  | 'Macro Risk';
+  | 'Macro Risk'
+  | 'Oil Risk';
 
 export interface RiskFactor {
   type: RiskFactorType;

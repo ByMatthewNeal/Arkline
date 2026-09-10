@@ -3,6 +3,7 @@
 import { Activity, TrendingUp, TrendingDown, Bitcoin, BarChart2, Users, Landmark, ChevronRight } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { GlassCard, Badge, Skeleton } from '@/components/ui';
+import { DefineTerm } from '@/components/ui/define-term';
 import { useMarketSentiment } from '@/lib/hooks/use-market';
 import { formatCurrency, cn } from '@/lib/utils/format';
 import type { SentimentRegimeType, AssetRiskLevel } from '@/types';
@@ -198,7 +199,7 @@ export function MarketSentiment() {
           {/* ArkLine Score */}
           <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-ark-text-tertiary">ArkLine Score</p>
+              <p className="text-xs font-medium text-ark-text-tertiary"><DefineTerm termKey="arkline-score" screen="market_sentiment" variant="underline">ArkLine Score</DefineTerm></p>
               <span className="text-xs text-ark-text-disabled">✦</span>
             </div>
             <div className="mt-2 flex items-end justify-between">
@@ -216,7 +217,7 @@ export function MarketSentiment() {
 
           {/* Fear & Greed */}
           <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-4">
-            <p className="text-xs font-medium text-ark-text-tertiary">Fear & Greed</p>
+            <p className="text-xs font-medium text-ark-text-tertiary"><DefineTerm termKey="fear-greed-index" screen="market_sentiment" variant="underline">Fear & Greed</DefineTerm></p>
             <div className="mt-2 flex items-end justify-between">
               <div>
                 <p className={cn('fig text-3xl font-bold', data.fear_greed <= 25 ? 'text-ark-error' : data.fear_greed <= 45 ? 'text-ark-warning' : data.fear_greed <= 55 ? 'text-ark-text' : 'text-ark-success')}>
@@ -257,7 +258,7 @@ export function MarketSentiment() {
 
           {/* Market Cap */}
           <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-4">
-            <p className="text-xs font-medium text-ark-text-tertiary">Market Cap</p>
+            <p className="text-xs font-medium text-ark-text-tertiary"><DefineTerm termKey="market-cap" screen="market_sentiment" variant="underline">Market Cap</DefineTerm></p>
             <div className="mt-2 flex items-end justify-between">
               <div>
                 <p className="fig text-xl font-bold text-ark-text">
@@ -367,7 +368,7 @@ export function MarketSentiment() {
       <GlassCard className="p-6">
         <div className="mb-4 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-ark-text-secondary" />
-          <h4 className="text-sm font-semibold text-ark-text">Asset Risk Levels</h4>
+          <h4 className="text-sm font-semibold text-ark-text"><DefineTerm termKey="risk-levels" screen="market_sentiment" variant="underline">Asset Risk Levels</DefineTerm></h4>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {data.asset_risk_levels.map((asset) => (
