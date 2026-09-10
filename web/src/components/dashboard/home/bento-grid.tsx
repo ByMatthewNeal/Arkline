@@ -570,6 +570,23 @@ function MarketMoversTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenP
                   </div>
                   <span className="mt-2 text-base font-bold text-ark-text">{sym}</span>
                   <span className="fig text-xs font-semibold text-ark-text-secondary">{formatCurrency(asset.current_price)}</span>
+                  {/* 7d sparkline fills the card's lower half instead of dead space */}
+                  {(() => {
+                    const spark = asset.sparkline_in_7d?.price ?? [];
+                    if (spark.length < 2) return <span className="flex-1" />;
+                    const wk = ((spark[spark.length - 1] - spark[0]) / spark[0]) * 100;
+                    const wkUp = wk >= 0;
+                    return (
+                      <>
+                        <div className="mt-auto min-h-8 flex-1 pt-2">
+                          <Spark data={spark} color={wkUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full min-h-8" />
+                        </div>
+                        <span className={cn('fig mt-1 text-[9px] font-semibold', wkUp ? 'text-ark-success' : 'text-ark-error')}>
+                          {formatPercent(wk)} <span className="font-medium text-ark-text-disabled">7d</span>
+                        </span>
+                      </>
+                    );
+                  })()}
                 </button>
               );
             })}
