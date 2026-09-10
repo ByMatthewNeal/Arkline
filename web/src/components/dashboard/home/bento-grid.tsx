@@ -1413,19 +1413,32 @@ function RotationTile({ onOpen }: { onOpen: () => void }) {
           <div className="mt-1 flex items-baseline gap-2">
             <span className="font-[family-name:var(--font-urbanist)] text-2xl font-bold leading-none" style={{ color }}>→ {favors}</span>
             <span className="fig text-sm font-bold text-ark-text-secondary">{score > 0 ? '+' : ''}{score.toFixed(0)}</span>
-            {data.prev_score != null && (
-              <span className="fig text-[10px] font-medium text-ark-text-tertiary">
-                yday {data.prev_score > 0 ? '+' : ''}{data.prev_score.toFixed(0)}
-              </span>
-            )}
+            {data.prev_score != null && (() => {
+              const delta = score - data.prev_score;
+              return (
+                <span
+                  className="fig rounded-md bg-ark-fill-secondary/60 px-1.5 py-0.5 text-[10px] font-semibold text-ark-text-tertiary"
+                  title={`Yesterday: ${data.prev_score > 0 ? '+' : ''}${data.prev_score.toFixed(0)}`}
+                >
+                  {delta === 0 ? 'unchanged' : `${delta > 0 ? '+' : ''}${delta.toFixed(0)} vs yday`}
+                </span>
+              );
+            })()}
           </div>
 
-          {/* Crypto ↔ Equities scale — where the lean sits, at a glance */}
+          {/* Crypto ↔ Equities scale — today's dot, with yesterday as a ghost */}
           <div className="mt-3">
             <div className="flex justify-between text-[8px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
               <span>Crypto</span><span>Equities</span>
             </div>
             <div className="relative mt-1 h-1.5 rounded-full bg-gradient-to-r from-ark-primary via-ark-text-disabled/40 to-ark-violet">
+              {data.prev_score != null && Math.abs(data.prev_score - score) >= 0.5 && (
+                <div
+                  className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ark-text-disabled/60"
+                  style={{ left: `${Math.min(96, Math.max(4, ((data.prev_score + 100) / 200) * 100))}%` }}
+                  title={`Yesterday: ${data.prev_score > 0 ? '+' : ''}${data.prev_score.toFixed(0)}`}
+                />
+              )}
               <div
                 className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ark-card shadow"
                 style={{ left: `${Math.min(96, Math.max(4, ((score + 100) / 200) * 100))}%`, backgroundColor: color }}
