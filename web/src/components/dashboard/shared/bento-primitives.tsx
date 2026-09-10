@@ -193,20 +193,23 @@ export function Spark({
 
 /* ── Mini Semi-Circle Gauge ── */
 export function MiniGauge({ value, max, color, size = 72 }: { value: number; max: number; color: string; size?: number }) {
-  const r = 28;
+  // Radius scales with size (it was a hardcoded 28, so larger sizes only
+  // added empty space around the same small arc).
+  const stroke = Math.max(5, Math.round(size / 16));
+  const r = size / 2 - stroke;
   const circ = Math.PI * r;
   const pct = Math.min(value / max, 1);
   const dashOffset = circ - pct * circ;
   const half = size / 2;
   return (
-    <svg viewBox={`0 0 ${size} ${half + 8}`} className="w-full" style={{ maxWidth: size }}>
+    <svg viewBox={`0 0 ${size} ${half + stroke + 2}`} className="w-full" style={{ maxWidth: size }}>
       <path
         d={`M ${half - r} ${half} A ${r} ${r} 0 0 1 ${half + r} ${half}`}
-        fill="none" stroke="var(--ark-divider)" strokeWidth="5" strokeLinecap="round"
+        fill="none" stroke="var(--ark-divider)" strokeWidth={stroke} strokeLinecap="round"
       />
       <path
         d={`M ${half - r} ${half} A ${r} ${r} 0 0 1 ${half + r} ${half}`}
-        fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"
+        fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
         strokeDasharray={circ} strokeDashoffset={dashOffset}
         className="transition-all duration-700"
       />
