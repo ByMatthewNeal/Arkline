@@ -547,15 +547,41 @@ export async function fetchAssetTechnical(symbol: string): Promise<AssetTechnica
   const dir = String(t.trend_direction ?? 'Neutral');
   const trend = trendToScore(dir);
 
-  // Valuation: derived from RSI position (lower RSI ⇒ more oversold ⇒ higher "value")
-  const valuationScore = Math.round(Math.max(0, Math.min(100, 100 - rsi)));
-  const valuationLabel = rsi < 30 ? 'Oversold' : rsi < 45 ? 'Oversold' : rsi > 70 ? 'Overbought' : rsi > 55 ? 'Elevated' : 'Fair Value';
+  // ── Valuation — exact iOS opportunityScore (TechnicalAnalysis.swift) ──
+  // Start 50; RSI is the primary factor (±30), Bollinger %B confirms (±20).
+  let val = 50;
+  if (rsi < 20) val += 30;
+  else if (rsi < 30) val += 20;
+  else if (rsi < 40) val += 10;
+  else if (rsi < 60) val += 0;
+  else if (rsi < 70) val -= 10;
+  else if (rsi < 80) val -= 20;
+  else val -= 30;
+  const bbU = Number(t.bb_upper), bbL = Number(t.bb_lower);
+  const bbRange = bbU - bbL;
+  if (Number.isFinite(bbRange) && bbRange > 0) {
+    const pb = (price - bbL) / bbRange; // %B
+    val += pb > 1 ? -20 : pb > 0.8 ? -10 : pb > 0.2 ? 0 : pb > 0 ? 10 : 20;
+  }
+  const valuationScore = Math.max(0, Math.min(100, val));
+  // iOS TechnicalScoreCards valuationLabel bands
+  const valuationLabel = valuationScore < 25 ? 'Overbought' : valuationScore < 40 ? 'Extended' : valuationScore < 60 ? 'Neutral' : valuationScore < 75 ? 'Oversold' : 'Deeply Oversold';
 
-  const down = trend.score < 40;
   const strongDown = trend.score <= 15;
-  const shortTerm = { label: down ? 'Bearish' : trend.score > 60 ? 'Bullish' : 'Neutral', direction: (down ? 'down' : trend.score > 60 ? 'up' : 'flat') as 'up' | 'down' | 'flat' };
-  const belowAllMas = price < sma21 && price < sma50 && price < sma200;
-  const longTerm = { label: belowAllMas ? 'Very Bearish' : down ? 'Bearish' : trend.score > 60 ? 'Bullish' : 'Neutral', direction: (down || belowAllMas ? 'down' : trend.score > 60 ? 'up' : 'flat') as 'up' | 'down' | 'flat' };
+  const goldenCross = sma50 >= sma200;
+  const above200 = price >= sma200;
+
+  // ── Market Outlook — exact iOS determineSentiment ──
+  // Short term from RSI momentum; long term from price vs 200-day SMA + crosses.
+  const shortTerm = rsi > 70 ? { label: 'Very Bullish', direction: 'up' as const }
+    : rsi > 55 ? { label: 'Bullish', direction: 'up' as const }
+    : rsi < 30 ? { label: 'Very Bearish', direction: 'down' as const }
+    : rsi < 45 ? { label: 'Bearish', direction: 'down' as const }
+    : { label: 'Neutral', direction: 'flat' as const };
+  const longTerm = above200 && goldenCross ? { label: 'Very Bullish', direction: 'up' as const }
+    : above200 ? { label: 'Bullish', direction: 'up' as const }
+    : !above200 && !goldenCross ? { label: 'Very Bearish', direction: 'down' as const }
+    : { label: 'Bearish', direction: 'down' as const };
 
   const tfTrend = (above: boolean): TechnicalTimeframeTrend => ({
     timeframe: '', label: above ? (trend.score > 60 ? 'Strong Up' : 'Up') : (strongDown ? 'Strong Down' : 'Down'),
@@ -572,8 +598,9 @@ export async function fetchAssetTechnical(symbol: string): Promise<AssetTechnica
     ? 'Price is holding above bull market support bands. Trend structure remains constructive while support holds.'
     : 'Price has broken below bull market support bands. Risk is elevated — patience may be warranted until support is reclaimed.';
 
-  const rsiLabel = rsi < 30 ? 'Oversold' : rsi < 45 ? 'Weak' : rsi > 70 ? 'Overbought' : rsi > 55 ? 'Strong' : 'Neutral';
-  const rsiNote = rsi < 45 ? 'Momentum weakening' : rsi > 55 ? 'Momentum strengthening' : 'Momentum balanced';
+  // iOS RSIZone bands + descriptions (TechnicalAnalysis.swift)
+  const rsiLabel = rsi < 30 ? 'Oversold' : rsi < 45 ? 'Weak' : rsi < 55 ? 'Neutral' : rsi < 70 ? 'Strong' : 'Overbought';
+  const rsiNote = rsi < 30 ? 'Potential buy signal' : rsi < 45 ? 'Momentum weakening' : rsi < 55 ? 'No clear signal' : rsi < 70 ? 'Momentum building' : 'Potential sell signal';
 
   return {
     symbol: symbol.toUpperCase(),

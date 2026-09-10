@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUp, ArrowDown, ArrowDownRight, ArrowUpRight, ArrowRight, Snowflake, Flame, AlertTriangle } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowDownRight, ArrowUpRight, ArrowRight, Snowflake, Flame, AlertTriangle, Minus } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { useAssetTechnical } from '@/lib/hooks/use-market';
 import { cn } from '@/lib/utils/format';
@@ -71,7 +71,9 @@ function AssetTechnical({ d }: { d: AssetTechnicalData }) {
       {/* Trend & Valuation gauges */}
       <div className="grid grid-cols-2 gap-3">
         <GaugeCard title="Trend" value={d.trendScore} label={d.trendLabel} color={d.trendScore < 40 ? RED : d.trendScore > 60 ? GREEN : YELLOW} />
-        <GaugeCard title="Valuation" value={d.valuationScore} label={d.valuationLabel} color={d.valuationScore > 55 ? GREEN : d.valuationScore < 45 ? RED : YELLOW} />
+        {/* iOS valuationColor bands: <25 red, <40 orange, <60 amber, <75 lime, else green */}
+        <GaugeCard title="Valuation" value={d.valuationScore} label={d.valuationLabel}
+          color={d.valuationScore < 25 ? RED : d.valuationScore < 40 ? '#F97316' : d.valuationScore < 60 ? YELLOW : d.valuationScore < 75 ? '#84CC16' : GREEN} />
       </div>
 
       {/* Market outlook */}
@@ -84,24 +86,30 @@ function AssetTechnical({ d }: { d: AssetTechnicalData }) {
         </div>
       </div>
 
-      {/* RSI */}
-      <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-bold text-ark-text">RSI (14)</h4>
-          <span className="rounded-full bg-ark-success/10 px-2.5 py-0.5 text-[11px] font-semibold text-ark-success">{d.rsiLabel}</span>
-        </div>
-        <p className="mt-2 text-center"><span className="fig text-4xl font-bold text-ark-success">{d.rsi.toFixed(1)}</span><span className="text-sm text-ark-text-disabled"> / 100</span></p>
-        <div className="relative mt-2">
-          <div className="flex h-2.5 overflow-hidden rounded-full">
-            <div className="w-[30%]" style={{ background: 'linear-gradient(90deg, #166534, #3F6212)' }} />
-            <div className="w-[40%]" style={{ background: 'linear-gradient(90deg, #3F6212, #7C5210)' }} />
-            <div className="w-[30%]" style={{ background: 'linear-gradient(90deg, #7C5210, #991B1B)' }} />
+      {/* RSI — iOS RSIZone colors: <30 green, <45 lime, <55 amber, <70 orange, 70+ red */}
+      {(() => {
+        const zoneColor = d.rsi < 30 ? GREEN : d.rsi < 45 ? '#84CC16' : d.rsi < 55 ? YELLOW : d.rsi < 70 ? '#F97316' : RED;
+        return (
+          <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-ark-text">RSI (14)</h4>
+              <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: `${zoneColor}1F`, color: zoneColor }}>{d.rsiLabel}</span>
+            </div>
+            <p className="mt-2 text-center"><span className="fig text-4xl font-bold" style={{ color: zoneColor }}>{d.rsi.toFixed(1)}</span><span className="text-sm text-ark-text-disabled"> / 100</span></p>
+            {/* iOS 3-zone bar: oversold / neutral / overbought */}
+            <div className="relative mt-2">
+              <div className="flex h-2.5 gap-px overflow-hidden rounded-full">
+                <div className="w-[30%] rounded-l-full bg-ark-success/30" />
+                <div className="w-[40%] bg-ark-warning/30" />
+                <div className="w-[30%] rounded-r-full bg-ark-error/30" />
+              </div>
+              <div className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ark-card shadow" style={{ left: `${Math.min(98, Math.max(2, d.rsi))}%`, backgroundColor: zoneColor }} />
+            </div>
+            <div className="mt-1 flex justify-between text-[11px] text-ark-text-disabled"><span>30</span><span>70</span></div>
+            <p className="mt-1.5 text-[12px] font-medium" style={{ color: zoneColor }}>{d.rsiNote}</p>
           </div>
-          <div className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ark-card bg-white shadow" style={{ left: `${Math.min(98, Math.max(2, d.rsi))}%` }} />
-        </div>
-        <div className="mt-1 flex justify-between text-[11px] text-ark-text-disabled"><span>30</span><span>70</span></div>
-        <p className="mt-1.5 text-[12px] font-medium text-ark-success">{d.rsiNote}</p>
-      </div>
+        );
+      })()}
 
       {/* Trend overview */}
       <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
@@ -192,12 +200,18 @@ function GaugeCard({ title, value, label, color }: { title: string; value: numbe
 }
 
 function OutlookCol({ title, label, direction }: { title: string; label: string; direction: 'up' | 'down' | 'flat' }) {
-  const veryBear = label.toLowerCase().includes('very');
+  // iOS parity: Very Bullish = flame, Very Bearish = snowflake, Neutral = dash.
+  const very = label.toLowerCase().includes('very');
   const c = direction === 'down' ? RED : direction === 'up' ? GREEN : YELLOW;
+  const icon = very && direction === 'up' ? <Flame className="h-5 w-5" style={{ color: c }} />
+    : very && direction === 'down' ? <Snowflake className="h-5 w-5" style={{ color: c }} />
+    : direction === 'down' ? <ArrowDownRight className="h-5 w-5" style={{ color: c }} />
+    : direction === 'up' ? <ArrowUpRight className="h-5 w-5" style={{ color: c }} />
+    : <Minus className="h-5 w-5" style={{ color: c }} />;
   return (
     <div className="flex-1 text-center">
       <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: `${c}1F` }}>
-        {veryBear ? <Snowflake className="h-5 w-5" style={{ color: c }} /> : direction === 'down' ? <ArrowDownRight className="h-5 w-5" style={{ color: c }} /> : direction === 'up' ? <ArrowUpRight className="h-5 w-5" style={{ color: c }} /> : <ArrowRight className="h-5 w-5" style={{ color: c }} />}
+        {icon}
       </div>
       <p className="mt-1.5 text-[11px] text-ark-text-disabled">{title}</p>
       <p className="text-[13px] font-bold" style={{ color: c }}>{label}</p>
