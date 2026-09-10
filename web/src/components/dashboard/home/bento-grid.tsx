@@ -1412,6 +1412,12 @@ function RotationTile({ onOpen }: { onOpen: () => void }) {
           </div>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="font-[family-name:var(--font-urbanist)] text-2xl font-bold leading-none" style={{ color }}>→ {favors}</span>
+            <span className="fig text-sm font-bold text-ark-text-secondary">{score > 0 ? '+' : ''}{score.toFixed(0)}</span>
+            {data.prev_score != null && (
+              <span className="fig text-[10px] font-medium text-ark-text-tertiary">
+                yday {data.prev_score > 0 ? '+' : ''}{data.prev_score.toFixed(0)}
+              </span>
+            )}
           </div>
 
           {/* Crypto ↔ Equities scale — where the lean sits, at a glance */}

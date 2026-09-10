@@ -68,8 +68,9 @@ export interface AssetTechnicalData {
   rsiNote: string;
   timeframes: TechnicalTimeframeTrend[];
   bmsb: {
-    status: string;           // Below Support / Above Support
+    status: string;           // Above Support / Testing Support / Below Support
     above: boolean;
+    band: 'above' | 'in' | 'below';
     sma20w: number;
     ema21w: number;
     sma20wPct: number;
@@ -78,6 +79,8 @@ export interface AssetTechnicalData {
   keyLevels: { label: string; value: number; above: boolean }[];   // 21/50/200 MA
   deathCross: boolean;
   goldenCross: boolean;
+  /** Simplified Bollinger — iOS "Price Position" card */
+  pricePosition: { percentB: number; label: string; signal: string };
 }
 
 /* ── Market Breadth detail (history + signals) ── */
@@ -192,6 +195,9 @@ export interface ArkLineScoreData {
   sp500Price?: number;
   nasdaqPrice?: number;
   components: ArkLineScoreComponent[];
+  /** Archive date (risk_snapshots.recorded_date) — iOS recomputes intraday,
+   * so surfacing this explains small score differences vs the app. */
+  asOf?: string;
 }
 
 export interface ArkLineScoreHistoryPoint {

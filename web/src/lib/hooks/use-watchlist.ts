@@ -47,3 +47,57 @@ export function useWatchlist() {
 
   return { coins, has, toggle: (symbol: string) => toggle.mutate(symbol), isLoading: q.isLoading };
 }
+
+/* ── Off-list watchlist assets ──
+ * The cached market list only covers the top coins, so watchlist symbols
+ * outside it (ONDO, RENDER, …) would silently vanish from the Favorites view.
+ * Resolve each missing symbol → CoinGecko id via /search, then batch-fetch
+ * market data so they render like any other row. */
+export interface WatchlistExtra {
+  id: string;
+  symbol: string;
+  name: string;
+  image?: string;
+  current_price: number;
+  price_change_percentage_24h: number | null;
+  sparkline_in_7d?: { price?: number[] };
+}
+
+async function fetchAssetsBySymbols(symbols: string[]): Promise<WatchlistExtra[]> {
+  if (!symbols.length || !isSupabaseConfigured()) return [];
+  const supabase = createClient();
+  type SearchResponse = { coins?: { id: string; symbol: string; market_cap_rank?: number | null }[] };
+
+  const ids: string[] = [];
+  for (const sym of symbols) {
+    const { data } = await supabase.functions.invoke('api-proxy', {
+      body: { service: 'coingecko', path: '/search', queryItems: { query: sym } },
+    });
+    const match = (((data as SearchResponse)?.coins) ?? [])
+      .filter((c) => c.symbol.toLowerCase() === sym.toLowerCase())
+      .sort((a, b) => (a.market_cap_rank ?? 1e9) - (b.market_cap_rank ?? 1e9))[0];
+    if (match) ids.push(match.id);
+  }
+  if (!ids.length) return [];
+
+  const { data: mkts, error } = await supabase.functions.invoke('api-proxy', {
+    body: {
+      service: 'coingecko',
+      path: '/coins/markets',
+      queryItems: { vs_currency: 'usd', ids: ids.join(','), sparkline: 'true' },
+    },
+  });
+  if (error || !Array.isArray(mkts)) return [];
+  return mkts as WatchlistExtra[];
+}
+
+/** Market rows for watchlist symbols missing from the cached top list. */
+export function useWatchlistExtras(missingSymbols: string[]) {
+  const sorted = [...missingSymbols].map((s) => s.toUpperCase()).sort();
+  return useQuery({
+    queryKey: ['watchlist-extras', sorted.join(',')],
+    queryFn: () => fetchAssetsBySymbols(sorted),
+    enabled: sorted.length > 0,
+    staleTime: 300_000,
+  });
+}

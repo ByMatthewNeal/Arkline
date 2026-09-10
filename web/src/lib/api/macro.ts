@@ -223,7 +223,7 @@ export async function fetchArkLineScore(): Promise<ArkLineScoreData> {
     .limit(1);
 
   const row = data?.[0] as
-    | { composite_score: number; tier: string; recommendation: string; components: RiskComponentRow[]; btc_price: number; sp500_price: number; nasdaq_price: number }
+    | { composite_score: number; tier: string; recommendation: string; components: RiskComponentRow[]; recorded_date: string; btc_price: number; sp500_price: number; nasdaq_price: number }
     | undefined;
   if (error || !row) return demoArkLineScore;
 
@@ -247,6 +247,7 @@ export async function fetchArkLineScore(): Promise<ArkLineScoreData> {
     sp500Price: row.sp500_price != null ? Number(row.sp500_price) : undefined,
     nasdaqPrice: row.nasdaq_price != null ? Number(row.nasdaq_price) : undefined,
     components,
+    asOf: row.recorded_date,
   };
 }
 
@@ -336,6 +337,14 @@ export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> 
   const cbLiq = latestOf('global_m2');
   if (!vix || !dxy || !netLiq || !cbLiq) return null;
 
+  // Monthly change for the CB Liquidity signal (iOS uses a 30-day window).
+  // Series is ascending, so scan from the end for the closest point ≤ 30d ago.
+  const cbSeries = byInd.get('global_m2') ?? [];
+  const monthAgo = [...cbSeries].reverse().find((p) => p.date <= daysAgoISO(30)) ?? cbSeries[0];
+  const cbLiqMonthlyPct = monthAgo && monthAgo.value !== 0
+    ? ((cbLiq.value - monthAgo.value) / monthAgo.value) * 100
+    : 0;
+
   const indicators: MacroDashIndicator[] = [
     {
       key: 'vix', label: 'VIX', value: vix.value,
@@ -360,16 +369,18 @@ export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> 
     },
     {
       key: 'cbLiquidity', label: 'CB Liquidity', value: cbLiq.value,
-      formattedValue: `$${(cbLiq.value / 1e12).toFixed(1)}T`, changePct: cbLiq.changePct,
-      signal: cbLiq.changePct >= 0 ? 'expanding' : 'contracting',
-      signalLabel: cbLiq.changePct >= 0 ? 'Expanding' : 'Contracting',
+      formattedValue: `$${(cbLiq.value / 1e12).toFixed(1)}T`, changePct: cbLiqMonthlyPct,
+      // iOS Global Liquidity signal: MONTHLY change with a ±0.3% neutral band —
+      // a WoW zero-threshold flips to "Contracting" on noise the app calls Expanding.
+      signal: cbLiqMonthlyPct > 0.3 ? 'expanding' : cbLiqMonthlyPct < -0.3 ? 'contracting' : 'neutral',
+      signalLabel: cbLiqMonthlyPct > 0.3 ? 'Expanding' : cbLiqMonthlyPct < -0.3 ? 'Contracting' : 'Neutral',
       sparkline: cbLiq.sparkline,
     },
   ];
 
   const bullishCount = [vix.value < 20, dxy.value < 100, netLiq.changePct >= 0].filter(Boolean).length;
   const riskOn = bullishCount >= 2;
-  const easing = cbLiq.changePct >= 0; // expanding liquidity ≈ disinflationary/easing
+  const easing = cbLiqMonthlyPct >= 0; // expanding liquidity ≈ disinflationary/easing
   const regimeLabel = `${riskOn ? 'Risk-On' : 'Risk-Off'} ${easing ? 'Disinflation' : 'Inflation'}`;
   const insight = riskOn
     ? 'Macro indicators are aligned to the upside. Low fear, a weakening or stable dollar, and growing liquidity have historically supported risk assets like BTC.'
@@ -533,36 +544,137 @@ const ASSET_META: Record<string, { coin: string; name: string; market: string }>
   SOL: { coin: 'sol', name: 'Solana', market: 'solana' },
 };
 
-function trendToScore(direction: string): { score: number; label: string } {
-  const d = direction.toLowerCase();
-  if (d.includes('strong') && d.includes('up')) return { score: 90, label: 'Strong Up' };
-  if (d.includes('up')) return { score: 70, label: 'Uptrend' };
-  if (d.includes('strong') && d.includes('down')) return { score: 10, label: 'Strong Down' };
-  if (d.includes('down')) return { score: 30, label: 'Downtrend' };
-  return { score: 50, label: 'Neutral' };
+/* Coinbase Exchange public candles (CORS-enabled). This is the same market the
+ * iOS APITechnicalAnalysisService computes from, so every score matches the app
+ * instead of drifting on a stale backend snapshot. */
+type DailyCandle = { time: number; close: number };
+
+async function fetchDailyCandles(pair: string): Promise<DailyCandle[]> {
+  const res = await fetch(`https://api.exchange.coinbase.com/products/${pair}/candles?granularity=86400`);
+  if (!res.ok) throw new Error(`Coinbase candles ${res.status}`);
+  const rows = (await res.json()) as [number, number, number, number, number, number][];
+  // newest-first [time, low, high, open, close, volume] → oldest-first
+  return rows.slice().reverse().map((r) => ({ time: r[0], close: r[4] }));
 }
 
+const smaOf = (xs: number[]) => (xs.length ? xs.reduce((s, v) => s + v, 0) / xs.length : 0);
+
+/** iOS calculateEMA — seeded with the first price, then standard smoothing. */
+function emaOf(xs: number[], period: number): number {
+  if (!xs.length) return 0;
+  const k = 2 / (period + 1);
+  let ema = xs[0];
+  for (let i = 1; i < xs.length; i++) ema = (xs[i] - ema) * k + ema;
+  return ema;
+}
+
+/** Weekly closes (Monday-start UTC weeks) from daily candles, excluding the
+ * current incomplete week — mirrors iOS's ONE_WEEK candles + dropLast(). */
+function weeklyClosesOf(candles: DailyCandle[]): number[] {
+  const byWeek = new Map<number, number>();
+  for (const c of candles) {
+    const d = new Date(c.time * 1000);
+    const sinceMonday = (d.getUTCDay() + 6) % 7;
+    const weekStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - sinceMonday);
+    byWeek.set(weekStart, c.close); // oldest-first iteration → last close of each week wins
+  }
+  const weeks = [...byWeek.keys()].sort((a, b) => a - b);
+  return weeks.slice(0, -1).map((w) => byWeek.get(w)!);
+}
+
+type TrendDir = 'strongUptrend' | 'uptrend' | 'sideways' | 'downtrend' | 'strongDowntrend';
+
+/** iOS determineTrend — direction + strength from price vs the three SMAs. */
+function determineTrendIOS(price: number, sma21: number, sma50: number, sma200: number): { dir: TrendDir; strength: 1 | 2 | 3 } {
+  const aboveCount = [price > sma21, price > sma50, price > sma200].filter(Boolean).length;
+  const higherHighs = price > sma21 && sma21 > sma50;
+  const higherLows = sma50 > sma200;
+  if (aboveCount === 3 && higherHighs && higherLows) return { dir: 'strongUptrend', strength: 3 };
+  if (aboveCount >= 2 && higherHighs) return { dir: 'uptrend', strength: aboveCount === 3 ? 3 : 2 };
+  if (aboveCount === 0 && !higherHighs && !higherLows) return { dir: 'strongDowntrend', strength: 3 };
+  if (aboveCount <= 1 && !higherHighs) return { dir: 'downtrend', strength: aboveCount === 0 ? 3 : 2 };
+  return { dir: 'sideways', strength: 1 };
+}
+
+const TREND_SHORT: Record<TrendDir, string> = {
+  strongUptrend: 'Strong Up', uptrend: 'Up', sideways: 'Sideways', downtrend: 'Down', strongDowntrend: 'Strong Down',
+};
+const trendArrow = (d: TrendDir): 'up' | 'down' | 'flat' =>
+  d === 'strongUptrend' || d === 'uptrend' ? 'up' : d === 'sideways' ? 'flat' : 'down';
+
 export async function fetchAssetTechnical(symbol: string): Promise<AssetTechnicalData | null> {
-  if (!isSupabaseConfigured()) return null;
   const meta = ASSET_META[symbol.toUpperCase()];
   if (!meta) return null;
-  const supabase = getSupabase();
 
-  const [techRes, mktRes] = await Promise.all([
-    supabase.from('technicals_snapshots').select('*').eq('coin_id', meta.coin).order('recorded_date', { ascending: false }).limit(1),
-    supabase.from('market_snapshots').select('current_price, price_change_pct_24h').eq('coin_id', meta.market).order('recorded_date', { ascending: false }).limit(1),
-  ]);
-  const t = techRes.data?.[0] as Record<string, number | string> | undefined;
-  if (!t) return null;
-  const m = mktRes.data?.[0] as { current_price: number; price_change_pct_24h: number } | undefined;
+  // 300 daily Coinbase candles → SMAs, RSI, Bollinger, trend (iOS-identical)
+  let candles: DailyCandle[];
+  try {
+    candles = await fetchDailyCandles(`${symbol.toUpperCase()}-USD`);
+  } catch {
+    return null;
+  }
+  if (candles.length < 21) return null;
+  const closes = candles.map((c) => c.close);
+  const price = closes[closes.length - 1];
 
-  const price = Number(m?.current_price ?? t.current_price);
-  const changePct24h = Number(m?.price_change_pct_24h ?? 0);
-  const rsi = Number(t.rsi);
-  const sma21 = Number(t.sma_21), sma50 = Number(t.sma_50), sma200 = Number(t.sma_200);
-  const sma20w = Number(t.bmsb_sma_20w), ema21w = Number(t.bmsb_ema_21w);
-  const dir = String(t.trend_direction ?? 'Neutral');
-  const trend = trendToScore(dir);
+  // 24h % — prefer the market snapshot (what iOS's asset header shows)
+  let changePct24h = closes.length >= 2 ? ((price - closes[closes.length - 2]) / closes[closes.length - 2]) * 100 : 0;
+  if (isSupabaseConfigured()) {
+    const { data } = await getSupabase()
+      .from('market_snapshots')
+      .select('price_change_pct_24h')
+      .eq('coin_id', meta.market)
+      .order('recorded_date', { ascending: false })
+      .limit(1);
+    const v = (data?.[0] as { price_change_pct_24h?: number } | undefined)?.price_change_pct_24h;
+    if (v != null) changePct24h = Number(v);
+  }
+
+  const sma21 = closes.length >= 21 ? smaOf(closes.slice(-21)) : 0;
+  const sma50 = closes.length >= 50 ? smaOf(closes.slice(-50)) : 0;
+  const sma200 = closes.length >= 200 ? smaOf(closes.slice(-200)) : 0;
+
+  // Bollinger (20, 2σ population) on daily closes
+  const bbCloses = closes.slice(-Math.min(closes.length, 20));
+  const bbMid = smaOf(bbCloses);
+  const bbStd = Math.sqrt(bbCloses.reduce((s, v) => s + (v - bbMid) ** 2, 0) / bbCloses.length);
+  const bbU = bbMid + 2 * bbStd;
+  const bbL = bbMid - 2 * bbStd;
+
+  const trend = determineTrendIOS(price, sma21, sma50, sma200);
+
+  // RSI(14) — iOS variant: simple average of the last 14 gains/losses
+  let rsi = 50;
+  if (closes.length >= 15) {
+    const recent = closes.slice(-15);
+    let gains = 0, losses = 0;
+    for (let i = 1; i < recent.length; i++) {
+      const ch = recent[i] - recent[i - 1];
+      if (ch > 0) gains += ch; else losses -= ch;
+    }
+    const avgGain = gains / 14, avgLoss = losses / 14;
+    rsi = avgLoss > 0 ? 100 - 100 / (1 + avgGain / avgLoss) : 100;
+  }
+
+  // Bull Market Support Bands from completed weekly closes
+  const wCloses = weeklyClosesOf(candles);
+  const sma20w = wCloses.length >= 20 ? smaOf(wCloses.slice(-20)) : price * 0.95;
+  const ema21w = wCloses.length >= 21 ? emaOf(wCloses.slice(-21), 21) : price * 0.94;
+  const aboveSma20w = price > sma20w;
+  const aboveEma21w = price > ema21w;
+  const bandPos: 'above' | 'in' | 'below' = aboveSma20w && aboveEma21w ? 'above' : !aboveSma20w && !aboveEma21w ? 'below' : 'in';
+
+  // ── Trend Score — exact iOS trendScore (TechnicalAnalysis.swift) ──
+  let ts = 50;
+  ts += trend.dir === 'strongUptrend' ? 20 : trend.dir === 'uptrend' ? 10 : trend.dir === 'downtrend' ? -10 : trend.dir === 'strongDowntrend' ? -20 : 0;
+  ts += price > sma21 ? 4 : -4;
+  ts += price > sma50 ? 4 : -4;
+  ts += price > sma200 ? 4 : -4;
+  ts += bandPos === 'above' ? 8 : bandPos === 'in' ? 2 : -8;
+  const trendScoreNum = Math.max(0, Math.min(100, ts));
+  // iOS DualScoreCard trendLabel buckets
+  const trendLabel = trendScoreNum < 25 ? 'Strong Down' : trendScoreNum < 40 ? 'Down' : trendScoreNum < 60 ? 'Sideways' : trendScoreNum < 75 ? 'Up' : 'Strong Up';
+  const trendScore = trendScoreNum;
 
   // ── Valuation — exact iOS opportunityScore (TechnicalAnalysis.swift) ──
   // Start 50; RSI is the primary factor (±30), Bollinger %B confirms (±20).
@@ -574,50 +686,70 @@ export async function fetchAssetTechnical(symbol: string): Promise<AssetTechnica
   else if (rsi < 70) val -= 10;
   else if (rsi < 80) val -= 20;
   else val -= 30;
-  const bbU = Number(t.bb_upper), bbL = Number(t.bb_lower);
   const bbRange = bbU - bbL;
-  if (Number.isFinite(bbRange) && bbRange > 0) {
-    const pb = (price - bbL) / bbRange; // %B
-    val += pb > 1 ? -20 : pb > 0.8 ? -10 : pb > 0.2 ? 0 : pb > 0 ? 10 : 20;
-  }
+  const pb = bbRange > 0 ? (price - bbL) / bbRange : 0.5; // %B
+  val += pb > 1 ? -20 : pb > 0.8 ? -10 : pb > 0.2 ? 0 : pb > 0 ? 10 : 20;
   const valuationScore = Math.max(0, Math.min(100, val));
   // iOS TechnicalScoreCards valuationLabel bands
   const valuationLabel = valuationScore < 25 ? 'Overbought' : valuationScore < 40 ? 'Extended' : valuationScore < 60 ? 'Neutral' : valuationScore < 75 ? 'Oversold' : 'Deeply Oversold';
 
-  const strongDown = trend.score <= 15;
-  const goldenCross = sma50 >= sma200;
-  const above200 = price >= sma200;
+  // iOS determineBollingerPosition labels + signals (Price Position card)
+  const posKey = pb > 1 ? 'aboveUpper' : pb > 0.8 ? 'nearUpper' : pb > 0.2 ? 'middle' : pb > 0 ? 'nearLower' : 'belowLower';
+  const POS_LABEL = { aboveUpper: 'Overbought', nearUpper: 'Upper Band', middle: 'Mid Band', nearLower: 'Lower Band', belowLower: 'Oversold' } as const;
+  const POS_SIGNAL = { aboveUpper: 'Potential reversal down', nearUpper: 'Resistance area', middle: 'Fair value zone', nearLower: 'Support area', belowLower: 'Potential reversal up' } as const;
 
-  // ── Market Outlook — exact iOS determineSentiment ──
-  // Short term from RSI momentum; long term from price vs 200-day SMA + crosses.
-  const shortTerm = rsi > 70 ? { label: 'Very Bullish', direction: 'up' as const }
+  const goldenCross = sma50 > sma200; // iOS SMAAnalysis.goldenCross
+  const above200 = price > sma200;
+  const above50 = price > sma50;
+
+  // ── Market Outlook — exact iOS determineSentiment (incl. "Strongly …" labels) ──
+  const shortTerm = rsi > 70 ? { label: 'Strongly Bullish', direction: 'up' as const }
     : rsi > 55 ? { label: 'Bullish', direction: 'up' as const }
-    : rsi < 30 ? { label: 'Very Bearish', direction: 'down' as const }
+    : rsi < 30 ? { label: 'Strongly Bearish', direction: 'down' as const }
     : rsi < 45 ? { label: 'Bearish', direction: 'down' as const }
     : { label: 'Neutral', direction: 'flat' as const };
-  const longTerm = above200 && goldenCross ? { label: 'Very Bullish', direction: 'up' as const }
+  const longTerm = above200 && goldenCross ? { label: 'Strongly Bullish', direction: 'up' as const }
     : above200 ? { label: 'Bullish', direction: 'up' as const }
-    : !above200 && !goldenCross ? { label: 'Very Bearish', direction: 'down' as const }
+    : !above200 && !goldenCross ? { label: 'Strongly Bearish', direction: 'down' as const }
     : { label: 'Bearish', direction: 'down' as const };
 
-  const tfTrend = (above: boolean): TechnicalTimeframeTrend => ({
-    timeframe: '', label: above ? (trend.score > 60 ? 'Strong Up' : 'Up') : (strongDown ? 'Strong Down' : 'Down'),
-    direction: above ? 'up' : 'down', strength: above ? (trend.score > 60 ? 3 : 2) : (strongDown ? 3 : 2),
-  });
+  // ── Trend Overview — 1D from daily trend; 1W/1M derived exactly like iOS ──
+  const weeklyDir: TrendDir = above50 && above200
+    ? (trend.dir === 'strongUptrend' ? 'strongUptrend' : 'uptrend')
+    : !above50 && !above200
+    ? (trend.dir === 'strongDowntrend' ? 'strongDowntrend' : 'downtrend')
+    : 'sideways';
+  const monthlyDir: TrendDir = above200 && goldenCross ? 'strongUptrend'
+    : above200 ? 'uptrend'
+    : !above200 && !goldenCross ? 'strongDowntrend'
+    : 'downtrend';
   const timeframes: TechnicalTimeframeTrend[] = [
-    { ...tfTrend(price >= sma21), timeframe: '1D' },
-    { ...tfTrend(price >= sma50), timeframe: '1W' },
-    { ...tfTrend(price >= sma200), timeframe: '1M' },
+    { timeframe: '1D', label: TREND_SHORT[trend.dir], direction: trendArrow(trend.dir), strength: trend.strength },
+    { timeframe: '1W', label: TREND_SHORT[weeklyDir], direction: trendArrow(weeklyDir), strength: trend.strength },
+    { timeframe: '1M', label: TREND_SHORT[monthlyDir], direction: trendArrow(monthlyDir), strength: above200 === above50 ? 3 : 2 },
   ];
-
-  const aboveBmsb = price >= Math.min(sma20w, ema21w);
-  const insight = aboveBmsb
-    ? 'Price is holding above bull market support bands. Trend structure remains constructive while support holds.'
-    : 'Price has broken below bull market support bands. Risk is elevated — patience may be warranted until support is reclaimed.';
 
   // iOS RSIZone bands + descriptions (TechnicalAnalysis.swift)
   const rsiLabel = rsi < 30 ? 'Oversold' : rsi < 45 ? 'Weak' : rsi < 55 ? 'Neutral' : rsi < 70 ? 'Strong' : 'Overbought';
   const rsiNote = rsi < 30 ? 'Potential buy signal' : rsi < 45 ? 'Momentum weakening' : rsi < 55 ? 'No clear signal' : rsi < 70 ? 'Momentum building' : 'Potential sell signal';
+
+  // ── Investment Insight — port of iOS generateInsight, same rule order ──
+  const stBull = shortTerm.label.includes('Bullish');
+  const stBear = shortTerm.label.includes('Bearish');
+  const insight =
+    rsi < 30 || (valuationScore >= 70 && trendScore >= 40)
+      ? "Oversold conditions, historically a zone where bounces have formed, though the trend hasn't confirmed a turn yet."
+      : rsi >= 70 && trendScore >= 60
+      ? 'Trend is strong but price is stretched here, historically a spot where pullbacks have been more common.'
+      : trendScore >= 60 && valuationScore >= 50 && stBull
+      ? 'Momentum and valuation are both constructive, trend support and sentiment are aligned to the upside.'
+      : trendScore <= 40 && valuationScore <= 40 && stBear
+      ? 'Indicators are tilting cautious, trend, valuation, and sentiment are aligned to the downside for now.'
+      : bandPos === 'above' && trendScore >= 50
+      ? 'Price is holding above bull market support bands, the broader trend remains constructive.'
+      : bandPos === 'below' && trendScore <= 50
+      ? 'Price has broken below bull market support bands. Risk is elevated until support is reclaimed.'
+      : 'Signals are mixed, no clear trend alignment right now.';
 
   return {
     symbol: symbol.toUpperCase(),
@@ -625,8 +757,8 @@ export async function fetchAssetTechnical(symbol: string): Promise<AssetTechnica
     price,
     changePct24h,
     insight,
-    trendScore: trend.score,
-    trendLabel: trend.label,
+    trendScore,
+    trendLabel,
     valuationScore,
     valuationLabel,
     shortTerm,
@@ -636,19 +768,21 @@ export async function fetchAssetTechnical(symbol: string): Promise<AssetTechnica
     rsiNote,
     timeframes,
     bmsb: {
-      status: aboveBmsb ? 'Above Support' : 'Below Support',
-      above: aboveBmsb,
+      status: bandPos === 'above' ? 'Above Support' : bandPos === 'below' ? 'Below Support' : 'Testing Support',
+      above: bandPos === 'above',
+      band: bandPos,
       sma20w, ema21w,
       sma20wPct: sma20w ? ((price - sma20w) / sma20w) * 100 : 0,
       ema21wPct: ema21w ? ((price - ema21w) / ema21w) * 100 : 0,
     },
     keyLevels: [
-      { label: '21 MA', value: sma21, above: price >= sma21 },
-      { label: '50 MA', value: sma50, above: price >= sma50 },
-      { label: '200 MA', value: sma200, above: price >= sma200 },
+      { label: '21 MA', value: sma21, above: price > sma21 },
+      { label: '50 MA', value: sma50, above: above50 },
+      { label: '200 MA', value: sma200, above: above200 },
     ],
     deathCross: sma50 < sma200,
-    goldenCross: sma50 >= sma200,
+    goldenCross,
+    pricePosition: { percentB: pb, label: POS_LABEL[posKey], signal: POS_SIGNAL[posKey] },
   };
 }
 

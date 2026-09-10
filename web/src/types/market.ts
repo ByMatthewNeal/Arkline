@@ -305,6 +305,8 @@ export interface RotationData {
   btc_30d_return: number | null;
   spy_30d_return: number | null;
   sectors: { name: string; return_30d: number }[];
+  prev_score: number | null; // previous signal day's score
+  prev_date: string | null;
 }
 
 /* ── Model Portfolio Update ── */

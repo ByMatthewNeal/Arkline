@@ -136,24 +136,36 @@ function AssetTechnical({ d }: { d: AssetTechnicalData }) {
         </div>
       </div>
 
-      {/* Bull market bands */}
-      <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-bold text-ark-text">Bull Market Bands</h4>
-          <span className={cn('flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold', d.bmsb.above ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>{d.bmsb.status}</span>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <BandCol label="20W SMA" value={d.bmsb.sma20w} pctv={d.bmsb.sma20wPct} />
-          <BandCol label="21W EMA" value={d.bmsb.ema21w} pctv={d.bmsb.ema21wPct} />
-        </div>
-        <p className={cn('mt-3 text-[12px] font-medium', d.bmsb.above ? 'text-ark-success' : 'text-ark-error')}>{d.bmsb.above ? 'Bull market support holding' : 'Bull market support lost'}</p>
-      </div>
+      {/* Bull market bands — tri-state like iOS BMSBPosition */}
+      {(() => {
+        const bandColor = d.bmsb.band === 'above' ? GREEN : d.bmsb.band === 'below' ? RED : YELLOW;
+        return (
+          <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-ark-text">Bull Market Bands</h4>
+              <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: `${bandColor}1A`, color: bandColor }}>{d.bmsb.status}</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <BandCol label="20W SMA" value={d.bmsb.sma20w} pctv={d.bmsb.sma20wPct} />
+              <BandCol label="21W EMA" value={d.bmsb.ema21w} pctv={d.bmsb.ema21wPct} />
+            </div>
+            <p className="mt-3 text-[12px] font-medium" style={{ color: bandColor }}>
+              {d.bmsb.band === 'above' ? 'Bull market support holding' : d.bmsb.band === 'below' ? 'Bull market support lost' : 'Price is testing bull market support'}
+            </p>
+          </div>
+        );
+      })()}
 
-      {/* Key levels */}
+      {/* Key levels — iOS overallSignal: 3 above = Strong Bullish, 2 = Bullish, 1 = Mixed, 0 = Bearish */}
+      {(() => {
+        const aboveCount = d.keyLevels.filter((k) => k.above).length;
+        const verdict = aboveCount === 3 ? 'Strong Bullish' : aboveCount === 2 ? 'Bullish' : aboveCount === 1 ? 'Mixed' : 'Bearish';
+        const vColor = aboveCount >= 2 ? GREEN : aboveCount === 1 ? YELLOW : RED;
+        return (
       <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-bold text-ark-text">Key Levels</h4>
-          <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-semibold', d.keyLevels.every((k) => k.above) ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>{d.keyLevels.every((k) => k.above) ? 'Bullish' : d.keyLevels.some((k) => k.above) ? 'Mixed' : 'Bearish'}</span>
+          <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: `${vColor}1A`, color: vColor }}>{verdict}</span>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3">
           {d.keyLevels.map((k) => {
@@ -176,6 +188,35 @@ function AssetTechnical({ d }: { d: AssetTechnicalData }) {
           <p className="mt-3 flex items-center gap-1.5 text-[12px] font-semibold text-ark-success"><Flame className="h-3.5 w-3.5" /> Golden Cross</p>
         )}
       </div>
+        );
+      })()}
+
+      {/* Price Position — simplified Bollinger (iOS PricePositionCard) */}
+      {(() => {
+        const pp = d.pricePosition;
+        const ppColor = pp.percentB > 1 ? RED : pp.percentB > 0.8 ? '#F97316' : pp.percentB > 0.2 ? YELLOW : pp.percentB > 0 ? '#84CC16' : GREEN;
+        const x = Math.min(1, Math.max(0, pp.percentB)) * 100;
+        return (
+          <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-ark-text">Price Position</h4>
+              <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: `${ppColor}1A`, color: ppColor }}>{pp.label}</span>
+            </div>
+            <div className="relative mt-3">
+              <div className="h-5 rounded-lg bg-gradient-to-r from-ark-success/30 via-ark-warning/20 to-ark-error/30" />
+              <div className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-ark-card shadow" style={{ left: `${x}%` }}>
+                <span className="absolute inset-0.5 rounded-full" style={{ backgroundColor: ppColor }} />
+              </div>
+            </div>
+            <div className="mt-1.5 flex justify-between text-[11px]">
+              <span className="text-ark-success">Oversold</span>
+              <span className="text-ark-warning">Fair Value</span>
+              <span className="text-ark-error">Overbought</span>
+            </div>
+            <p className="mt-2 text-[12px] font-medium" style={{ color: ppColor }}>{pp.signal}</p>
+          </div>
+        );
+      })()}
     </div>
   );
 }

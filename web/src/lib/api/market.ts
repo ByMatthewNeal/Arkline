@@ -149,7 +149,11 @@ export async function fetchEconomicEvents(): Promise<EconomicEvent[]> {
     .from('economic_events')
     .select('id, title, country, currency, event_date, event_time, impact, forecast, previous, actual, beat_miss, claude_analysis')
     .gte('event_date', sinceISO)
+    // iOS EconomicEventsService orders by event_date THEN event_time — without
+    // the time sort, same-day events render in insert order (a 6 PM release
+    // could lead the list). Nulls last so untimed events sink within their day.
     .order('event_date', { ascending: true })
+    .order('event_time', { ascending: true, nullsFirst: false })
     .limit(80);
   if (error || !data?.length) return demoEvents;
   return (data as {
@@ -860,11 +864,13 @@ export async function fetchRotationSignal(): Promise<RotationData | null> {
     .from('rotation_signals')
     .select('signal_date, rotation_score, regime, narrative, btc_30d_return, spy_30d_return')
     .order('signal_date', { ascending: false })
-    .limit(1);
-  const r = rot.data?.[0] as {
+    .limit(2); // latest + previous day for the "yesterday" readout
+  type RotRow = {
     signal_date: string; rotation_score: number; regime: string; narrative: string | null;
     btc_30d_return: number | null; spy_30d_return: number | null;
-  } | undefined;
+  };
+  const r = rot.data?.[0] as RotRow | undefined;
+  const prev = rot.data?.[1] as RotRow | undefined;
   if (rot.error || !r) return null;
 
   const secRes = await supabase
@@ -887,6 +893,8 @@ export async function fetchRotationSignal(): Promise<RotationData | null> {
     btc_30d_return: r.btc_30d_return,
     spy_30d_return: r.spy_30d_return,
     sectors,
+    prev_score: prev ? Number(prev.rotation_score) : null,
+    prev_date: prev?.signal_date ?? null,
   };
 }
 

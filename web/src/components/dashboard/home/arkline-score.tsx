@@ -199,6 +199,13 @@ export function ArkLineScore() {
         {recommendation && (
           <p className="mt-3 max-w-sm text-center text-sm leading-relaxed text-ark-text-secondary">{recommendation}</p>
         )}
+        {/* Daily archive stamp — the iOS app recomputes intraday, so a small
+            difference vs the app is timing, not a bug. */}
+        {data.asOf && (
+          <p className="mt-2 text-[11px] text-ark-text-disabled">
+            Daily snapshot · {new Date(data.asOf + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </p>
+        )}
       </div>
 
       {/* ── Fear/Greed scale ── */}

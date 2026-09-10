@@ -6,7 +6,8 @@ import { Star, Search, X, ArrowUpRight, ArrowDownRight, Plus } from 'lucide-reac
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { Skeleton } from '@/components/ui';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
-import { useWatchlist } from '@/lib/hooks/use-watchlist';
+import { useWatchlist, useWatchlistExtras } from '@/lib/hooks/use-watchlist';
+import { useCoinSearch } from '@/lib/hooks/use-coin-search';
 import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
 
 export function FavoritesCard() {
@@ -14,16 +15,32 @@ export function FavoritesCard() {
   const { data: assets, isLoading } = useCryptoAssets(1);
   const { coins, has, toggle } = useWatchlist();
   const [search, setSearch] = useState('');
+  // Live CoinGecko search so any coin (ONDO, RENDER, …) is addable — the
+  // cached list only covers the top coins.
+  const { data: liveResults } = useCoinSearch(search);
 
   const all = assets ?? [];
-  const favorites = all.filter((a) => has(a.symbol));
+  // Watchlist symbols outside the cached top list still need market rows.
+  const missing = coins.filter((sym) => !all.some((a) => a.symbol.toLowerCase() === sym.toLowerCase()));
+  const { data: extras } = useWatchlistExtras(missing);
+  const favorites = [
+    ...all.filter((a) => has(a.symbol)),
+    ...(extras ?? []).map((e) => ({ ...e, price_change_percentage_24h: e.price_change_percentage_24h ?? 0 })),
+  ];
 
   const searchResults = useMemo(() => {
     const t = search.trim().toLowerCase();
     if (!t) return [];
-    return all.filter((a) => (a.symbol.toLowerCase().includes(t) || a.name.toLowerCase().includes(t)) && !has(a.symbol)).slice(0, 6);
+    const local = all.filter((a) => (a.symbol.toLowerCase().includes(t) || a.name.toLowerCase().includes(t)) && !has(a.symbol)).slice(0, 6);
+    // Append live-search hits the local list doesn't cover.
+    const seen = new Set(local.map((a) => a.symbol.toLowerCase()));
+    const remote = (liveResults ?? [])
+      .filter((c) => !seen.has(c.symbol.toLowerCase()) && !has(c.symbol))
+      .slice(0, 6 - Math.min(local.length, 4))
+      .map((c) => ({ id: c.id, symbol: c.symbol, name: c.name, image: undefined as string | undefined }));
+    return [...local, ...remote];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, all, coins]);
+  }, [search, all, coins, liveResults]);
 
   return (
     <div className="space-y-4 pb-2">
