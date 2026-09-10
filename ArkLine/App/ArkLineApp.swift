@@ -884,14 +884,29 @@ class AppState: ObservableObject {
     func refreshUserProfile() async {
         guard SupabaseManager.shared.isConfigured else { return }
 
-        // Determine the user ID: prefer cached user, fall back to Supabase auth session
+        // Determine the user ID. The live Supabase session is the source of truth:
+        // RLS and every authenticated read are gated on its JWT, so the profile we
+        // display must match it. Prefer the session id; fall back to the cached
+        // user's id only when the session hasn't restored yet (cold-launch race).
+        let sessionUserId = SupabaseAuthManager.shared.currentUserId
         let userId: UUID
-        if let existingId = currentUser?.id {
+        if let sessionUserId {
+            userId = sessionUserId
+        } else if let existingId = currentUser?.id {
             userId = existingId
-        } else if let authId = SupabaseAuthManager.shared.currentUserId {
-            userId = authId
         } else {
             return
+        }
+
+        // If the cached identity disagrees with the live session, the cache is stale
+        // (e.g. left over from signing into another account while testing). Clear it
+        // so we rebuild the profile from the account we're actually authenticated as,
+        // instead of merging another user's fields — this keeps the displayed identity
+        // and the data queries (which also use the live session id) in lockstep.
+        let identityMismatch = sessionUserId != nil && currentUser?.id != nil && sessionUserId != currentUser?.id
+        if identityMismatch {
+            logWarning("Profile refresh: cached identity \(currentUser?.id.uuidString ?? "nil") != live session \(sessionUserId?.uuidString ?? "nil"); dropping stale cache", category: .auth)
+            UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
         }
 
         do {
@@ -902,8 +917,11 @@ class AppState: ObservableObject {
             // Exit early if this refresh was superseded by a newer one
             guard !Task.isCancelled else { return }
 
-            // Build user from existing cached user or create a new one from the DB profile
-            var updatedUser = currentUser ?? User(
+            // Build user from the existing cached user only when it's the SAME
+            // account as the live session; otherwise start fresh from the DB profile
+            // so no stale fields carry over from a previously-cached account.
+            let base: User? = (currentUser?.id == userId) ? currentUser : nil
+            var updatedUser = base ?? User(
                 id: userId,
                 username: profile.username ?? "user",
                 email: profile.email ?? ""

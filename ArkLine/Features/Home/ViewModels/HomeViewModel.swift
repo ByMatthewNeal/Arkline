@@ -1345,21 +1345,47 @@ class HomeViewModel {
                 try? await Task.sleep(nanoseconds: 100_000_000) // 100ms, up to 3s total
             }
 
-            // Prefer cached user from UserDefaults (available immediately), fall back to Supabase auth
             let cachedUserId: UUID? = {
                 guard let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.currentUser),
                       let user = try? JSONDecoder().decode(User.self, from: data) else { return nil }
                 return user.id
             }()
             let supabaseUserId: UUID? = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
-            let resolvedUserId: UUID? = cachedUserId ?? supabaseUserId
+
+            // The live Supabase session is the source of truth for which account we
+            // can actually read: RLS gates every row on the session's JWT, not on the
+            // cached profile. Prefer the session id; fall back to the cached id only
+            // when the session hasn't restored yet (cold-launch race). If the two
+            // disagree, the cached profile is stale — e.g. left over from signing into
+            // another account while testing — so we must NOT filter by the cached id
+            // while authenticated as someone else, which silently returns an empty,
+            // wrong-identity screen. Trust the session so the query always matches the
+            // account we're actually authenticated as.
+            let resolvedUserId: UUID? = supabaseUserId ?? cachedUserId
+            if let supabaseUserId, let cachedUserId, supabaseUserId != cachedUserId {
+                logWarning("Portfolio load: cached user \(cachedUserId) != live session \(supabaseUserId); using live session id", category: .data)
+            }
             guard let userId = resolvedUserId else {
                 logWarning("No authenticated user for portfolio fetch", category: .data)
                 await MainActor.run { self.hasLoadedPortfolios = true }
                 return
             }
-            let fetchedPortfolios = try await withTimeout(seconds: 15) { [portfolioService] in
+            var fetchedPortfolios = try await withTimeout(seconds: 15) { [portfolioService] in
                 try await portfolioService.fetchPortfolios(userId: userId)
+            }
+
+            // An empty result can be a transient rather than a real "no portfolios"
+            // state: if the auth token is still refreshing when PostgREST evaluates
+            // RLS, the read comes back 200 + [] (no error). We resolved a real user
+            // id above, so retry once after a short delay before committing to the
+            // empty state — otherwise the Home hero card sticks on "Track Your
+            // Portfolio" until a full relaunch.
+            if fetchedPortfolios.isEmpty {
+                try? await Task.sleep(nanoseconds: 800_000_000) // 0.8s
+                let retry = try? await withTimeout(seconds: 15) { [portfolioService] in
+                    try await portfolioService.fetchPortfolios(userId: userId)
+                }
+                if let retry, !retry.isEmpty { fetchedPortfolios = retry }
             }
 
             await MainActor.run {

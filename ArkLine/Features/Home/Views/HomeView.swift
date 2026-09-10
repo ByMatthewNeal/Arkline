@@ -48,7 +48,7 @@ struct HomeView: View {
                             StaleDataBanner(
                                 failedCount: viewModel.failedFetchCount,
                                 lastRefreshed: viewModel.lastRefreshed,
-                                onRetry: { Task { await viewModel.refresh(forceRefresh: true) } }
+                                onRetry: { Task { await viewModel.refresh(forceRefresh: true); await viewModel.loadPortfolios(forceRefresh: true) } }
                             )
                             .padding(.horizontal, 20)
                         }
@@ -136,6 +136,10 @@ struct HomeView: View {
                 .scrollIndicators(.hidden)
                 .refreshable {
                     await viewModel.refresh(forceRefresh: true)
+                    // Also re-fetch the portfolios list (refresh() only reloads
+                    // market data/prices), so pull-to-refresh recovers the hero
+                    // card if a prior load returned an empty/transient result.
+                    await viewModel.loadPortfolios(forceRefresh: true)
                 }
                 .onChange(of: appState.homeNavigationReset) { _, _ in
                     navigationPath = NavigationPath()
