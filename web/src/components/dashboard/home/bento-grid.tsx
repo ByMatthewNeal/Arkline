@@ -1210,11 +1210,11 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
               <p className="text-xs text-ark-text-tertiary">No signal changes today</p>
             </div>
           ) : (
-            <div className="mt-2 space-y-2 overflow-hidden">
-              {changes.slice(0, 5).map((c) => (
-                <div key={c.asset}>
+            <div className="mt-2 flex flex-1 flex-col justify-evenly gap-1.5 overflow-hidden">
+              {changes.slice(0, 4).map((c) => (
+                <div key={c.asset} className="rounded-lg bg-ark-fill-secondary/40 px-2.5 py-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex w-[88px] shrink-0 items-center gap-1 text-[11px] font-semibold text-ark-text">
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11px] font-semibold text-ark-text">
                       <CoinIcon symbol={c.asset.split('/')[0]} size="xs" />
                       <span className="truncate">{c.asset}</span>
                     </span>
@@ -1222,10 +1222,10 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
                     <ArrowUpRight className="h-3 w-3 shrink-0 rotate-45 text-ark-text-disabled" />
                     <span className="w-[52px] shrink-0 rounded py-0.5 text-center text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
                   </div>
-                  <p className="mt-0.5 text-[10px] leading-tight text-ark-text-tertiary">{signalChangeHint(c.prev_signal, c.signal)}</p>
+                  <p className="mt-1 truncate text-[10px] leading-tight text-ark-text-tertiary">{signalChangeHint(c.prev_signal, c.signal)}</p>
                 </div>
               ))}
-              {changes.length > 5 && <p className="text-[10px] text-ark-text-disabled">+{changes.length - 5} more</p>}
+              {changes.length > 4 && <p className="text-right text-[10px] font-medium text-ark-text-disabled">+{changes.length - 4} more →</p>}
             </div>
           )}
         </div>
