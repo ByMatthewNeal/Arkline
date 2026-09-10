@@ -60,15 +60,20 @@ export async function recordBroadcastImpression(broadcastId: string, userId: str
 }
 
 /**
- * Record an OPEN (expanded read) — same RPC iOS calls. Inserts a deduped
- * `broadcast_reads` row; a trigger recomputes `view_count` as distinct
- * readers, and the admin Seen-by list is built from these rows. Without this,
- * web reads never appear in the reader list.
+ * Record an OPEN (expanded read) — mirrors iOS markAsRead: upsert the
+ * deduped `broadcast_reads` row (UNIQUE broadcast_id,user_id); the DB
+ * trigger then recomputes `view_count` as distinct readers, and the admin
+ * Seen-by list is built from these rows.
  */
-export async function recordBroadcastOpen(broadcastId: string): Promise<void> {
+export async function recordBroadcastOpen(broadcastId: string, userId: string): Promise<void> {
   if (!isSupabaseConfigured()) return;
   const supabase = createClient();
-  await supabase.rpc('increment_view_count', { broadcast_uuid: broadcastId });
+  await supabase
+    .from('broadcast_reads')
+    .upsert(
+      { broadcast_id: broadcastId, user_id: userId, read_at: new Date().toISOString() },
+      { onConflict: 'broadcast_id,user_id' },
+    );
 }
 
 /** Published broadcasts, pinned first then newest. */

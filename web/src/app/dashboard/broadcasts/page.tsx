@@ -46,9 +46,9 @@ function BroadcastCard({ b, social, uid }: { b: Broadcast; social: Social; uid?:
   // Open (read) tracking: expanding the card counts as reading it, same as
   // iOS opening the detail. Feeds broadcast_reads → view_count + Seen-by.
   const toggleExpanded = () => {
-    if (!expanded && !openRecorded.current) {
+    if (!expanded && !openRecorded.current && uid) {
       openRecorded.current = true;
-      void recordBroadcastOpen(b.id);
+      void recordBroadcastOpen(b.id, uid);
     }
     setExpanded((v) => !v);
   };
