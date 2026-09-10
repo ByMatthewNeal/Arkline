@@ -1211,7 +1211,8 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
             </div>
           ) : (
             <div className="mt-2 flex flex-1 flex-col justify-evenly gap-1.5 overflow-hidden">
-              {changes.slice(0, 4).map((c) => (
+              {/* 3 full rows — a 4th clips at this tile height */}
+              {changes.slice(0, 3).map((c) => (
                 <div key={c.asset} className="rounded-lg bg-ark-fill-secondary/40 px-2.5 py-2">
                   <div className="flex items-center gap-2">
                     <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11px] font-semibold text-ark-text">
@@ -1225,7 +1226,7 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
                   <p className="mt-1 truncate text-[10px] leading-tight text-ark-text-tertiary">{signalChangeHint(c.prev_signal, c.signal)}</p>
                 </div>
               ))}
-              {changes.length > 4 && <p className="text-right text-[10px] font-medium text-ark-text-disabled">+{changes.length - 4} more →</p>}
+              {changes.length > 3 && <p className="text-right text-[10px] font-medium text-ark-text-disabled">+{changes.length - 3} more →</p>}
             </div>
           )}
         </div>

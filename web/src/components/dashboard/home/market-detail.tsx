@@ -5,7 +5,7 @@ import { Area, AreaChart, ComposedChart, Line, CartesianGrid, XAxis, ResponsiveC
 import { ArrowRight } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
 import { cn, signalChangeHint } from '@/lib/utils/format';
-import { useSignalChangeHistory, useStockRiskLevels, useMarketBreadthDetail } from '@/lib/hooks/use-market';
+import { useSignalChangeHistory, useRiskAppetite, useStockRiskLevels, useMarketBreadthDetail } from '@/lib/hooks/use-market';
 import { MomentumMap } from '@/components/dashboard/market/momentum-map';
 import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { localDateISO } from '@/lib/utils/format';
@@ -165,6 +165,29 @@ function signalDayLabel(dateISO: string): string {
   return formatted;
 }
 
+/* Risk Appetite banner — iOS QPSSignalChangesCard parity */
+function RiskAppetiteBanner() {
+  const { data: ra } = useRiskAppetite();
+  if (!ra) return null;
+  const toneColor = ra.tone === 'success' ? 'var(--ark-success)' : ra.tone === 'warning' ? 'var(--ark-warning)' : 'var(--ark-error)';
+  return (
+    <div className="rounded-xl border border-ark-divider p-3.5">
+      <div className="flex items-center gap-2.5">
+        <span className="shrink-0 text-[11px] font-medium text-ark-text-secondary">Risk Appetite</span>
+        {/* Distribution: share of all tracked assets bullish / neutral / bearish */}
+        <div className="flex h-[5px] flex-1 gap-px overflow-hidden rounded-full">
+          <div className="rounded-l-full bg-ark-success" style={{ width: `${Math.max(ra.dist.bullish * 100, 2)}%` }} />
+          <div className="bg-ark-warning" style={{ width: `${Math.max(ra.dist.neutral * 100, 2)}%` }} />
+          <div className="rounded-r-full bg-ark-error" style={{ width: `${Math.max(ra.dist.bearish * 100, 2)}%` }} />
+        </div>
+        <span className="shrink-0 text-xs font-bold" style={{ color: toneColor }}>{ra.label}</span>
+        <span className="fig shrink-0 text-sm font-bold" style={{ color: toneColor }}>{ra.pct}%</span>
+      </div>
+      <p className="mt-1.5 text-xs leading-relaxed text-ark-text-secondary">{ra.guidance}</p>
+    </div>
+  );
+}
+
 export function SignalChangesDetail() {
   const { data: history, isLoading } = useSignalChangeHistory();
   const [tab, setTab] = useState<'changes' | 'momentum'>('changes');
@@ -207,6 +230,7 @@ export function SignalChangesDetail() {
         <p className="py-8 text-center text-sm text-ark-text-tertiary">No positioning changes in the past 3 weeks.</p>
       ) : (
         <>
+          <RiskAppetiteBanner />
           <p className="text-sm text-ark-text-secondary">
             {todayCount === 0 ? 'No changes today — showing recent history.' : `${todayCount} asset${todayCount === 1 ? '' : 's'} changed positioning today.`}
           </p>

@@ -725,6 +725,73 @@ export async function fetchSignalChanges(): Promise<SignalChangeItem[]> {
     .map((r) => ({ asset: r.asset, signal: r.signal as QpsSignal, prev_signal: r.prev_signal as QpsSignal }));
 }
 
+/* ── Risk Appetite ── (iOS QPSSignalChangesCard math, computed over ALL of
+   today's positioning signals — not just the ones that changed) */
+export interface RiskAppetite {
+  pct: number;                 // 0-100
+  label: string;               // Risk-On / Leaning Risk-On / Mixed / …
+  tone: 'success' | 'warning' | 'error';
+  guidance: string;
+  dist: { bullish: number; neutral: number; bearish: number }; // shares 0-1
+}
+
+const APPETITE_WEIGHTS: Record<string, number> = {
+  crypto: 1.5, alt_btc: 1.5, index: 1.2, stock: 1.0, commodity: 0.8, macro: 0.8,
+};
+
+export async function fetchRiskAppetite(): Promise<RiskAppetite | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const latest = await supabase
+    .from('positioning_signals')
+    .select('signal_date')
+    .order('signal_date', { ascending: false })
+    .limit(1);
+  const latestDate = latest.data?.[0]?.signal_date;
+  if (!latestDate) return null;
+  const { data, error } = await supabase
+    .from('positioning_signals')
+    .select('signal, category')
+    .eq('signal_date', latestDate);
+  if (error || !data?.length) return null;
+
+  const rows = data as { signal: string; category: string | null }[];
+  // Weighted appetite: bullish = full weight, neutral = 40% of weight.
+  const { wBull, wTotal } = rows.reduce(
+    (acc, r) => {
+      const w = APPETITE_WEIGHTS[r.category ?? ''] ?? 1.0;
+      if (r.signal === 'bullish') acc.wBull += w;
+      else if (r.signal === 'neutral') acc.wBull += w * 0.4;
+      acc.wTotal += w;
+      return acc;
+    },
+    { wBull: 0, wTotal: 0 },
+  );
+  const pct = wTotal > 0 ? (wBull / wTotal) * 100 : 50;
+
+  const label = pct >= 70 ? 'Risk-On' : pct >= 55 ? 'Leaning Risk-On' : pct >= 45 ? 'Mixed' : pct >= 30 ? 'Leaning Risk-Off' : 'Risk-Off';
+  const tone: RiskAppetite['tone'] = pct >= 55 ? 'success' : pct >= 45 ? 'warning' : 'error';
+  const guidance =
+    pct >= 70 ? 'Most assets are trending up together, a broadly supportive backdrop.'
+    : pct >= 55 ? 'More signals are tilting bullish than bearish, a modestly supportive backdrop.'
+    : pct >= 45 ? 'Signals are split, no clear lean either way right now.'
+    : pct >= 30 ? 'More signals are tilting bearish than bullish, a modestly cautious backdrop.'
+    : 'Most assets are trending down together, a broadly weak backdrop.';
+
+  const n = rows.length;
+  return {
+    pct: Math.round(pct),
+    label,
+    tone,
+    guidance,
+    dist: {
+      bullish: rows.filter((r) => r.signal === 'bullish').length / n,
+      neutral: rows.filter((r) => r.signal === 'neutral').length / n,
+      bearish: rows.filter((r) => r.signal === 'bearish').length / n,
+    },
+  };
+}
+
 /* ── Signal change history ── (day-by-day transitions, iOS parity) */
 export async function fetchSignalChangeHistory(days = 21): Promise<SignalChangeDay[]> {
   if (!isSupabaseConfigured()) return [];

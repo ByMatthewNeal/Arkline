@@ -15,6 +15,7 @@ import {
   fetchMarketBreadth,
   fetchSignalChanges,
   fetchSignalChangeHistory,
+  fetchRiskAppetite,
 } from '@/lib/api/market';
 import { fetchBtcMultiFactor } from '@/lib/api/btc-multi-factor';
 import {
@@ -196,6 +197,14 @@ export function useSignalChangeHistory() {
   return useQuery({
     queryKey: ['signal-change-history'],
     queryFn: () => fetchSignalChangeHistory(),
+    staleTime: 900_000,
+  });
+}
+
+export function useRiskAppetite() {
+  return useQuery({
+    queryKey: ['risk-appetite'],
+    queryFn: () => fetchRiskAppetite(),
     staleTime: 900_000,
   });
 }
