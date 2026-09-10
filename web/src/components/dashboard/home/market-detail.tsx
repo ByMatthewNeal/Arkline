@@ -31,7 +31,11 @@ const BREADTH_PERIODS = [{ label: '1M', days: 30 }, { label: '3M', days: 90 }, {
 
 export function MarketBreadthDetail() {
   const [days, setDays] = useState(90);
-  const { data, isLoading } = useMarketBreadthDetail(days);
+  // Always fetch the full year; the range pills only window the CHART.
+  // Recent Signals must not change with the range (iOS shows the last 6
+  // crossovers regardless of the selected window — a range-dependent chip
+  // list made web and iOS appear to disagree).
+  const { data, isLoading } = useMarketBreadthDetail(365);
   if (isLoading) return <Skeleton className="h-72 w-full" />;
   if (!data) return <p className="py-8 text-center text-sm text-ark-text-tertiary">No data available.</p>;
 
@@ -42,10 +46,13 @@ export function MarketBreadthDetail() {
   const breadthLabel = data.breadthPct >= 70 ? 'Strong' : data.breadthPct >= 30 ? 'Mixed' : 'Weak';
 
   const fmtDay = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const btcVals = data.history.map((h) => h.btc);
+  // Chart shows the selected window; signals/markers come from the window too,
+  // but the Recent Signals chips above use the full-year list.
+  const windowed = data.history.slice(-days);
+  const btcVals = windowed.map((h) => h.btc);
   const btcMin = Math.min(...btcVals), btcMax = Math.max(...btcVals);
-  const signals = data.history.filter((h) => h.crossover === 'bullish_crossover' || h.crossover === 'bearish_crossover');
-  const firstDate = data.history[0]?.date, lastDate = data.history[data.history.length - 1]?.date;
+  const signals = windowed.filter((h) => h.crossover === 'bullish_crossover' || h.crossover === 'bearish_crossover');
+  const firstDate = windowed[0]?.date, lastDate = windowed[windowed.length - 1]?.date;
 
   return (
     <div className="space-y-5 pb-2">
@@ -101,7 +108,7 @@ export function MarketBreadthDetail() {
         </div>
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data.history} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <ComposedChart data={windowed} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="var(--ark-divider)" strokeDasharray="3 3" vertical={false} opacity={0.4} />
               <XAxis dataKey="date" tickLine={false} axisLine={false} ticks={firstDate && lastDate ? [firstDate, lastDate] : []} tickFormatter={fmtDay} tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }} interval="preserveStartEnd" />
               <YAxis yAxisId="b" domain={[0, 100]} hide />
