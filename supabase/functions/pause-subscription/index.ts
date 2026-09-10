@@ -11,7 +11,8 @@ const supabase = createClient(
 )
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://web.arkline.io",
+  // Production web app origin (the dashboard lives at arkline.io, not web.arkline.io)
+  "Access-Control-Allow-Origin": "https://arkline.io",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
