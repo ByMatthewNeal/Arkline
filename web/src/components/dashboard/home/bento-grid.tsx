@@ -291,26 +291,33 @@ function FearGreedTile({ onOpen }: { onOpen: () => void }) {
             <Badge variant={variant}>{label}</Badge>
           </div>
 
-          {/* Mini gauge */}
-          <div className="flex justify-center">
-            <MiniGauge value={value} max={100} color={color} size={80} />
-          </div>
-
-          <div className="flex items-end justify-between relative">
-            <AmbientGlow color={color} className="-left-2 -bottom-2 h-12 w-20" />
-            <div className="flex items-baseline gap-1 relative">
-              <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-4xl font-bold leading-none" style={{ color }}>
-                {counter.value}
-              </span>
-              <span className="text-[10px] text-ark-text-disabled">/ 100</span>
+          {/* Centered gauge with the value seated inside the arc */}
+          <div className="relative flex flex-1 flex-col items-center justify-center py-1">
+            <AmbientGlow color={color} className="inset-x-0 top-1/2 mx-auto h-14 w-28 -translate-y-1/2" />
+            <div className="relative w-[120px]">
+              <MiniGauge value={value} max={100} color={color} size={120} />
+              <div className="absolute inset-x-0 bottom-0 flex items-baseline justify-center gap-1">
+                <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none" style={{ color }}>
+                  {counter.value}
+                </span>
+                <span className="text-[9px] text-ark-text-disabled">/100</span>
+              </div>
             </div>
             <span className={cn(
-              'fig flex items-center gap-0.5 text-[10px] font-semibold',
-              change > 0 ? 'text-ark-success' : change < 0 ? 'text-ark-error' : 'text-ark-text-disabled',
+              'fig mt-2 flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+              change > 0 ? 'bg-ark-success/10 text-ark-success' : change < 0 ? 'bg-ark-error/10 text-ark-error' : 'bg-ark-fill-secondary text-ark-text-disabled',
             )}>
               {change > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
               {change > 0 ? '+' : ''}{change} vs yday
             </span>
+          </div>
+
+          {/* Fear ↔ Greed spectrum anchors the bottom edge */}
+          <div>
+            <div className="relative h-1.5 rounded-full" style={{ background: 'linear-gradient(90deg, var(--ark-error), var(--ark-warning), var(--ark-success))' }}>
+              <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ark-card shadow" style={{ left: `${Math.min(98, Math.max(2, value))}%`, backgroundColor: color }} />
+            </div>
+            <div className="mt-1 flex justify-between text-[9px] text-ark-text-disabled"><span>Extreme Fear</span><span>Extreme Greed</span></div>
           </div>
         </>
       )}
@@ -341,17 +348,18 @@ function ArkLineScoreTile({ onOpen }: { onOpen: () => void }) {
             <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: `${color}1F`, color }}>{tier}</span>
           </div>
 
-          {/* Gauge + score */}
-          <div className="flex justify-center">
-            <MiniGauge value={score} max={100} color={color} size={80} />
-          </div>
-
-          <div className="flex items-baseline gap-1 justify-center -mt-1 relative">
-            <AmbientGlow color={color} className="-left-2 -bottom-2 h-12 w-20 mx-auto" />
-            <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-4xl font-bold leading-none relative" style={{ color }}>
-              {counter.value}
-            </span>
-            <span className="text-[10px] text-ark-text-disabled">/ 100</span>
+          {/* Centered gauge with the value seated inside the arc */}
+          <div className="relative flex flex-1 flex-col items-center justify-center py-1">
+            <AmbientGlow color={color} className="inset-x-0 top-1/2 mx-auto h-14 w-28 -translate-y-1/2" />
+            <div className="relative w-[120px]">
+              <MiniGauge value={score} max={100} color={color} size={120} />
+              <div className="absolute inset-x-0 bottom-0 flex items-baseline justify-center gap-1">
+                <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none" style={{ color }}>
+                  {counter.value}
+                </span>
+                <span className="text-[9px] text-ark-text-disabled">/100</span>
+              </div>
+            </div>
           </div>
 
           {/* Top 3 component bars */}
