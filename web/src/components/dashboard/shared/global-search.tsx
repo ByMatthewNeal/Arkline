@@ -121,9 +121,11 @@ function Palette({ onClose }: { onClose: () => void }) {
             ref={inputRef} autoFocus value={q} onChange={(e) => setQ(e.target.value)}
             onKeyDown={onInputKey}
             placeholder="Search coins or jump to a page…"
-            // The dialog frame is the visual affordance — suppress the global
-            // :focus-visible ring that otherwise draws a blue box in here.
-            className="h-14 w-full bg-transparent text-sm text-ark-text outline-none placeholder:text-ark-text-disabled focus-visible:outline-none"
+            // The dialog frame is the visual affordance. The app's global
+            // :focus-visible ring lives OUTSIDE Tailwind's cascade layers, so
+            // utility classes can't override it — inline style can.
+            style={{ outline: 'none' }}
+            className="h-14 w-full bg-transparent text-sm text-ark-text placeholder:text-ark-text-disabled"
           />
           <kbd className="hidden shrink-0 rounded border border-ark-divider px-1.5 py-0.5 text-[10px] text-ark-text-disabled sm:inline">esc</kbd>
         </div>
