@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { ChevronRight, ChevronLeft, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ArrowUp, ArrowDown, HelpCircle, Search as SearchIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { DefineTerm } from '@/components/ui/define-term';
 import { useRiskLevels, useIndicatorHistory, useBtcMultiFactor } from '@/lib/hooks/use-market';
@@ -65,6 +65,7 @@ function RiskLevelsDetail({ kind, initialSymbol }: { kind: 'crypto' | 'stock'; i
   const { data, isLoading } = useRiskLevels(kind);
   const [sort, setSort] = useState<'band' | 'az'>('band');
   const [period, setPeriod] = useState<7 | 30>(7);
+  const [search, setSearch] = useState('');
   const [selectedSym, setSelectedSym] = useState<string | null>(initialSymbol ? initialSymbol.toUpperCase() : null);
 
   const selected = selectedSym ? (data ?? []).find((i) => i.symbol === selectedSym) : undefined;
@@ -76,11 +77,26 @@ function RiskLevelsDetail({ kind, initialSymbol }: { kind: 'crypto' | 'stock'; i
     return <div className="space-y-3 pb-4">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>;
   }
 
-  const items = data;
-  const subtitle = kind === 'crypto' ? `Regression model · ${items.length} assets` : `Trend & momentum · ${items.length} stocks bucketed`;
+  // Search by ticker or name (iOS parity)
+  const term = search.trim().toLowerCase();
+  const items = term
+    ? data.filter((it) => it.symbol.toLowerCase().includes(term) || it.name.toLowerCase().includes(term))
+    : data;
+  const subtitle = kind === 'crypto' ? `Regression model · ${data.length} assets` : `Trend & momentum · ${data.length} stocks bucketed`;
 
   return (
     <div className="space-y-4 pb-2">
+      {/* Search (iOS parity) */}
+      <div className="relative">
+        <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ark-text-disabled" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search name or ticker"
+          className="h-10 w-full rounded-xl border border-ark-divider bg-ark-fill-secondary/40 pl-9 pr-3 text-sm text-ark-text outline-none placeholder:text-ark-text-disabled focus:border-ark-primary"
+        />
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm text-ark-text-secondary">{subtitle}</p>
@@ -98,7 +114,9 @@ function RiskLevelsDetail({ kind, initialSymbol }: { kind: 'crypto' | 'stock'; i
         </div>
       </div>
 
-      {sort === 'az' ? (
+      {term && items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-ark-text-tertiary">No assets match &ldquo;{search.trim()}&rdquo;.</p>
+      ) : sort === 'az' ? (
         <div className="overflow-hidden rounded-2xl border border-ark-divider bg-ark-fill-secondary/20">
           {[...items].sort((a, b) => a.symbol.localeCompare(b.symbol)).map((it, i) => (
             <Row key={it.symbol} it={it} kind={kind} period={period} divider={i > 0} onClick={() => setSelectedSym(it.symbol)} />

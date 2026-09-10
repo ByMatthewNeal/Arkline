@@ -428,6 +428,21 @@ function riskBand(v: number): RiskBand {
   return 'High';
 }
 
+// iOS AssetRiskConfig.cryptoConfigs — the authoritative crypto list for the
+// Crypto Risk Levels screen. The crypto_risk_* indicator prefix also carries
+// stocks added via the admin risk search, so an allowlist (not the prefix)
+// decides what counts as crypto.
+const CRYPTO_RISK_SYMBOLS = new Set([
+  'btc', 'eth', 'sol',
+  'bnb', 'ada', 'dot', 'avax', 'near', 'atom', 'sui', 'tao', 'hbar', 'algo',
+  'arb', 'op', 'imx', 'mnt',
+  'uni', 'aave', 'ldo', 'ena', 'jup', 'syrup',
+  'link', 'render', 'fet',
+  'xrp', 'ltc', 'zec', 'bch', 'etc', 'trx',
+  'ondo', 'fil', 'inj', 'sei', 'tia', 'aster',
+  'doge', 'shib', 'pepe',
+]);
+
 export async function fetchRiskLevels(kind: 'crypto' | 'stock'): Promise<RiskLevelItem[]> {
   if (!isSupabaseConfigured()) return [];
   const supabase = getSupabase();
@@ -466,7 +481,9 @@ export async function fetchRiskLevels(kind: 'crypto' | 'stock'): Promise<RiskLev
   const bySym = new Map<string, { value: number; date: string }[]>();
   for (const r of all) {
     const sym = r.indicator.replace(prefix, '');
-    if (kind === 'crypto' && stockSyms.has(sym)) continue; // exclude stocks from crypto list
+    // Crypto list = iOS allowlist only (crypto_risk_* also carries admin-added stocks)
+    if (kind === 'crypto' && !CRYPTO_RISK_SYMBOLS.has(sym.toLowerCase())) continue;
+    if (kind === 'crypto' && stockSyms.has(sym)) continue; // belt-and-braces
     const arr = bySym.get(sym) ?? [];
     arr.push({ value: Number(r.value), date: r.recorded_date });
     bySym.set(sym, arr);
