@@ -1228,7 +1228,8 @@ function MarketBreadthTile({ onOpen }: { onOpen: () => void }) {
           </div>
 
           <div className="mt-2 grid grid-cols-3 gap-1">
-            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">Breadth</p><p className="fig text-lg font-bold" style={{ color }}>{data.breadthPct.toFixed(1)}%</p></div>
+            {/* Breadth value colored by its own zone (iOS: ≥70 Strong, ≥30 Mixed, <30 Weak) */}
+            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">Breadth</p><p className="fig text-lg font-bold" style={{ color: data.breadthPct >= 70 ? 'var(--ark-success)' : data.breadthPct >= 30 ? 'var(--ark-warning)' : 'var(--ark-error)' }}>{data.breadthPct.toFixed(1)}%</p></div>
             <div><p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">Trending</p><p className="fig text-lg font-bold text-ark-text">{data.trendingTokens}/{data.totalTokens}</p></div>
             <div><p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">BTC</p><p className="fig text-lg font-bold text-ark-text">${(data.btcPrice / 1000).toFixed(1)}K</p></div>
           </div>
@@ -1239,8 +1240,9 @@ function MarketBreadthTile({ onOpen }: { onOpen: () => void }) {
             <span className="fig text-ark-text-disabled">{fmtDay(data.asOf)}</span>
           </div>
 
+          {/* iOS widget draws the breadth line in brand blue, not trend color */}
           {data.history.length > 1 && (
-            <div className="mt-2 flex-1"><Spark data={data.history.map((h) => h.breadth)} color={color} className="h-full w-full" /></div>
+            <div className="mt-2 flex-1"><Spark data={data.history.map((h) => h.breadth)} color="var(--ark-primary)" className="h-full w-full" /></div>
           )}
         </div>
       )}

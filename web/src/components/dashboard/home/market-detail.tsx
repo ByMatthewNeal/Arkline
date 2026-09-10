@@ -37,8 +37,9 @@ export function MarketBreadthDetail() {
 
   const bullish = data.trend === 'bullish';
   const trendColor = bullish ? 'var(--ark-success)' : 'var(--ark-error)';
-  const breadthColor = data.breadthPct >= 60 ? 'var(--ark-success)' : data.breadthPct >= 40 ? 'var(--ark-warning)' : 'var(--ark-error)';
-  const breadthLabel = data.breadthPct >= 60 ? 'Strong' : data.breadthPct >= 40 ? 'Moderate' : 'Weak';
+  // iOS MarketBreadth.zoneDescription bands: ≥70 Strong, ≥30 Mixed, <30 Weak
+  const breadthColor = data.breadthPct >= 70 ? 'var(--ark-success)' : data.breadthPct >= 30 ? 'var(--ark-warning)' : 'var(--ark-error)';
+  const breadthLabel = data.breadthPct >= 70 ? 'Strong' : data.breadthPct >= 30 ? 'Mixed' : 'Weak';
 
   const fmtDay = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const btcVals = data.history.map((h) => h.btc);
@@ -60,8 +61,9 @@ export function MarketBreadthDetail() {
             <span className="text-ark-text-tertiary">{data.ema12 >= data.ema21 ? '>' : '<'}</span> EMA 21 ({data.ema21.toFixed(1)}%)
           </p>
         </div>
+        {/* Bar reflects breadth STRENGTH (iOS: amber when mixed), not the EMA trend */}
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-ark-fill-secondary">
-          <div className="h-full rounded-full" style={{ width: `${data.breadthPct}%`, backgroundColor: trendColor }} />
+          <div className="h-full rounded-full" style={{ width: `${data.breadthPct}%`, backgroundColor: breadthColor }} />
         </div>
         <div className="mt-1 flex justify-between text-[11px] text-ark-text-disabled">
           <span>{data.breadthPct.toFixed(1)}% of tokens in uptrend</span>
