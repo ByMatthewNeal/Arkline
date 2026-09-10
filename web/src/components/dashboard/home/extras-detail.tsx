@@ -9,10 +9,12 @@ function Info({ title, items }: { title: string; items: { label: string; text: s
   return (
     <div className="rounded-xl bg-ark-fill-secondary/40 p-3.5">
       <h4 className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{title}</h4>
-      <div className="mt-2 space-y-2">
+      {/* Fixed label column wide enough for the longest label ("Why it matters")
+          so every row's text starts at the same x and labels never wrap. */}
+      <div className="mt-2.5 divide-y divide-ark-divider/50">
         {items.map((item) => (
-          <div key={item.label} className="flex gap-3">
-            <span className="w-20 shrink-0 pt-px text-[10px] font-semibold uppercase tracking-wide text-ark-text-tertiary">{item.label}</span>
+          <div key={item.label} className="flex items-baseline gap-3 py-1.5 first:pt-0 last:pb-0">
+            <span className="w-28 shrink-0 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-ark-text-tertiary">{item.label}</span>
             <p className="text-xs leading-relaxed text-ark-text-secondary">{item.text}</p>
           </div>
         ))}
