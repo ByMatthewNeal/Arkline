@@ -48,7 +48,17 @@ import {
   fetchFearGreedDetail,
   fetchIndicatorHistory,
   fetchRiskLevels,
+  fetchGlobalLiquidityIndex,
 } from '@/lib/api/macro';
+
+/** BIS+FRED Global Liquidity Index — same cache iOS reads (daily refresh). */
+export function useGlobalLiquidityIndex() {
+  return useQuery({
+    queryKey: ['global-liquidity-index'],
+    queryFn: fetchGlobalLiquidityIndex,
+    staleTime: 900_000,
+  });
+}
 
 export function useCryptoAssets(page = 1) {
   return useQuery({

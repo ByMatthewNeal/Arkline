@@ -1209,7 +1209,7 @@ const M2Tile = makeMacroTile({
 const SIG_COLORS: Record<string, string> = {
   bullish: 'var(--ark-success)', neutral: 'var(--ark-warning)', bearish: 'var(--ark-error)',
 };
-function MarketBreadthTile({ onOpen }: { onOpen: () => void }) {
+export function MarketBreadthTile({ onOpen }: { onOpen: () => void }) {
   const { data, isLoading } = useMarketBreadthDetail(90);
   const trend = (data?.trend ?? 'neutral').toLowerCase();
   const color = trend === 'bullish' ? 'var(--ark-success)' : trend === 'bearish' ? 'var(--ark-error)' : 'var(--ark-warning)';
@@ -1760,7 +1760,7 @@ function PerpPremiumTile({ onOpen }: { onOpen: () => void }) {
 }
 
 /* ── Fed Watch tile (market_data_cache 'fed_watch' via edge cron) ── */
-function FedWatchTile({ onOpen }: { onOpen: () => void }) {
+export function FedWatchTile({ onOpen }: { onOpen: () => void }) {
   const { data, isLoading } = useFedWatch();
   const meetings = data ?? [];
   const fmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

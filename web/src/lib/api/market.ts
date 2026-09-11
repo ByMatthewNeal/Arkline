@@ -482,14 +482,14 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
   const supabase = getSupabase();
   const sinceISO = new Date(Date.now() - 30 * 86_400_000).toISOString().split('T')[0];
 
-  // Brent crude isn't in the collected indicator series yet, so pull a live
-  // ~30d daily history straight from FMP via the api-proxy (BZUSD), mirroring
-  // the iOS live path. FMP returns newest-first; reverse to chronological so it
-  // feeds build() the same way as the collected series.
-  const brentPromise = (async (): Promise<number[]> => {
+  // Brent crude + Silver aren't in the collected indicator series yet, so pull
+  // live ~30d daily histories straight from FMP via the api-proxy (BZUSD /
+  // SIUSD), mirroring the iOS live path. FMP returns newest-first; reverse to
+  // chronological so it feeds build() the same way as the collected series.
+  const fmpHistory = async (symbol: string): Promise<number[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('api-proxy', {
-        body: { service: 'fmp', path: '/historical-price-eod/full', queryItems: { symbol: 'BZUSD' } },
+        body: { service: 'fmp', path: '/historical-price-eod/full', queryItems: { symbol } },
       });
       if (error || !Array.isArray(data)) return [];
       return (data as { close?: number }[])
@@ -500,9 +500,11 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
     } catch {
       return [];
     }
-  })();
+  };
+  const brentPromise = fmpHistory('BZUSD');
+  const silverPromise = fmpHistory('SIUSD');
 
-  const [rsRes, indRes, brentCloses] = await Promise.all([
+  const [rsRes, indRes, brentCloses, silverCloses] = await Promise.all([
     supabase
       .from('risk_snapshots')
       .select('recorded_date, sp500_price, nasdaq_price')
@@ -511,10 +513,11 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
     supabase
       .from('indicator_snapshots')
       .select('indicator, value, recorded_date')
-      .in('indicator', ['gold_xau', 'crude_oil_wti'])
+      .in('indicator', ['gold_xau'])
       .gte('recorded_date', sinceISO)
       .order('recorded_date', { ascending: true }),
     brentPromise,
+    silverPromise,
   ]);
 
   const build = (
@@ -555,10 +558,11 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
     indBy.set(r.indicator, a);
   }
   const gold = build('gold', 'XAU', 'Gold', indBy.get('gold_xau') ?? []);
-  const oil = build('wti', 'WTI', 'Crude Oil', indBy.get('crude_oil_wti') ?? []);
+  const silver = build('silver', 'XAG', 'Silver', silverCloses);
   const brent = build('brent', 'Brent', 'Brent Crude', brentCloses);
 
-  const out = [sp, ndx, gold, oil, brent].filter((x): x is TraditionalMarketAsset => x !== null);
+  // iOS TraditionalMarketsSection order: S&P 500, Nasdaq, Gold, Silver, Brent.
+  const out = [sp, ndx, gold, silver, brent].filter((x): x is TraditionalMarketAsset => x !== null);
   return out.length ? out : demoTraditionalMarkets;
 }
 

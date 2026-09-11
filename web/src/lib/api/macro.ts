@@ -306,15 +306,24 @@ const REGIME_TEXT: Record<string, string> = {
 /** Server-side Global Liquidity Index (BIS + FRED composite) — the SAME cache
  * the iOS app reads, with pre-computed monthly changes and signal. Using it
  * keeps both liquidity rows identical across platforms. */
-interface GliPayload {
+export interface GliPayload {
+  period?: string; // e.g. "2026-07" (BIS data month)
   signal?: string; // 'expanding' | 'contracting' | 'neutral'
-  changes?: { monthly?: number | null; annual?: number | null };
+  changes?: { monthly?: number | null; quarterly?: number | null; semiannual?: number | null; annual?: number | null };
   us_net_liquidity_t?: number;
   composite_liquidity_t?: number;
   history?: { period: string; composite_t?: number; us_net_liquidity_t?: number }[];
+  liquidity_cycle?: {
+    momentum_index?: number;   // 0-100 percentile of 3M rate of change
+    cycle_phase?: string;      // early_expansion | late_expansion | early_contraction | late_contraction
+    momentum_3m?: number;
+    momentum_6m?: number;
+    crypto_guidance?: string;
+    equity_guidance?: string;
+  };
 }
 
-async function fetchGlobalLiquidityIndex(): Promise<GliPayload | null> {
+export async function fetchGlobalLiquidityIndex(): Promise<GliPayload | null> {
   const { data, error } = await getSupabase()
     .from('market_data_cache')
     .select('data')

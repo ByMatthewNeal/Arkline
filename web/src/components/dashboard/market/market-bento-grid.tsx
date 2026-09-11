@@ -21,7 +21,10 @@ import {
   useMacroIndicators, useRegimeData, useCryptoPositioning, useMomentumMap,
   useTraditionalMarkets, useCryptoAssets, useAltcoinScanner, useNews,
   useUSFutures, useRiskAppetite, useSignalChanges, useTradeSignals,
+  useGlobalLiquidityIndex,
 } from '@/lib/hooks/use-market';
+// Shared tiles with the Home grid — one implementation, both surfaces.
+import { MarketBreadthTile, FedWatchTile } from '../home/bento-grid';
 import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } from '@/lib/utils/format';
 import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
 import { useReadArticles } from '@/lib/hooks/use-read-articles';
@@ -34,7 +37,8 @@ type MarketWidgetKey =
   | 'marketOverview' | 'fearGreed' | 'regime' | 'sentiment'
   | 'macro' | 'positioning' | 'momentumMap' | 'tradMarkets' | 'topCoins'
   | 'altcoinScanner' | 'news' | 'retailSentiment' | 'funding'
-  | 'futures' | 'dailyPositioning' | 'tradeSignals';
+  | 'futures' | 'dailyPositioning' | 'tradeSignals'
+  | 'fedWatch' | 'liquidityCycle' | 'cbLiquidity' | 'marketBreadth';
 
 /* ── Zone chips (iOS MarketZone: All / Today / Macro / Assets / Signals) ──
  * Mapping mirrors MarketWidget.swift `zone`: usFutures/sentiment/dailyNews →
@@ -51,8 +55,11 @@ const WIDGET_ZONE: Record<MarketWidgetKey, Exclude<MarketZone, 'all'>> = {
   sentiment: 'today',
   fearGreed: 'today',
   news: 'today',
+  fedWatch: 'today',
   retailSentiment: 'today',
   dailyPositioning: 'macro',
+  liquidityCycle: 'macro',
+  cbLiquidity: 'macro',
   macro: 'macro',
   regime: 'macro',
   momentumMap: 'macro',
@@ -60,6 +67,7 @@ const WIDGET_ZONE: Record<MarketWidgetKey, Exclude<MarketZone, 'all'>> = {
   marketOverview: 'assets',
   tradMarkets: 'assets',
   topCoins: 'assets',
+  marketBreadth: 'assets',
   altcoinScanner: 'assets',
   funding: 'assets',
   tradeSignals: 'signals',
@@ -70,6 +78,10 @@ const drawerTitles: Record<MarketWidgetKey, string> = {
   futures: 'US Futures',
   dailyPositioning: 'Daily Positioning',
   tradeSignals: 'Trade Signals',
+  fedWatch: 'Fed Watch',
+  liquidityCycle: 'Liquidity Cycle',
+  cbLiquidity: 'Central Bank Liquidity',
+  marketBreadth: 'Market Breadth',
   fearGreed: 'Fear & Greed Index',
   regime: 'Market Regime',
   sentiment: 'Market Sentiment',
@@ -96,6 +108,10 @@ function LazyMarketWidget({ widgetKey }: { widgetKey: MarketWidgetKey }) {
       futures: () => import('../home/extras-detail').then(m => ({ default: m.USFuturesDetail })),
       dailyPositioning: () => import('../home/market-detail').then(m => ({ default: m.SignalChangesDetail })),
       tradeSignals: () => import('../home/trade-signal-detail').then(m => ({ default: m.TradeSignalsDetail })),
+      fedWatch: () => import('../home/extras-detail').then(m => ({ default: m.FedWatchDetail })),
+      marketBreadth: () => import('../home/market-detail').then(m => ({ default: m.MarketBreadthDetail })),
+      liquidityCycle: () => Promise.resolve({ default: LiquidityCycleDetail }),
+      cbLiquidity: () => Promise.resolve({ default: CBLiquidityDetail }),
       fearGreed: () => import('../home/fear-greed-gauge').then(m => ({ default: m.FearGreedGauge })),
       regime: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
       sentiment: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
@@ -556,7 +572,7 @@ function MomentumMapTile({ onOpen }: { onOpen: () => void }) {
 
 function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
   const { data: assets, isLoading } = useTraditionalMarkets();
-  const rows = (assets ?? []).slice(0, 4);
+  const rows = (assets ?? []).slice(0, 5); // iOS set: SPX, NDX, Gold, Silver, Brent
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-info)">
@@ -989,6 +1005,199 @@ function TradeSignalsTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+/* ── Liquidity Cycle (GLI liquidity_cycle — iOS LiquidityCycleSection) ── */
+
+const CYCLE_PHASES: Record<string, { name: string; short: string; crypto: string }> = {
+  early_expansion: { name: 'Early Expansion', short: 'Recovery', crypto: 'BTC Accumulation' },
+  late_expansion: { name: 'Late Expansion', short: 'Peak', crypto: 'Alt Season' },
+  early_contraction: { name: 'Early Contraction', short: 'Slowdown', crypto: 'Rotate to Stables' },
+  late_contraction: { name: 'Late Contraction', short: 'Trough', crypto: 'DCA Opportunity' },
+};
+// iOS momentumColor: ≥70 green, ≥40 amber, else red
+const momentumColor = (i: number) => i >= 70 ? 'var(--ark-success)' : i >= 40 ? 'var(--ark-warning)' : 'var(--ark-error)';
+
+function LiquidityCycleTile({ onOpen }: { onOpen: () => void }) {
+  const { data: gli, isLoading } = useGlobalLiquidityIndex();
+  const cyc = gli?.liquidity_cycle;
+  const phase = CYCLE_PHASES[cyc?.cycle_phase ?? ''] ?? null;
+  const idx = cyc?.momentum_index ?? 50;
+  const color = momentumColor(idx);
+
+  return (
+    <Tile onClick={onOpen} accentColor={color}>
+      <AccentLine color={color} />
+      {isLoading || !cyc ? <SkeletonSparkTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Liquidity Cycle</span>
+            </div>
+            {phase && (
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: `${color}1A`, color }}>
+                {phase.short}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-2 flex items-end justify-between">
+            <div>
+              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Momentum</p>
+              <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none" style={{ color }}>
+                {idx}<span className="text-xs font-normal text-ark-text-disabled"> / 100</span>
+              </p>
+            </div>
+            {phase && (
+              <div className="text-right">
+                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Crypto</p>
+                <p className="text-sm font-bold" style={{ color }}>{phase.crypto}</p>
+              </div>
+            )}
+          </div>
+
+          {cyc.crypto_guidance && (
+            <p className="mt-2 line-clamp-3 text-[11px] leading-relaxed text-ark-text-secondary">{cyc.crypto_guidance}</p>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+function LiquidityCycleDetail() {
+  const { data: gli, isLoading } = useGlobalLiquidityIndex();
+  const cyc = gli?.liquidity_cycle;
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (!cyc) return <p className="py-8 text-center text-sm text-ark-text-tertiary">No liquidity cycle data.</p>;
+  const phase = CYCLE_PHASES[cyc.cycle_phase ?? ''] ?? null;
+  const idx = cyc.momentum_index ?? 50;
+  const color = momentumColor(idx);
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: `${color}12` }}>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{phase?.name ?? 'Cycle Phase'}</p>
+        <p className="mt-1 font-[family-name:var(--font-urbanist)] text-3xl font-bold" style={{ color }}>{phase?.short ?? '—'}</p>
+        <p className="fig mt-1 text-sm text-ark-text-secondary">Momentum {idx} / 100</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {([['3M Momentum', cyc.momentum_3m], ['6M Momentum', cyc.momentum_6m]] as const).map(([label, v]) => (
+          <div key={label} className="rounded-xl border border-ark-divider p-3 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">{label}</p>
+            <p className={cn('fig mt-1 text-xl font-bold', (v ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+              {(v ?? 0) >= 0 ? '+' : ''}{(v ?? 0).toFixed(1)}%
+            </p>
+          </div>
+        ))}
+      </div>
+      {cyc.crypto_guidance && (
+        <div className="rounded-2xl border border-ark-divider p-4">
+          <h4 className="text-sm font-bold text-ark-text">Crypto</h4>
+          <p className="mt-1 text-[13px] leading-relaxed text-ark-text-secondary">{cyc.crypto_guidance}</p>
+        </div>
+      )}
+      {cyc.equity_guidance && (
+        <div className="rounded-2xl border border-ark-divider p-4">
+          <h4 className="text-sm font-bold text-ark-text">Equities</h4>
+          <p className="mt-1 text-[13px] leading-relaxed text-ark-text-secondary">{cyc.equity_guidance}</p>
+        </div>
+      )}
+      <p className="text-[11px] leading-relaxed text-ark-text-disabled">
+        Momentum ranks the 3-month rate of change of global central-bank liquidity (0–100). Historical guidance, not financial advice.
+      </p>
+    </div>
+  );
+}
+
+/* ── Central Bank Liquidity (GLI composite — iOS GlobalLiquiditySection) ── */
+
+function CBLiquidityTile({ onOpen }: { onOpen: () => void }) {
+  const { data: gli, isLoading } = useGlobalLiquidityIndex();
+  const sig = gli?.signal === 'expanding' ? 'Expanding' : gli?.signal === 'contracting' ? 'Contracting' : 'Neutral';
+  const color = gli?.signal === 'expanding' ? 'var(--ark-success)' : gli?.signal === 'contracting' ? 'var(--ark-error)' : 'var(--ark-warning)';
+  const monthly = gli?.changes?.monthly ?? 0;
+  const spark = (gli?.history ?? []).map((h) => h.composite_t).filter((v): v is number => v != null);
+
+  return (
+    <Tile onClick={onOpen} accentColor={color}>
+      <AccentLine color={color} />
+      {isLoading || !gli ? <SkeletonSparkTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Landmark className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">CB Liquidity</span>
+            </div>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: `${color}1A`, color }}>{sig}</span>
+          </div>
+
+          <div className="mt-1.5">
+            <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Composite</p>
+            <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold leading-tight text-ark-text">
+              ${(gli.composite_liquidity_t ?? 0).toFixed(1)}<span className="text-sm font-normal opacity-40">T</span>
+            </p>
+            <span className={cn('fig text-[10px] font-semibold', monthly >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+              {monthly >= 0 ? '+' : ''}{monthly.toFixed(1)}% MoM
+            </span>
+          </div>
+
+          {spark.length > 2 && (
+            <div className="mt-1 flex-1">
+              <Spark data={spark.slice(-24)} color={color} className="h-full w-full" />
+            </div>
+          )}
+          {gli.period && (
+            <p className="mt-1 text-[8px] uppercase tracking-wider text-ark-text-disabled">BIS data thru {gli.period} · ~2mo lag</p>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+function CBLiquidityDetail() {
+  const { data: gli, isLoading } = useGlobalLiquidityIndex();
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (!gli) return <p className="py-8 text-center text-sm text-ark-text-tertiary">No liquidity data.</p>;
+  const sig = gli.signal === 'expanding' ? 'Expanding' : gli.signal === 'contracting' ? 'Contracting' : 'Neutral';
+  const color = gli.signal === 'expanding' ? 'var(--ark-success)' : gli.signal === 'contracting' ? 'var(--ark-error)' : 'var(--ark-warning)';
+  const spark = (gli.history ?? []).map((h) => h.composite_t).filter((v): v is number => v != null);
+  const changeRows = [
+    ['Monthly', gli.changes?.monthly], ['Quarterly', gli.changes?.quarterly],
+    ['6 Month', gli.changes?.semiannual], ['Annual', gli.changes?.annual],
+  ] as const;
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: `${color}12` }}>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Composite Liquidity</p>
+        <p className="fig mt-1 font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
+          ${(gli.composite_liquidity_t ?? 0).toFixed(1)}T
+        </p>
+        <span className="mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold" style={{ backgroundColor: `${color}1F`, color }}>{sig}</span>
+        {gli.period && <p className="mt-2 text-[11px] text-ark-text-disabled">BIS data thru {gli.period} · updates monthly with a ~2-month lag</p>}
+      </div>
+      {spark.length > 2 && (
+        <div className="rounded-2xl border border-ark-divider p-4">
+          <h4 className="mb-2 text-sm font-bold text-ark-text">Trend</h4>
+          <div className="h-24"><Spark data={spark} color={color} className="h-full w-full" /></div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        {changeRows.map(([label, v]) => (
+          <div key={label} className="rounded-xl border border-ark-divider p-3 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">{label}</p>
+            <p className={cn('fig mt-1 text-lg font-bold', (v ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+              {(v ?? 0) >= 0 ? '+' : ''}{(v ?? 0).toFixed(1)}%
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] leading-relaxed text-ark-text-disabled">
+        Tracks Fed net liquidity plus central-bank balance sheets across 11 major economies (BIS). Expanding = monthly change &gt; +0.3%; Contracting = &lt; −0.3%. Historically, expanding liquidity has supported risk assets with a 2–3 month lag.
+      </p>
+    </div>
+  );
+}
+
 /* ══════════════════════ BENTO GRID ══════════════════════ */
 
 // rowHeight = 80px. h:2 = 168px (compact), h:3 = 248px (hero)
@@ -999,62 +1208,78 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'regime',          x: 3, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'futures',         x: 0, y: 3,  w: 2, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'dailyPositioning', x: 2, y: 3, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'sentiment',       x: 0, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'macro',           x: 2, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'positioning',     x: 0, y: 9,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'tradMarkets',     x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'topCoins',        x: 3, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'altcoinScanner',  x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'news',            x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'retailSentiment', x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'funding',         x: 3, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'momentumMap',     x: 0, y: 15, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'tradeSignals',    x: 2, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'liquidityCycle',  x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'cbLiquidity',     x: 1, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'news',            x: 2, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'fedWatch',        x: 3, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'sentiment',       x: 0, y: 9,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'macro',           x: 2, y: 9,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'positioning',     x: 0, y: 12, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'tradMarkets',     x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'topCoins',        x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'marketBreadth',   x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'altcoinScanner',  x: 3, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'retailSentiment', x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'funding',         x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'momentumMap',     x: 2, y: 15, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'tradeSignals',    x: 0, y: 18, w: 2, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
     { i: 'fearGreed',       x: 2, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'futures',         x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'dailyPositioning', x: 1, y: 3, w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'regime',          x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'sentiment',       x: 1, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'macro',           x: 0, y: 9,  w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'positioning',     x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'tradMarkets',     x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'topCoins',        x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'altcoinScanner',  x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'news',            x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'retailSentiment', x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'funding',         x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'momentumMap',     x: 0, y: 18, w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'liquidityCycle',  x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'cbLiquidity',     x: 1, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'news',            x: 2, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'fedWatch',        x: 0, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'regime',          x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'sentiment',       x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'macro',           x: 0, y: 12, w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'positioning',     x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'tradMarkets',     x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'topCoins',        x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'marketBreadth',   x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'altcoinScanner',  x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'retailSentiment', x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'funding',         x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'tradeSignals',    x: 2, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 21, w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'futures',         x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'dailyPositioning', x: 1, y: 3, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'fearGreed',       x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'regime',          x: 1, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'sentiment',       x: 0, y: 9,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'macro',           x: 0, y: 12, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'positioning',     x: 0, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'tradMarkets',     x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'topCoins',        x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'altcoinScanner',  x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'news',            x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'retailSentiment', x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'funding',         x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'momentumMap',     x: 0, y: 27, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'tradeSignals',    x: 0, y: 30, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'liquidityCycle',  x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'cbLiquidity',     x: 1, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'news',            x: 0, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'fedWatch',        x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'fearGreed',       x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'regime',          x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'sentiment',       x: 0, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'macro',           x: 0, y: 18, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'positioning',     x: 0, y: 21, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'tradMarkets',     x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'topCoins',        x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'marketBreadth',   x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'altcoinScanner',  x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'retailSentiment', x: 0, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'funding',         x: 1, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 30, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'tradeSignals',    x: 0, y: 33, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
 const widgetKeys: MarketWidgetKey[] = [
-  'marketOverview', 'fearGreed', 'regime', 'futures', 'dailyPositioning',
+  // Ordered to echo the iOS "All" stack: futures/positioning first, then
+  // liquidity, news/Fed, assets, signals — with the web hero row on top.
+  'marketOverview', 'fearGreed', 'regime',
+  'futures', 'dailyPositioning',
+  'liquidityCycle', 'cbLiquidity', 'news', 'fedWatch',
   'sentiment', 'macro',
   // 'positioning' (Crypto Positioning) retired from view — component + data kept.
-  'momentumMap', 'tradMarkets', 'topCoins', 'altcoinScanner',
-  'news', 'retailSentiment', 'funding', 'tradeSignals',
+  'tradMarkets', 'topCoins', 'marketBreadth', 'altcoinScanner',
+  'retailSentiment', 'funding', 'momentumMap', 'tradeSignals',
 ];
 
 const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
@@ -1062,6 +1287,10 @@ const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () =
   futures: FuturesTile,
   dailyPositioning: DailyPositioningTile,
   tradeSignals: TradeSignalsTile,
+  fedWatch: FedWatchTile,
+  liquidityCycle: LiquidityCycleTile,
+  cbLiquidity: CBLiquidityTile,
+  marketBreadth: MarketBreadthTile,
   fearGreed: FearGreedTile,
   regime: RegimeTile,
   sentiment: SentimentTile,
