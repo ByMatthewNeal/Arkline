@@ -38,7 +38,7 @@ function matchesDate(b: Broadcast, filter: DateFilter): boolean {
   return diffDays <= 31;
 }
 
-function BroadcastCard({ b, social, uid }: { b: Broadcast; social: Social; uid?: string }) {
+function BroadcastCard({ b, social, uid, isAdmin }: { b: Broadcast; social: Social; uid?: string; isAdmin?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const openRecorded = useRef(false);
@@ -139,7 +139,7 @@ function BroadcastCard({ b, social, uid }: { b: Broadcast; social: Social; uid?:
       )}
 
       <div className="mt-3 flex items-center gap-3 text-[11px] text-ark-text-disabled">
-        <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{b.view_count}</span>
+        {isAdmin && <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{b.view_count}</span>}
         <button
           onClick={(e) => { e.stopPropagation(); social.toggleReact(b.id); }}
           className={cn('flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-ark-fill-secondary', liked ? 'text-ark-error' : 'text-ark-text-disabled')}
@@ -175,8 +175,10 @@ export default function BroadcastsPage() {
   const [savedOnly, setSavedOnly] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const social = useBroadcastSocial();
-  const { authUser } = useAuth();
+  const { authUser, profile } = useAuth();
   const uid = authUser?.id;
+  // View counts are admin-only (matches iOS, where members never see them).
+  const isAdmin = (profile as { role?: string } | null)?.role === 'admin';
 
   const { data: broadcasts, isLoading } = useQuery({
     queryKey: ['broadcasts'],
@@ -276,12 +278,12 @@ export default function BroadcastsPage() {
           {pinned.length > 0 && (
             <div className="space-y-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Pinned</p>
-              {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} />)}
+              {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} isAdmin={isAdmin} />)}
             </div>
           )}
           <div className="space-y-3">
             {pinned.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Latest</p>}
-            {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} />)}
+            {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} isAdmin={isAdmin} />)}
           </div>
         </div>
       )}
