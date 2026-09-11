@@ -8,6 +8,7 @@ enum IndexSymbol: String, CaseIterable, Identifiable {
     case nasdaq = "^IXIC"
     case gold = "GC=F"
     case silver = "SI=F"
+    case oil = "BZ=F"
 
     var id: String { rawValue }
 
@@ -17,6 +18,7 @@ enum IndexSymbol: String, CaseIterable, Identifiable {
         case .nasdaq: return "Nasdaq"
         case .gold: return "Gold"
         case .silver: return "Silver"
+        case .oil: return "Brent Crude"
         }
     }
 }

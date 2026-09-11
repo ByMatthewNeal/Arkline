@@ -482,7 +482,27 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
   const supabase = getSupabase();
   const sinceISO = new Date(Date.now() - 30 * 86_400_000).toISOString().split('T')[0];
 
-  const [rsRes, indRes] = await Promise.all([
+  // Brent crude isn't in the collected indicator series yet, so pull a live
+  // ~30d daily history straight from FMP via the api-proxy (BZUSD), mirroring
+  // the iOS live path. FMP returns newest-first; reverse to chronological so it
+  // feeds build() the same way as the collected series.
+  const brentPromise = (async (): Promise<number[]> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('api-proxy', {
+        body: { service: 'fmp', path: '/historical-price-eod/full', queryItems: { symbol: 'BZUSD' } },
+      });
+      if (error || !Array.isArray(data)) return [];
+      return (data as { close?: number }[])
+        .map((r) => Number(r.close))
+        .filter((v) => Number.isFinite(v) && v > 0)
+        .reverse()
+        .slice(-30);
+    } catch {
+      return [];
+    }
+  })();
+
+  const [rsRes, indRes, brentCloses] = await Promise.all([
     supabase
       .from('risk_snapshots')
       .select('recorded_date, sp500_price, nasdaq_price')
@@ -494,6 +514,7 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
       .in('indicator', ['gold_xau', 'crude_oil_wti'])
       .gte('recorded_date', sinceISO)
       .order('recorded_date', { ascending: true }),
+    brentPromise,
   ]);
 
   const build = (
@@ -535,8 +556,9 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
   }
   const gold = build('gold', 'XAU', 'Gold', indBy.get('gold_xau') ?? []);
   const oil = build('wti', 'WTI', 'Crude Oil', indBy.get('crude_oil_wti') ?? []);
+  const brent = build('brent', 'Brent', 'Brent Crude', brentCloses);
 
-  const out = [sp, ndx, gold, oil].filter((x): x is TraditionalMarketAsset => x !== null);
+  const out = [sp, ndx, gold, oil, brent].filter((x): x is TraditionalMarketAsset => x !== null);
   return out.length ? out : demoTraditionalMarkets;
 }
 

@@ -159,6 +159,7 @@ class TrendChannelViewModel {
         case "^IXIC": return "^IXIC"      // Nasdaq composite
         case "GC=F": return "GCUSD"       // Gold futures
         case "SI=F": return "SIUSD"       // Silver futures
+        case "BZ=F": return "BZUSD"       // Brent crude futures
         default: return nil
         }
     }

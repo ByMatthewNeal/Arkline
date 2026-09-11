@@ -36,6 +36,9 @@ struct TraditionalMarketsSection: View {
                 // Precious Metals (with trend channel analysis)
                 IndexWidgetCard(index: .gold, qpsSignal: qpsSignal(for: "GOLD"))
                 IndexWidgetCard(index: .silver, qpsSignal: qpsSignal(for: "SILVER"))
+
+                // Energy (Brent crude — trend channel only, no QPS signal yet)
+                IndexWidgetCard(index: .oil, qpsSignal: qpsSignal(for: "OIL"))
             }
             .padding(.horizontal)
         }

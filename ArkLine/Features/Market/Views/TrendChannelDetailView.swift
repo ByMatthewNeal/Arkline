@@ -610,6 +610,7 @@ struct IndexWidgetCard: View {
         case .nasdaq: return "NDX"
         case .gold: return "Au"
         case .silver: return "Ag"
+        case .oil: return "OIL"
         }
     }
 
@@ -618,6 +619,7 @@ struct IndexWidgetCard: View {
         case .sp500, .nasdaq: return AppColors.accent
         case .gold: return Color(hex: "F59E0B")
         case .silver: return Color(hex: "94A3B8")
+        case .oil: return Color(hex: "44403C")
         }
     }
 
