@@ -5,7 +5,7 @@ import {
   Globe, Gauge, Compass, Activity, BarChart3, Target,
   Landmark, Bitcoin, Search, Newspaper, Users, DollarSign,
   ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown,
-  RotateCcw, SlidersHorizontal, CandlestickChart, Zap,
+  RotateCcw, SlidersHorizontal, CandlestickChart, Zap, ShieldCheck, Crosshair,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge, Skeleton } from '@/components/ui';
@@ -20,7 +20,7 @@ import {
   useGlobalMarketData, useFearGreedIndex, useMarketSentiment,
   useMacroIndicators, useRegimeData, useCryptoPositioning, useMomentumMap,
   useTraditionalMarkets, useCryptoAssets, useAltcoinScanner, useNews,
-  useUSFutures, useRiskAppetite, useSignalChanges,
+  useUSFutures, useRiskAppetite, useSignalChanges, useTradeSignals,
 } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } from '@/lib/utils/format';
 import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
@@ -34,12 +34,42 @@ type MarketWidgetKey =
   | 'marketOverview' | 'fearGreed' | 'regime' | 'sentiment'
   | 'macro' | 'positioning' | 'momentumMap' | 'tradMarkets' | 'topCoins'
   | 'altcoinScanner' | 'news' | 'retailSentiment' | 'funding'
-  | 'futures' | 'dailyPositioning';
+  | 'futures' | 'dailyPositioning' | 'tradeSignals';
+
+/* ── Zone chips (iOS MarketZone: All / Today / Macro / Assets / Signals) ──
+ * Mapping mirrors MarketWidget.swift `zone`: usFutures/sentiment/dailyNews →
+ * today; qpsGrid/liquidity → macro; coins/tradMarkets/screener → assets;
+ * swingSetups → signals. Web-only tiles are slotted where they belong. */
+type MarketZone = 'all' | 'today' | 'macro' | 'assets' | 'signals';
+
+const ZONE_LABELS: [MarketZone, string][] = [
+  ['all', 'All'], ['today', 'Today'], ['macro', 'Macro'], ['assets', 'Assets'], ['signals', 'Signals'],
+];
+
+const WIDGET_ZONE: Record<MarketWidgetKey, Exclude<MarketZone, 'all'>> = {
+  futures: 'today',
+  sentiment: 'today',
+  fearGreed: 'today',
+  news: 'today',
+  retailSentiment: 'today',
+  dailyPositioning: 'macro',
+  macro: 'macro',
+  regime: 'macro',
+  momentumMap: 'macro',
+  positioning: 'macro',
+  marketOverview: 'assets',
+  tradMarkets: 'assets',
+  topCoins: 'assets',
+  altcoinScanner: 'assets',
+  funding: 'assets',
+  tradeSignals: 'signals',
+};
 
 const drawerTitles: Record<MarketWidgetKey, string> = {
   marketOverview: 'Market Overview',
   futures: 'US Futures',
   dailyPositioning: 'Daily Positioning',
+  tradeSignals: 'Trade Signals',
   fearGreed: 'Fear & Greed Index',
   regime: 'Market Regime',
   sentiment: 'Market Sentiment',
@@ -65,6 +95,7 @@ function LazyMarketWidget({ widgetKey }: { widgetKey: MarketWidgetKey }) {
       marketOverview: () => Promise.resolve({ default: MarketOverviewDetail }),
       futures: () => import('../home/extras-detail').then(m => ({ default: m.USFuturesDetail })),
       dailyPositioning: () => import('../home/market-detail').then(m => ({ default: m.SignalChangesDetail })),
+      tradeSignals: () => import('../home/trade-signal-detail').then(m => ({ default: m.TradeSignalsDetail })),
       fearGreed: () => import('../home/fear-greed-gauge').then(m => ({ default: m.FearGreedGauge })),
       regime: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
       sentiment: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
@@ -900,6 +931,64 @@ function DailyPositioningTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+function TradeSignalsTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useTradeSignals();
+  const signals = data ?? [];
+  const active = signals.filter((s) => s.status === 'active' || s.status === 'triggered');
+  const closed = signals.filter((s) => s.outcome != null);
+  const wins = closed.filter((s) => s.outcome === 'win').length;
+
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <Crosshair className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Trade Signals</span>
+            {closed.length > 0 && (
+              <span className="fig ml-auto text-[10px] font-semibold text-ark-text-tertiary">
+                <span className="text-ark-success">{wins}</span>/{closed.length} recent wins
+              </span>
+            )}
+          </div>
+
+          {active.length === 0 ? (
+            /* iOS "Standing By" state — sitting out is part of the strategy */
+            <div className="flex flex-1 flex-col items-center justify-center px-3 text-center">
+              <span className="flex items-center gap-1.5 text-sm font-bold text-ark-text">
+                <ShieldCheck className="h-4 w-4 text-ark-success" /> Standing By
+              </span>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-ark-text-secondary">
+                No high-conviction setups right now. The system only fires when price, trend, and momentum align — sitting out is part of the strategy.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-1 flex-col justify-start gap-1.5">
+              {active.slice(0, 4).map((s) => {
+                const long = s.signal_type === 'buy' || s.signal_type === 'strong_buy';
+                return (
+                  <div key={s.id} className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1.5">
+                    <span className={cn('h-4 w-0.5 shrink-0 rounded-full', long ? 'bg-ark-success' : 'bg-ark-error')} />
+                    <span className="w-12 truncate text-[11px] font-bold text-ark-text">{s.asset.toUpperCase()}</span>
+                    <span className={cn('text-[9px] font-bold', long ? 'text-ark-success' : 'text-ark-error')}>{long ? 'LONG' : 'SHORT'}</span>
+                    {s.timeframe && <span className="text-[9px] uppercase text-ark-text-disabled">{s.timeframe}</span>}
+                    <span className="flex-1" />
+                    {s.risk_reward_ratio != null && <span className="fig text-[9px] text-ark-text-tertiary">{s.risk_reward_ratio.toFixed(1)}x R:R</span>}
+                    <span className={cn('rounded-md px-1.5 py-0.5 text-[9px] font-bold', s.status === 'triggered' ? 'bg-ark-warning/10 text-ark-warning' : 'bg-ark-info/10 text-ark-info')}>
+                      {s.status === 'triggered' ? 'Live' : 'Active'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
 /* ══════════════════════ BENTO GRID ══════════════════════ */
 
 // rowHeight = 80px. h:2 = 168px (compact), h:3 = 248px (hero)
@@ -920,6 +1009,7 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'retailSentiment', x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'funding',         x: 3, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'momentumMap',     x: 0, y: 15, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'tradeSignals',    x: 2, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
@@ -937,6 +1027,7 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'retailSentiment', x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'funding',         x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'momentumMap',     x: 0, y: 18, w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'tradeSignals',    x: 2, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -954,6 +1045,7 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'retailSentiment', x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'funding',         x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'momentumMap',     x: 0, y: 27, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'tradeSignals',    x: 0, y: 30, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
@@ -962,13 +1054,14 @@ const widgetKeys: MarketWidgetKey[] = [
   'sentiment', 'macro',
   // 'positioning' (Crypto Positioning) retired from view — component + data kept.
   'momentumMap', 'tradMarkets', 'topCoins', 'altcoinScanner',
-  'news', 'retailSentiment', 'funding',
+  'news', 'retailSentiment', 'funding', 'tradeSignals',
 ];
 
 const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
   marketOverview: MarketOverviewTile,
   futures: FuturesTile,
   dailyPositioning: DailyPositioningTile,
+  tradeSignals: TradeSignalsTile,
   fearGreed: FearGreedTile,
   regime: RegimeTile,
   sentiment: SentimentTile,
@@ -986,11 +1079,14 @@ const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () =
 export function MarketBentoGrid() {
   const [activeWidget, setActiveWidget] = useState<MarketWidgetKey | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [zone, setZone] = useState<MarketZone>('all');
   const { isEnabled, toggle, setAll } = useWidgetVisibility('market', widgetKeys);
   const resetRef = useRef<(() => void) | null>(null);
   const open = (key: MarketWidgetKey) => () => setActiveWidget(key);
 
-  const enabledKeys = widgetKeys.filter(isEnabled);
+  const enabledKeys = widgetKeys
+    .filter(isEnabled)
+    .filter((k) => zone === 'all' || WIDGET_ZONE[k] === zone);
 
   return (
     <>
@@ -1019,12 +1115,32 @@ export function MarketBentoGrid() {
         </div>
       </div>
 
+      {/* Zone chips — iOS Market Overview sub-tabs (All / Today / Macro / Assets / Signals) */}
+      <div className="mb-4 flex gap-2">
+        {ZONE_LABELS.map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setZone(key)}
+            className={cn(
+              'rounded-full px-4 py-1.5 text-xs font-semibold transition-colors',
+              zone === key
+                ? 'bg-ark-primary text-white shadow-sm'
+                : 'bg-ark-fill-secondary/60 text-ark-text-secondary hover:bg-ark-fill-secondary hover:text-ark-text',
+            )}
+            aria-pressed={zone === key}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <motion.div
+        key={zone}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <DraggableGrid layoutKey="market" defaultLayouts={MARKET_DEFAULT_LAYOUTS} resetRef={resetRef}>
+        <DraggableGrid layoutKey="market" defaultLayouts={MARKET_DEFAULT_LAYOUTS} resetRef={resetRef} frozen={zone !== 'all'}>
           {enabledKeys.map((key, i) => {
             const TileComp = tileComponents[key];
             return (

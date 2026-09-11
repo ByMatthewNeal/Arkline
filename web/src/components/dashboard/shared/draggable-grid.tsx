@@ -23,11 +23,15 @@ interface DraggableGridProps {
   children: ReactNode;
   /** Optional: receives the reset function so a parent can render its own Reset control. */
   resetRef?: { current: (() => void) | null };
+  /** Disable drag + layout persistence (e.g. while a zone filter shows a
+   * subset — rearranging a filtered view would scramble the full layout,
+   * matching iOS which only allows editing in "All"). */
+  frozen?: boolean;
 }
 
 export type { ResponsiveLayouts };
 
-export function DraggableGrid({ layoutKey, defaultLayouts, children, resetRef }: DraggableGridProps) {
+export function DraggableGrid({ layoutKey, defaultLayouts, children, resetRef, frozen = false }: DraggableGridProps) {
   const { layouts, onLayoutChange, resetLayout, isReady } = useWidgetLayout(layoutKey, defaultLayouts);
 
   useEffect(() => {
@@ -76,9 +80,9 @@ export function DraggableGrid({ layoutKey, defaultLayouts, children, resetRef }:
           rowHeight={ROW_HEIGHT}
           margin={MARGIN}
           containerPadding={[0, 0]}
-          dragConfig={{ handle: '.drag-handle' }}
+          dragConfig={{ handle: frozen ? '.drag-disabled' : '.drag-handle' }}
           compactor={verticalCompactor}
-          onLayoutChange={onLayoutChange}
+          onLayoutChange={frozen ? () => {} : onLayoutChange}
         >
           {children}
         </ResponsiveGridLayout>
