@@ -572,7 +572,7 @@ function MomentumMapTile({ onOpen }: { onOpen: () => void }) {
 
 function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
   const { data: assets, isLoading } = useTraditionalMarkets();
-  const rows = (assets ?? []).slice(0, 5); // iOS set: SPX, NDX, Gold, Silver, Brent
+  const rows = (assets ?? []).slice(0, 6); // iOS set (SPX, NDX, Gold, Silver, Brent) + WTI desktop extra
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-info)">

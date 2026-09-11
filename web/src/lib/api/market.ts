@@ -513,7 +513,7 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
     supabase
       .from('indicator_snapshots')
       .select('indicator, value, recorded_date')
-      .in('indicator', ['gold_xau'])
+      .in('indicator', ['gold_xau', 'crude_oil_wti'])
       .gte('recorded_date', sinceISO)
       .order('recorded_date', { ascending: true }),
     brentPromise,
@@ -560,9 +560,11 @@ export async function fetchTraditionalMarkets(): Promise<TraditionalMarketAsset[
   const gold = build('gold', 'XAU', 'Gold', indBy.get('gold_xau') ?? []);
   const silver = build('silver', 'XAG', 'Silver', silverCloses);
   const brent = build('brent', 'Brent', 'Brent Crude', brentCloses);
+  const wti = build('wti', 'WTI', 'WTI Crude', indBy.get('crude_oil_wti') ?? []);
 
-  // iOS TraditionalMarketsSection order: S&P 500, Nasdaq, Gold, Silver, Brent.
-  const out = [sp, ndx, gold, silver, brent].filter((x): x is TraditionalMarketAsset => x !== null);
+  // iOS TraditionalMarketsSection order (SPX, NDX, Gold, Silver, Brent),
+  // plus WTI as a desktop-only extra at the end.
+  const out = [sp, ndx, gold, silver, brent, wti].filter((x): x is TraditionalMarketAsset => x !== null);
   return out.length ? out : demoTraditionalMarkets;
 }
 
