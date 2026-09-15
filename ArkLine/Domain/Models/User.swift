@@ -358,15 +358,21 @@ extension User {
     }
 
     /// Whether the user has active access.
-    /// Single-tier model: all onboarded users get full access. Only explicitly
-    /// expired canceled/past-due users are blocked.
+    ///
+    /// FREE PHASE: Arkline is currently free for everyone while we grow the user
+    /// base and gather feedback — so every authenticated user gets full access and
+    /// the subscription-expired gate never blocks anyone. The subscription-aware
+    /// logic is preserved below (commented) so re-introducing paid access later is
+    /// a one-line revert: delete `return true` and restore the block.
     var isAccessGranted: Bool {
-        if role == .admin { return true }
-        if subscriptionStatus == .active || subscriptionStatus == .trialing || subscriptionStatus == .none { return true }
-        if subscriptionStatus == .canceled || subscriptionStatus == .pastDue {
-            if let periodEnd = currentPeriodEnd, periodEnd > Date() { return true }
-        }
-        return false
+        return true
+        // --- Paid-access logic (restore to re-enable the paywall) ---
+        // if role == .admin { return true }
+        // if subscriptionStatus == .active || subscriptionStatus == .trialing || subscriptionStatus == .none { return true }
+        // if subscriptionStatus == .canceled || subscriptionStatus == .pastDue {
+        //     if let periodEnd = currentPeriodEnd, periodEnd > Date() { return true }
+        // }
+        // return false
     }
 
     /// Days remaining in trial, nil if not trialing

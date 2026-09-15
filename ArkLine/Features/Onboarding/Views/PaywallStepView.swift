@@ -96,19 +96,24 @@ struct PaywallStepView: View {
             resolvedUserId = try? await SupabaseManager.shared.client.auth.session.user.id
         }
         guard let userId = resolvedUserId else {
-            // Truly no session — show the paywall (they can go Back to sign in).
-            showPaywall = true
+            // No session (shouldn't happen right after verification) — return to
+            // Welcome, which offers the real choices (try again / sign in).
+            viewModel.isMovingForward = false
+            viewModel.currentStep = .welcome
             return
         }
 
-        // Link RevenueCat to this user before any purchase so IAP attributes to
-        // the Supabase UUID (removes the auth→logIn race).
+        // FREE PHASE: Arkline is free for everyone right now, so there is no
+        // purchase to make here. We still link RevenueCat to the Supabase UUID so
+        // IAP attribution stays wired for when paid access returns, then pass
+        // straight through to the profile steps. To re-enable the paywall, restore
+        // the hasActiveAccess branch below.
         await RevenueCatService.shared.logIn(userId: userId)
-
-        if await viewModel.hasActiveAccess(userId: userId) {
-            viewModel.nextStep()   // already comped / subscribed — skip the paywall
-        } else {
-            showPaywall = true
-        }
+        viewModel.nextStep()
+        // if await viewModel.hasActiveAccess(userId: userId) {
+        //     viewModel.nextStep()   // already comped / subscribed — skip the paywall
+        // } else {
+        //     showPaywall = true
+        // }
     }
 }

@@ -11,7 +11,7 @@ import {
   CRYPTO_APPROACHES, PORTFOLIO_GOALS,
   type OnboardingData, type OnboardingStepId,
 } from '@/lib/onboarding/config';
-import { completeOnboarding, getOnboardingState, startSelfCheckout } from '@/lib/api/onboarding';
+import { completeOnboarding, startSelfCheckout } from '@/lib/api/onboarding';
 import { TRIAL_DAYS } from '@/lib/pricing';
 
 const STEP_TITLES: Record<OnboardingStepId, { title: string; subtitle: string }> = {
@@ -29,31 +29,12 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<OnboardingData>(EMPTY_ONBOARDING_DATA);
-  const [steps, setSteps] = useState<OnboardingStepId[]>(ONBOARDING_STEPS);
-  const [initializing, setInitializing] = useState(true);
-
-  // Decide whether the payment step is needed (self-serve users who haven't paid)
-  // and handle the return from Stripe (?paid=1) by polling for activation.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const justPaid = new URLSearchParams(window.location.search).get('paid') === '1';
-      let state = await getOnboardingState();
-
-      if (justPaid && state.needsPayment) {
-        // Webhook may lag the redirect — poll briefly for the active status.
-        for (let i = 0; i < 6 && state.needsPayment; i++) {
-          await new Promise((r) => setTimeout(r, 1500));
-          state = await getOnboardingState();
-        }
-      }
-      if (cancelled) return;
-
-      setSteps(state.needsPayment ? ['payment', ...ONBOARDING_STEPS] : ONBOARDING_STEPS);
-      setInitializing(false);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // FREE PHASE: Arkline is free for everyone while we grow the user base, so the
+  // in-flow payment step is never required — every signup goes straight through
+  // the profile steps. The PaymentStep component and getOnboardingState/checkout
+  // helpers are left in place (dormant) so re-enabling paid onboarding later means
+  // restoring the needsPayment check that used to prepend the 'payment' step here.
+  const steps: OnboardingStepId[] = ONBOARDING_STEPS;
 
   const step = steps[stepIndex];
   const numberedSteps: OnboardingStepId[] = steps.filter((s) => s !== 'complete');
@@ -74,14 +55,6 @@ export default function OnboardingPage() {
 
   const canAdvance =
     step === 'name' ? data.firstName.trim().length > 0 : true;
-
-  if (initializing) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-ark-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-5 py-10">

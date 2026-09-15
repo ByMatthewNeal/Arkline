@@ -69,7 +69,7 @@ struct WelcomeView: View {
                 // Bottom buttons
                 VStack(spacing: ArkSpacing.sm) {
                     PrimaryButton(
-                        title: "Start Free Trial",
+                        title: "Get Started",
                         action: { viewModel.beginSignUp() }
                     )
 
