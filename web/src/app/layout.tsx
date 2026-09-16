@@ -92,12 +92,9 @@ const jsonLd = {
         'Market intelligence platform combining multi-factor risk scoring, macro dashboard, AI briefings, and positioning signals for crypto and traditional markets.',
       offers: {
         '@type': 'Offer',
-        price: '39.99',
+        price: '0',
         priceCurrency: 'USD',
-        priceValidUntil: '2027-12-31',
-        // Surfaces the free trial in rich results alongside the price.
-        eligibleCustomerType: 'https://schema.org/NewCondition',
-        description: '7-day free trial, then $39.99/month. Cancel anytime.',
+        description: 'Free to use. Every tool included, on iOS and the web.',
       },
       publisher: { '@id': 'https://arkline.io/#organization' },
     },

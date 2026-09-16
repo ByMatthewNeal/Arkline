@@ -2,13 +2,12 @@
 
 import { UserPlus, BarChart3, Brain, TrendingUp } from 'lucide-react';
 import { FadeIn } from '@/components/marketing/fade-in';
-import { TRIAL_DAYS } from '@/lib/pricing';
 
 const steps = [
   {
     icon: UserPlus,
     title: 'Download & Start Free',
-    description: `Grab ArkLine from the App Store and start your ${TRIAL_DAYS}-day free trial in seconds. iOS 17+.`,
+    description: 'Grab ArkLine from the App Store — free, no card, ready in seconds. iOS 17+.',
     color: 'var(--ark-primary)',
   },
   {

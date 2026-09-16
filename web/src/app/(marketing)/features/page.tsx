@@ -1,8 +1,6 @@
 'use client';
 
-import Link from 'next/link';
 import { ViewContentEvent } from '@/components/analytics/ViewContentEvent';
-import { TRIAL_DAYS } from '@/lib/pricing';
 import {
   BarChart3,
   Shield,
@@ -280,13 +278,13 @@ export default function FeaturesPage() {
               See ArkLine in action.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Every feature above is included. One price, and a {TRIAL_DAYS}-day free trial to try all of it.
+              Every feature above is included &mdash; free. No tiers, no trial clock, no card.
             </p>
             <div className="mt-8 flex justify-center">
               <AppStoreCTA />
             </div>
             <div className="mt-6 text-xs text-ark-text-disabled">
-              Now available on iOS · {TRIAL_DAYS} days free
+              Now on iOS and the web · Free to use
             </div>
           </FadeIn>
         </div>

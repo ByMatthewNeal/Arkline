@@ -7,28 +7,23 @@ import { ArklineLogo } from '@/components/ui';
 import { AppStoreCTA } from '@/components/marketing/app-store-cta';
 import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { FadeIn } from '@/components/marketing/fade-in';
-import { SpotsCounter } from '@/components/marketing/spots-counter';
 
-import { PRICING, PRO_FEATURES, TRIAL_COPY, TRIAL_DAYS } from '@/lib/pricing';
+import { PRO_FEATURES } from '@/lib/pricing';
 
 const proFeatures = PRO_FEATURES;
 
 const faqs = [
   {
-    q: 'How does the free trial work?',
-    a: `You get ${TRIAL_DAYS} days of full access to ArkLine Pro before you're charged anything. Cancel any time during the trial and you pay nothing. If you don't cancel, your subscription starts automatically at the end of day ${TRIAL_DAYS} at the price shown above. The trial is the same length whether you start on iPhone or on the web, and it's available once per account.`,
+    q: 'Is ArkLine really free?',
+    a: 'Yes. Every tool, signal, briefing, and macro read is free right now — the full app, nothing held back and no tiers. I built ArkLine to help people invest more confidently with the tools I paid to learn, so for now there is no price on it.',
   },
   {
-    q: 'Can I cancel anytime?',
-    a: 'Yes. Cancel from Settings at any time. During the trial you will not be charged at all. After that, you keep full access until the end of your billing period.',
+    q: 'Do I need a credit card?',
+    a: 'No. There is no card, no trial clock, and no checkout. Download the app or sign up on the web with your email and you are in.',
   },
   {
-    q: 'How do I subscribe?',
-    a: `Download ArkLine from the App Store and start your ${TRIAL_DAYS}-day trial in-app through Apple, or start it on this page through our secure web checkout (Stripe). Both give you the same full access to ArkLine Pro.`,
-  },
-  {
-    q: 'What payment methods do you accept?',
-    a: 'In-app: Apple ID (any payment method attached including credit/debit, Apple Pay, Apple ID balance). On the web: all major credit cards via Stripe.',
+    q: 'Will it always be free?',
+    a: 'It is free while I grow ArkLine and gather feedback. If a paid plan is introduced later, I will give plenty of notice — and the early users who helped build this will always be looked after.',
   },
   {
     q: 'What data sources does Arkline use?',
@@ -48,7 +43,7 @@ const faqs = [
   },
   {
     q: 'Do you support Android?',
-    a: 'Arkline is currently iOS only. Android and web app support are on the roadmap.',
+    a: 'Arkline is on iOS and the web today — you can use the full web app on any device, including Android, right now. A native Android app is on the roadmap.',
   },
   {
     q: 'What makes Arkline different from other portfolio trackers?',
@@ -74,18 +69,18 @@ export default function PricingPage() {
         <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <FadeIn onMount>
             <h1 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold tracking-tight text-ark-text sm:text-5xl md:text-6xl">
-              Transparent Pricing.{' '}
+              It&apos;s{' '}
               <span className="bg-gradient-to-r from-ark-primary via-ark-purple to-ark-cyan bg-clip-text text-transparent">
-                Real Value.
+                free.
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-lg text-ark-text-secondary">
-              One tier. Everything included. Start with a {TRIAL_DAYS}-day free trial on iOS or on the web.
+              One app, every tool included — no tiers, no trial, no card. Free on iOS and the web while I grow ArkLine.
             </p>
             <div className="mt-5 flex items-center justify-center gap-4 text-xs text-ark-text-tertiary">
               <div className="flex items-center gap-1">
                 <Shield className="h-3 w-3" />
-                {TRIAL_DAYS} days free
+                Free to use
               </div>
               <div className="h-3 w-px bg-ark-divider" />
               <div className="flex items-center gap-1">
@@ -97,10 +92,9 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Pricing cards */}
+      {/* Free card */}
       <section className="pt-8 pb-20 sm:pt-12 sm:pb-28">
-        <div className="mx-auto grid max-w-5xl gap-8 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-          {/* Founding Member — active tier */}
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
           <FadeIn onMount delay={0.1}>
             <div className="relative h-full overflow-hidden rounded-2xl border border-ark-primary/30 bg-gradient-to-b from-ark-primary/[0.06] to-ark-primary/[0.01] p-8 shadow-xl shadow-ark-primary/10">
               {/* Corner glow */}
@@ -109,24 +103,22 @@ export default function PricingPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary to-transparent" />
 
               <div className="inline-flex items-center gap-1.5 rounded-full bg-ark-primary/10 px-2.5 py-1 text-[11px] font-semibold text-ark-primary">
-                Limited to the first {PRICING.foundingSpots} members
+                Free while I build this
               </div>
 
-              <h3 className="mt-3 text-lg font-semibold text-ark-text">Founding Member</h3>
+              <h3 className="mt-3 text-lg font-semibold text-ark-text">Everything included</h3>
               <p className="mt-1 text-sm text-ark-text-secondary">
-                Lock in the lowest price ArkLine will ever charge. Yours forever as long as you stay subscribed.
+                The same tools I paid to learn, curated into one app. No tiers, no upsells — the full toolkit, free.
               </p>
 
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                  {PRICING.founding.monthly}
+                  Free
                 </span>
-                <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
-              <p className="mt-1 text-xs text-ark-text-tertiary">
-                or <span className="font-medium text-ark-text-secondary">{PRICING.founding.annual}/year</span>, save {PRICING.founding.annualSavings}
+              <p className="mt-1 text-xs font-semibold text-ark-success">
+                No card, no trial clock — just sign up.
               </p>
-              <SpotsCounter className="mt-2" />
 
               <ul className="mt-6 space-y-2.5">
                 {proFeatures.map((f) => (
@@ -148,60 +140,18 @@ export default function PricingPage() {
                   href="/signup"
                   className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
                 >
-                  Subscribe on the web →
+                  Start free on the web →
                 </Link>
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                {TRIAL_COPY.withPrice}. Same free trial on iPhone or web (Mac, Windows, Android).
-              </p>
-              <p className="mt-1 text-center text-[11px] text-ark-text-disabled">
-                Secure. {TRIAL_COPY.reassurance}
+                iPhone or web. Same tools, same access, no cost.
               </p>
             </div>
           </FadeIn>
-
-          {/* Standard — future pricing after founding spots fill */}
-          <FadeIn onMount delay={0.2}>
-            <div className="relative h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-ark-text-tertiary">
-                After founding spots fill
-              </div>
-
-              <h3 className="mt-3 text-lg font-semibold text-ark-text">Standard</h3>
-              <p className="mt-1 text-sm text-ark-text-secondary">
-                Once the 150 founding spots are gone, ArkLine Pro moves to standard pricing.
-              </p>
-
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                  {PRICING.standard.monthly}
-                </span>
-                <span className="text-sm text-ark-text-tertiary">/month</span>
-              </div>
-              <p className="mt-1 text-xs text-ark-text-tertiary">
-                Same features, no founding discount. Start your free trial now to lock in {PRICING.founding.monthly} for life.
-              </p>
-
-              <ul className="mt-6 space-y-2.5">
-                {proFeatures.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-ark-text-secondary">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-ark-success" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-8 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center">
-                <p className="text-xs text-ark-text-tertiary">
-                  Don&apos;t wait. Founding pricing is grandfathered forever.
-                </p>
-              </div>
-            </div>
-          </FadeIn>
+          <p className="mt-4 text-center text-[11px] text-ark-text-disabled">
+            Your portfolio data is encrypted and never shared.
+          </p>
         </div>
-        <p className="mt-4 text-center text-[11px] text-ark-text-disabled">
-          Your portfolio data is encrypted and never shared.
-        </p>
       </section>
 
       {/* FAQ */}
@@ -244,13 +194,10 @@ export default function PricingPage() {
               Your edge starts here.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Risk scoring. Macro intelligence. AI briefings. See why investors choose ArkLine.
+              Risk scoring. Macro intelligence. AI briefings. Free to use — see why investors choose ArkLine.
             </p>
             <div className="mt-8 flex justify-center">
               <AppStoreCTA />
-            </div>
-            <div className="mt-4 flex justify-center">
-              <SpotsCounter />
             </div>
           </FadeIn>
         </div>

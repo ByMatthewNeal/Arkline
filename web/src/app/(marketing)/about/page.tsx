@@ -2,7 +2,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Linkedin, Twitter, Mail } from 'lucide-react';
 import { AppStoreCTA } from '@/components/marketing/app-store-cta';
-import { PRICING, TRIAL_COPY, TRIAL_DAYS } from '@/lib/pricing';
 import { FadeIn } from '@/components/marketing/fade-in';
 
 export const metadata = {
@@ -69,7 +68,7 @@ export default function AboutPage() {
               ArkLine is my answer to that. The same systematic approach I had to learn the hard way &mdash; multi-factor risk scoring, macro regime detection, sentiment signals, AI briefings that pull it together &mdash; built for people with jobs and portfolios. Not for day traders. Not for institutions. For the version of me that spent years and tens of thousands of dollars figuring this out without a guide.
             </p>
             <p>
-              You don&apos;t have to be that person. You don&apos;t have to take the risk, because I&apos;ve taken it for you. I&apos;ve paid the tuition to the market for you. ArkLine is me giving that back &mdash; institutional-level data, in your pocket, for the price of a couple of takeout meals a month &mdash; so you can actually compete, and stop being driven by emotion and fear.
+              You don&apos;t have to be that person. You don&apos;t have to take the risk, because I&apos;ve taken it for you &mdash; I&apos;ve paid the tuition to the market so you don&apos;t have to. ArkLine is me giving that back: institutional-level data and the exact tools I had to pay to learn, in your pocket, free. No paywall, no catch. Right now I care more about earning your trust than charging you at the door. Use everything I&apos;ve curated, invest with more confidence, and put yourself in a better position &mdash; and if it helps you, tell someone who needs it.
             </p>
             <p>
               I&apos;m a solo founder, in New York. No outside funding. I read every email at matt@arkline.io. If any of this sounded like you, I&apos;d like to hear from you. &mdash; Matt
@@ -163,10 +162,10 @@ export default function AboutPage() {
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
           <FadeIn>
             <h2 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold text-ark-text sm:text-4xl">
-              Try ArkLine free for {TRIAL_DAYS} days
+              ArkLine is free
             </h2>
             <p className="mt-4 text-base leading-relaxed text-ark-text-secondary sm:text-lg">
-              The first {PRICING.foundingSpots} members lock in {PRICING.founding.monthly}/month &mdash; forever.
+              Every tool, every signal, every briefing &mdash; free while I build this. Download it and see for yourself.
             </p>
           </FadeIn>
           <FadeIn delay={0.1} className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -180,7 +179,7 @@ export default function AboutPage() {
           </FadeIn>
           <FadeIn delay={0.15}>
             <p className="mt-4 text-sm text-ark-text-tertiary">
-              {TRIAL_COPY.withPrice} &middot; {TRIAL_COPY.reassurance}
+              No card, no trial clock &middot; just sign up with your email and you&apos;re in.
             </p>
           </FadeIn>
         </div>
