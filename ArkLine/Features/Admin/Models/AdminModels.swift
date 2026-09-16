@@ -11,9 +11,44 @@ struct AdminMember: Codable, Identifiable, Equatable {
     let subscriptionStatus: String
     let isActive: Bool
     let createdAt: Date
+    /// Most recent session activity (admin-members / admin_last_active). Nil = no
+    /// recorded activity (signed up but never returned, or signed out).
+    let lastActiveAt: Date?
     let subscriptions: [MemberSubscription]
 
     var subscription: MemberSubscription? { subscriptions.first }
+
+    // MARK: - Activity (free-era growth/engagement)
+
+    enum ActivityStatus {
+        case new       // joined in the last 7 days
+        case active    // opened the app in the last 30 days
+        case dormant   // no activity in 30+ days (or never returned)
+
+        var label: String {
+            switch self {
+            case .new: return "New"
+            case .active: return "Active"
+            case .dormant: return "Dormant"
+            }
+        }
+        var colorName: String {
+            switch self {
+            case .new: return "info"
+            case .active: return "success"
+            case .dormant: return "textTertiary"
+            }
+        }
+    }
+
+    /// Growth/engagement bucket. New (recent signup) wins; otherwise Active if
+    /// seen in the last 30 days, else Dormant.
+    var activityStatus: ActivityStatus {
+        let now = Date()
+        if now.timeIntervalSince(createdAt) < 7 * 86_400 { return .new }
+        if let last = lastActiveAt, now.timeIntervalSince(last) < 30 * 86_400 { return .active }
+        return .dormant
+    }
 
     var displayName: String {
         fullName ?? username ?? email
@@ -78,6 +113,7 @@ struct AdminMember: Codable, Identifiable, Equatable {
         case subscriptionStatus = "subscription_status"
         case isActive = "is_active"
         case createdAt = "created_at"
+        case lastActiveAt = "last_active_at"
     }
 
     static func == (lhs: AdminMember, rhs: AdminMember) -> Bool {
@@ -160,8 +196,32 @@ struct MemberSubscription: Codable, Equatable {
 // MARK: - Admin Metrics
 
 struct AdminMetrics: Codable, Equatable {
+    /// Free-era growth & engagement metrics. Optional so older responses (and the
+    /// revenue-only shape) still decode.
+    let growth: GrowthMetrics?
     let mrr: Double
     let arr: Double
+
+    struct GrowthMetrics: Codable, Equatable {
+        let totalMembers: Int
+        let newToday: Int
+        let newThisWeek: Int
+        let newThisMonth: Int
+        let active7d: Int
+        let active30d: Int
+        let dormant: Int
+        let comped: Int
+
+        enum CodingKeys: String, CodingKey {
+            case totalMembers = "total_members"
+            case newToday = "new_today"
+            case newThisWeek = "new_this_week"
+            case newThisMonth = "new_this_month"
+            case active7d = "active_7d"
+            case active30d = "active_30d"
+            case dormant, comped
+        }
+    }
     /// Comped pipeline: comps pay $0 now but many convert later. Optional so older
     /// responses without these keys still decode. See get-admin-metrics.
     let compedActive: Int?
@@ -195,6 +255,7 @@ struct AdminMetrics: Codable, Equatable {
     }
 
     enum CodingKeys: String, CodingKey {
+        case growth
         case mrr, arr
         case compedActive = "comped_active"
         case compedPotentialMrr = "comped_potential_mrr"

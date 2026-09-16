@@ -205,6 +205,8 @@ struct BroadcastDetailView: View {
     var previousBroadcast: Broadcast? = nil
     var nextBroadcast: Broadcast? = nil
     var onNavigate: ((Broadcast) -> Void)? = nil
+    /// Suppresses admin-only UI (the view count) so the admin "User Preview" is faithful.
+    var isUserPreview: Bool = false
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
@@ -249,7 +251,7 @@ struct BroadcastDetailView: View {
                             Spacer()
 
                             // Admin-only: tap the view count to see WHO has read this insight
-                            if appState.currentUser?.isAdmin == true {
+                            if appState.currentUser?.isAdmin == true && !isUserPreview {
                                 Button {
                                     showReaders = true
                                 } label: {

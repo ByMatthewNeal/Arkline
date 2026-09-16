@@ -33,7 +33,17 @@ private struct DateSectionKey: Hashable, Comparable {
 
 /// User-facing view showing published broadcasts from the admin.
 struct BroadcastFeedView: View {
+    /// When true, the feed renders exactly as a regular user sees it — admin-only
+    /// elements (view counts, pin action) are hidden. Used by the admin
+    /// "User Preview" so it's a faithful representation of the user experience.
+    var isUserPreview: Bool = false
+
     @EnvironmentObject var appState: AppState
+
+    /// Admin privileges are suppressed while previewing as a user.
+    private var effectiveIsAdmin: Bool {
+        appState.currentUser?.isAdmin == true && !isUserPreview
+    }
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = BroadcastViewModel()
@@ -557,7 +567,8 @@ struct BroadcastFeedView: View {
                     viewModel: viewModel,
                     previousBroadcast: neighbor(of: broadcast, offset: -1),
                     nextBroadcast: neighbor(of: broadcast, offset: +1),
-                    onNavigate: { target in openBroadcast(target) }
+                    onNavigate: { target in openBroadcast(target) },
+                    isUserPreview: isUserPreview
                 )
                 .id(broadcast.id) // fresh state (reactions, players) per insight
             }
@@ -797,7 +808,7 @@ struct BroadcastFeedView: View {
     private func broadcastCard(_ broadcast: Broadcast) -> some View {
         BroadcastCardView(
             broadcast: broadcast,
-            isAdmin: appState.currentUser?.isAdmin == true,
+            isAdmin: effectiveIsAdmin,
             isUnread: !viewModel.isRead(broadcast.id),
             hasReacted: viewModel.userHeartedBroadcastIds.contains(broadcast.id),
             isBookmarked: viewModel.isBookmarked(broadcast.id),
@@ -829,8 +840,8 @@ struct BroadcastFeedView: View {
                 }
             }
 
-            // Admin-only pin
-            if appState.currentUser?.isAdmin == true {
+            // Admin-only pin (suppressed in user preview)
+            if effectiveIsAdmin {
                 Button {
                     Task { try? await viewModel.togglePin(broadcast) }
                 } label: {

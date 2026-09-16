@@ -47,9 +47,6 @@ struct MemberManagementView: View {
             await viewModel.loadMembers()
             await viewModel.loadMetrics()
         }
-        .onChange(of: viewModel.statusFilter) { _, _ in
-            Task { await viewModel.loadMembers() }
-        }
         .overlay {
             if let success = viewModel.successMessage {
                 VStack {
@@ -77,11 +74,14 @@ struct MemberManagementView: View {
     // MARK: - Stats Section
 
     private func statsSection(_ metrics: AdminMetrics) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: ArkSpacing.sm) {
-            MetricCard(title: "Total", value: "\(metrics.totalMembers)", icon: "person.2.fill", color: AppColors.accent)
-            MetricCard(title: "Active", value: "\(metrics.activeMembers)", icon: "checkmark.circle.fill", color: AppColors.success)
-            MetricCard(title: "Comped", value: "\(metrics.compedActive ?? 0)", icon: "gift.fill", color: AppColors.info)
-            MetricCard(title: "Churned", value: "\(metrics.canceledMembers)", icon: "xmark.circle.fill", color: AppColors.error)
+        // Free-era: growth + engagement, not revenue. Falls back to legacy fields
+        // if an older metrics response (no `growth`) comes back.
+        let g = metrics.growth
+        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: ArkSpacing.sm) {
+            MetricCard(title: "Total", value: "\(g?.totalMembers ?? metrics.totalMembers)", icon: "person.2.fill", color: AppColors.accent)
+            MetricCard(title: "New this week", value: "\(g?.newThisWeek ?? 0)", icon: "sparkles", color: AppColors.info)
+            MetricCard(title: "Active (30d)", value: "\(g?.active30d ?? metrics.activeMembers)", icon: "checkmark.circle.fill", color: AppColors.success)
+            MetricCard(title: "Dormant", value: "\(g?.dormant ?? 0)", icon: "moon.zzz.fill", color: AppColors.textSecondary)
         }
         .padding(.horizontal, ArkSpacing.lg)
     }

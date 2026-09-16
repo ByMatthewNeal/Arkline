@@ -115,10 +115,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Last-active per user (auth.sessions max updated_at) for the activity-based
+    // member views. auth schema isn't PostgREST-visible, so we go through the RPC.
+    const lastActiveByUser = new Map<string, string>()
+    if (ids.length > 0) {
+      const { data: activity } = await supabase.rpc("admin_last_active", { uids: ids })
+      // deno-lint-ignore no-explicit-any
+      for (const a of (activity ?? []) as any[]) {
+        if (a.last_active_at) lastActiveByUser.set(a.user_id, a.last_active_at)
+      }
+    }
+
     // Real external members FIRST, internal accounts last, is_internal flagged.
     const tagged = (rows ?? []).map(r => ({
       ...r,
       subscriptions: subsByUser.get(r.id) ?? [],
+      last_active_at: lastActiveByUser.get(r.id) ?? null,
       is_internal: isInternalEmail(r.email),
     }))
 

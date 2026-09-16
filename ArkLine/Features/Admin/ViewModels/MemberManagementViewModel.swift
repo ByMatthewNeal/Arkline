@@ -37,34 +37,28 @@ class MemberManagementViewModel {
 
     // MARK: - Filter Enum
 
-    // Source-aware filters matching the real business states (server resolves
-    // them against the subscriptions table): who pays, who's comped, who signed
-    // up but has no access, and who canceled. Billing-lifecycle filters
-    // (trial/past-due/paused) can return when those states actually exist.
+    // Free-era filters: growth/engagement buckets, not billing states. Resolved
+    // client-side from each member's activityStatus (join date + last session).
     enum MemberStatusFilter: String, CaseIterable {
         case all = "All"
-        case paying = "Paying"
-        case comped = "Comped"
-        case noAccess = "No Access"
-        case canceled = "Canceled"
-
-        var queryValue: String? {
-            switch self {
-            case .all: return nil
-            case .paying: return "paying"
-            case .comped: return "comp"
-            case .noAccess: return "none"
-            case .canceled: return "canceled"
-            }
-        }
+        case new = "New"
+        case active = "Active"
+        case dormant = "Dormant"
     }
 
     // MARK: - Computed
 
     var filteredMembers: [AdminMember] {
-        guard !searchText.isEmpty else { return members }
+        var result = members
+        switch statusFilter {
+        case .all: break
+        case .new: result = result.filter { $0.activityStatus == .new }
+        case .active: result = result.filter { $0.activityStatus == .active }
+        case .dormant: result = result.filter { $0.activityStatus == .dormant }
+        }
+        guard !searchText.isEmpty else { return result }
         let query = searchText.lowercased()
-        return members.filter {
+        return result.filter {
             $0.email.lowercased().contains(query) ||
             ($0.username?.lowercased().contains(query) ?? false) ||
             ($0.fullName?.lowercased().contains(query) ?? false)
@@ -78,9 +72,11 @@ class MemberManagementViewModel {
         errorMessage = nil
         defer { isLoading = false }
         do {
+            // Fetch all members; the growth/engagement filters are applied
+            // client-side from each member's activityStatus.
             let response = try await service.fetchMembers(
                 search: nil,
-                status: statusFilter.queryValue,
+                status: nil,
                 page: 1
             )
             members = response.members

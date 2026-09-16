@@ -207,10 +207,6 @@ struct AdminBroadcastDetailView: View {
                             }
                     }
 
-                    // Reactions breakdown
-                    if !reactionSummary.isEmpty {
-                        reactionsBreakdown
-                    }
                 }
                 .padding(ArkSpacing.md)
             }
@@ -254,79 +250,54 @@ struct AdminBroadcastDetailView: View {
             }
             .task {
                 isPinned = broadcast.isPinned
-                await loadReactions()
             }
         }
     }
 
     // MARK: - Engagement Banner
 
+    // Subtle one-line reach summary. Per-emoji breakdown lives in the Reactions
+    // section below, so it's intentionally omitted here to avoid duplication.
     private var engagementBanner: some View {
-        VStack(spacing: ArkSpacing.sm) {
-            HStack(spacing: ArkSpacing.md) {
-                // Views — tap to see WHO read this insight
-                Button {
-                    showReaders = true
-                } label: {
-                    HStack(spacing: ArkSpacing.xs) {
-                        Image(systemName: "eye.fill")
-                            .font(.caption)
-                            .foregroundColor(AppColors.success)
-                        Text("\(broadcast.viewCount ?? 0)")
-                            .font(ArkFonts.bodySemibold)
-                            .foregroundColor(AppColors.textPrimary(colorScheme))
-                        Text("views")
-                            .font(ArkFonts.caption)
-                            .foregroundColor(AppColors.textSecondary)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-                }
-                .buttonStyle(.plain)
-                .sheet(isPresented: $showReaders) {
-                    BroadcastReadersSheet(broadcastId: broadcast.id, broadcastTitle: broadcast.title)
-                }
-
-                Spacer()
-
-                // Total reactions
-                HStack(spacing: ArkSpacing.xs) {
-                    Image(systemName: "heart.fill")
-                        .font(.caption)
-                        .foregroundColor(AppColors.error)
-                    Text("\(broadcast.reactionCount ?? 0)")
+        HStack(spacing: ArkSpacing.md) {
+            // Views — tap to see WHO read this insight
+            Button {
+                showReaders = true
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "eye.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.success)
+                    Text("\(broadcast.viewCount ?? 0)")
                         .font(ArkFonts.bodySemibold)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
-                    Text("reactions")
+                    Text("views")
                         .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
                         .foregroundColor(AppColors.textSecondary)
                 }
             }
-
-            // Per-emoji breakdown
-            if !reactionSummary.isEmpty {
-                HStack(spacing: ArkSpacing.sm) {
-                    ForEach(reactionSummary, id: \.emoji) { summary in
-                        HStack(spacing: 4) {
-                            Text(summary.emoji)
-                                .font(.system(size: 14))
-                            Text("\(summary.count)")
-                                .font(ArkFonts.caption)
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-                        .padding(.horizontal, ArkSpacing.sm)
-                        .padding(.vertical, ArkSpacing.xxs)
-                        .background(AppColors.cardBackground(colorScheme))
-                        .cornerRadius(ArkSpacing.sm)
-                    }
-                    Spacer()
-                }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $showReaders) {
+                BroadcastReadersSheet(broadcastId: broadcast.id, broadcastTitle: broadcast.title)
             }
+
+            HStack(spacing: 4) {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.error)
+                Text("\(broadcast.reactionCount ?? 0)")
+                    .font(ArkFonts.bodySemibold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                Text("likes")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Spacer()
         }
-        .padding(ArkSpacing.md)
-        .background(AppColors.accent.opacity(0.05))
-        .cornerRadius(ArkSpacing.sm)
     }
 
     // MARK: - Images Section
@@ -516,30 +487,9 @@ struct BroadcastRowView: View {
 
                 Spacer()
 
-                // Engagement + media indicators
+                // Media indicators (engagement counts live inside the opened post,
+                // not on the list row).
                 VStack(alignment: .trailing, spacing: ArkSpacing.xxs) {
-                    if broadcast.status == .published {
-                        HStack(spacing: ArkSpacing.sm) {
-                            HStack(spacing: 3) {
-                                Image(systemName: "eye")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(AppColors.success)
-                                Text("\(broadcast.viewCount ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(AppColors.textSecondary)
-                            }
-
-                            HStack(spacing: 3) {
-                                Image(systemName: "heart")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(AppColors.error)
-                                Text("\(broadcast.reactionCount ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(AppColors.textSecondary)
-                            }
-                        }
-                    }
-
                     HStack(spacing: ArkSpacing.xs) {
                         if broadcast.audioURL != nil {
                             Image(systemName: "waveform")

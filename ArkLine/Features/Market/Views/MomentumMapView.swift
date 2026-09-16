@@ -65,7 +65,11 @@ struct MomentumMapView: View {
         do {
             let signals = try await service.fetchLatestSignals()
             groups = MomentumPair.grouped(from: signals)
-            asOf = signals.first?.signalDate
+            // Header date = the freshest signal in the set. `signals` is sorted by
+            // asset name, so `.first` was showing whichever asset sorts first
+            // alphabetically (often a lagging stock/index dated a few days back),
+            // making fresh data look stale. Use the max date instead.
+            asOf = signals.map(\.signalDate).max()
             if groups.isEmpty {
                 errorMessage = "No paired positioning data available yet."
             }
@@ -75,7 +79,7 @@ struct MomentumMapView: View {
                 try await Task.sleep(nanoseconds: 400_000_000)
                 let signals = try await service.fetchLatestSignals(forceRefresh: true)
                 groups = MomentumPair.grouped(from: signals)
-                asOf = signals.first?.signalDate
+                asOf = signals.map(\.signalDate).max()
             } catch {
                 logWarning("MomentumMap: \(error.localizedDescription)", category: .network)
                 if groups.isEmpty {

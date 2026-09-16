@@ -4,14 +4,31 @@ struct MemberRow: View {
     let member: AdminMember
     @Environment(\.colorScheme) var colorScheme
 
-    // Badge reflects the date-aware effective status (see AdminMember.effectiveStatus),
-    // so a lapsed trial reads "Expired" instead of a stale "Active"/"Trial".
+    // Free-era: badge reflects growth/engagement (New / Active / Dormant), not
+    // billing status.
     private var statusColor: Color {
-        color(for: member.effectiveStatus.colorName)
+        color(for: member.activityStatus.colorName)
     }
 
     private var statusLabel: String {
-        member.effectiveStatus.label
+        member.activityStatus.label
+    }
+
+    /// Human context under the badge: when they joined (new) or were last seen.
+    private var activitySubtitle: String {
+        if member.activityStatus == .new {
+            return "Joined \(relative(member.createdAt))"
+        }
+        if let last = member.lastActiveAt {
+            return "Seen \(relative(last))"
+        }
+        return "No activity"
+    }
+
+    private func relative(_ date: Date) -> String {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f.localizedString(for: date, relativeTo: Date())
     }
 
     private func color(for token: String) -> Color {
@@ -72,11 +89,9 @@ struct MemberRow: View {
                     .background(statusColor.opacity(0.12))
                     .cornerRadius(ArkSpacing.Radius.xs)
 
-                if let plan = member.subscription?.plan {
-                    Text(plan.capitalized)
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-                }
+                Text(activitySubtitle)
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
         .padding(.vertical, ArkSpacing.xxs)

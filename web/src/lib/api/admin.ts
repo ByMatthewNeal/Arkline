@@ -29,11 +29,14 @@ export interface AdminMember {
   subscription_status: string | null;
   is_active: boolean | null;
   created_at: string;
+  /** Most recent session activity (admin_last_active). Null = never returned. */
+  last_active_at: string | null;
   is_internal: boolean;
   subscriptions: AdminSubscription[];
 }
 
-export type MemberFilter = 'all' | 'paying' | 'comp' | 'none' | 'active' | 'canceled';
+// Free-era growth/engagement buckets (resolved client-side from activity).
+export type MemberFilter = 'all' | 'new' | 'active' | 'dormant';
 
 export async function fetchMembers(opts: { search?: string; status?: MemberFilter; page?: number } = {}): Promise<{ members: AdminMember[]; total: number }> {
   if (!isSupabaseConfigured()) return { members: [], total: 0 };
@@ -47,7 +50,20 @@ export async function fetchMembers(opts: { search?: string; status?: MemberFilte
 
 /* ── Revenue metrics (get-admin-metrics edge function) ── */
 
+export interface GrowthMetrics {
+  total_members: number;
+  new_today: number;
+  new_this_week: number;
+  new_this_month: number;
+  active_7d: number;
+  active_30d: number;
+  dormant: number;
+  comped: number;
+}
+
 export interface AdminMetrics {
+  /** Free-era growth & engagement metrics (optional for older responses). */
+  growth?: GrowthMetrics;
   mrr: number;
   arr: number;
   revenue_breakdown?: Record<string, number>;

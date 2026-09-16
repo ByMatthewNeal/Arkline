@@ -122,7 +122,7 @@ struct BroadcastStudioView: View {
                 // No outer NavigationStack: BroadcastFeedView brings its own, and
                 // nesting two stacks left the feed's large title trapped under the
                 // banner. One slim inset strip carries both the label and Done.
-                BroadcastFeedView()
+                BroadcastFeedView(isUserPreview: true)
                     .safeAreaInset(edge: .top) {
                         VStack(spacing: 2) {
                             HStack(spacing: ArkSpacing.xs) {

@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     // excluded from every count below.
     const { data: allProfiles } = await supabase
       .from("profiles")
-      .select("id, email, subscription_status")
+      .select("id, email, subscription_status, created_at")
     const profilesList = allProfiles ?? []
     const internalIds = new Set(
       profilesList.filter(p => isInternalEmail(p.email)).map(p => p.id)
@@ -238,7 +238,50 @@ Deno.serve(async (req) => {
       FOUNDING_CAP - (foundingClaimed ?? 0) - (foundingPending ?? 0),
     )
 
+    // ---- Growth & engagement (free-era metrics) ----
+    // The revenue block above no longer maps to reality now that Arkline is free.
+    // These are the numbers that matter: how many members, how fast they're
+    // joining, and how many keep coming back. Total counts EVERY external member
+    // (a free signup has no subscription, so the old "has a sub" total under-counts
+    // them). New = by join date. Active/dormant = by last session activity, via the
+    // admin_last_active RPC (reads auth.sessions, which PostgREST can't see).
+    const externalProfiles = profilesList.filter(p => !isInternalEmail(p.email))
+    const externalIdList = externalProfiles.map(p => p.id)
+
+    const startOfTodayMs = new Date(new Date().setHours(0, 0, 0, 0)).getTime()
+    const dayMs = 24 * 60 * 60 * 1000
+    const newSince = (ms: number) =>
+      externalProfiles.filter(p => p.created_at && new Date(p.created_at).getTime() >= ms).length
+
+    const lastActiveByUser = new Map<string, number>()
+    if (externalIdList.length > 0) {
+      const { data: activity } = await supabase.rpc("admin_last_active", { uids: externalIdList })
+      // deno-lint-ignore no-explicit-any
+      for (const a of (activity ?? []) as any[]) {
+        if (a.last_active_at) lastActiveByUser.set(a.user_id, new Date(a.last_active_at).getTime())
+      }
+    }
+    const activeWithin = (ms: number) =>
+      externalIdList.filter(id => (lastActiveByUser.get(id) ?? 0) >= nowMs - ms).length
+    const active30d = activeWithin(30 * dayMs)
+    const compedActiveMembers = subs.filter(s => s.source === "comp" && isCurrent(s)).length
+
+    const growth = {
+      total_members: externalIdList.length,
+      new_today: newSince(startOfTodayMs),
+      new_this_week: newSince(nowMs - 7 * dayMs),
+      new_this_month: newSince(nowMs - 30 * dayMs),
+      active_7d: activeWithin(7 * dayMs),
+      active_30d: active30d,
+      // Signed up but no app activity in 30 days (includes never-returned).
+      dormant: externalIdList.length - active30d,
+      comped: compedActiveMembers,
+    }
+
     return jsonResponse({
+      // Growth & engagement (the free-era headline metrics)
+      growth,
+
       // Revenue (paying subscriptions only — comps excluded)
       mrr: Math.round(mrr * 100) / 100,
       arr: Math.round(arr * 100) / 100,
