@@ -481,6 +481,22 @@ final class APIPortfolioService: PortfolioServiceProtocol {
             }
         }
 
+        // Coins outside the top 100 by market cap are absent from the page fetch
+        // above, which left long-tail alts with no live price — they rendered as
+        // $0 value / full loss. Resolve each still-missing symbol with a targeted
+        // search (same source the Add flow uses, so a coin you could add always
+        // gets priced). The unresolved set is normally tiny, so a sequential
+        // loop is fine and avoids hammering the API.
+        let unresolved = symbols.filter { prices[$0] == nil }
+        for symbol in unresolved {
+            guard let results = try? await marketService.searchCrypto(query: symbol),
+                  let match = results.first(where: { $0.symbol.lowercased() == symbol.lowercased() }),
+                  match.currentPrice > 0 else { continue }
+            let priceData = (match.currentPrice, match.priceChangePercentage24h, match.iconUrl)
+            prices[match.id] = priceData
+            prices[match.symbol.lowercased()] = priceData
+        }
+
         return prices
     }
 

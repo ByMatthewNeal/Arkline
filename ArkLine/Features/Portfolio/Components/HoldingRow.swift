@@ -5,9 +5,15 @@ import Kingfisher
 struct HoldingRow: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let holding: PortfolioHolding
 
     private var currency: String { appState.preferredCurrency }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     private var isRealEstate: Bool {
         holding.assetType == Constants.AssetType.realEstate.rawValue
@@ -43,7 +49,7 @@ struct HoldingRow: View {
 
             // Value & P/L
             VStack(alignment: .trailing, spacing: 4) {
-                Text(holding.currentValue.asCurrency(code: currency))
+                Text(privacy.currency(holding.currentValue, code: currency))
                     .font(AppFonts.body14Bold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -57,7 +63,7 @@ struct HoldingRow: View {
                             .font(AppFonts.caption12)
                     }
                     .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
-                } else {
+                } else if holding.hasCostBasis {
                     HStack(spacing: 4) {
                         Image(systemName: holding.isProfit ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10))
@@ -66,6 +72,11 @@ struct HoldingRow: View {
                             .font(AppFonts.caption12)
                     }
                     .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
+                } else {
+                    // Unknown cost basis (Holding mode / transfer-in) — no P/L to show.
+                    Text("—")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
                 }
             }
         }
@@ -78,9 +89,15 @@ struct HoldingRow: View {
 struct HoldingRowCompact: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let holding: PortfolioHolding
 
     private var currency: String { appState.preferredCurrency }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     private var isRealEstate: Bool {
         holding.assetType == Constants.AssetType.realEstate.rawValue
@@ -110,7 +127,7 @@ struct HoldingRowCompact: View {
                         .foregroundColor(AppColors.textSecondary)
                         .lineLimit(1)
                 } else {
-                    Text("\(holding.quantity, specifier: "%.4f") • \((holding.currentPrice ?? 0).asCurrency(code: currency))")
+                    Text("\(privacy.quantity(String(format: "%.4f", holding.quantity))) • \((holding.currentPrice ?? 0).asCurrency(code: currency))")
                         .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -119,13 +136,19 @@ struct HoldingRowCompact: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(holding.currentValue.asCurrency(code: currency))
+                Text(privacy.currency(holding.currentValue, code: currency))
                     .font(AppFonts.body14Medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: isRealEstate ? "%.1f" : "%.2f")%")
-                    .font(AppFonts.caption12)
-                    .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
+                if holding.hasCostBasis || isRealEstate {
+                    Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: isRealEstate ? "%.1f" : "%.2f")%")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
+                } else {
+                    Text("—")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
             }
         }
         .padding(12)

@@ -140,17 +140,28 @@ extension PortfolioHolding {
         return quantity * price
     }
 
+    /// True only when we know what was paid for this position. A Holding-mode
+    /// entry or a transfer-in has `averageBuyPrice == nil` (unknown), which is
+    /// distinct from a genuine $0 cost.
+    var hasCostBasis: Bool {
+        guard let avg = averageBuyPrice else { return false }
+        return avg > 0
+    }
+
     var totalCost: Double {
-        guard let avgPrice = averageBuyPrice else { return 0 }
+        guard hasCostBasis, let avgPrice = averageBuyPrice else { return 0 }
         return quantity * avgPrice
     }
 
     var profitLoss: Double {
-        currentValue - totalCost
+        // With no known cost basis, P/L is not knowable. Return 0 (neutral)
+        // rather than counting the entire current value as profit.
+        guard hasCostBasis else { return 0 }
+        return currentValue - totalCost
     }
 
     var profitLossPercentage: Double {
-        guard totalCost > 0 else { return 0 }
+        guard hasCostBasis, totalCost > 0 else { return 0 }
         return ((currentValue - totalCost) / totalCost) * 100
     }
 
@@ -171,8 +182,12 @@ extension PortfolioHolding {
             if group.count == 1 { return first }
 
             let totalQuantity = group.reduce(0) { $0 + $1.quantity }
-            let totalCost = group.reduce(0) { $0 + ($1.quantity * ($1.averageBuyPrice ?? 0)) }
-            let weightedAvgPrice = totalQuantity > 0 ? totalCost / totalQuantity : nil
+            // Average only over units whose cost we actually know, so an
+            // unknown-cost row (Holding mode / transfer-in) doesn't drag the
+            // blended average toward zero. Nil when no known-cost units exist.
+            let knownUnits = group.filter { $0.hasCostBasis }.reduce(0) { $0 + $1.quantity }
+            let knownCost = group.filter { $0.hasCostBasis }.reduce(0) { $0 + ($1.quantity * ($1.averageBuyPrice ?? 0)) }
+            let weightedAvgPrice = knownUnits > 0 ? knownCost / knownUnits : nil
 
             let totalTarget: Double? = {
                 let targets = group.compactMap(\.targetPercentage)

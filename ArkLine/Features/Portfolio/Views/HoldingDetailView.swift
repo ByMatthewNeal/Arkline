@@ -19,6 +19,10 @@ struct HoldingDetailView: View {
     // hiding your balance in one place hides it everywhere (and lets you
     // screenshot/share an asset without exposing how much you hold).
     @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    /// Presentation Mode: hide money, keep growth percentages. Quantities hide too
+    /// only when the user opted into that in Settings.
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
 
     // Per-asset performance chart state.
     @State private var selectedPeriod: TimePeriod = .month
@@ -33,6 +37,10 @@ struct HoldingDetailView: View {
 
     private var currency: String {
         appState.preferredCurrency
+    }
+
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
     }
 
     private var liveHolding: PortfolioHolding {
@@ -118,7 +126,7 @@ struct HoldingDetailView: View {
                             .accessibilityLabel(isHidden ? "Show values" : "Hide values")
                         }
 
-                        Text(isHidden ? "••••••" : liveHolding.currentValue.asCurrency(code: currency))
+                        Text(privacy.currency(liveHolding.currentValue, code: currency))
                             .font(AppFonts.number44)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                             .contentTransition(.numericText())
@@ -130,42 +138,56 @@ struct HoldingDetailView: View {
                     // lets someone back out your position size); prices stay
                     // visible since they're public market data.
                     HStack(spacing: 0) {
-                        StatItem(title: "Quantity", value: isHidden ? "••••" : liveHolding.quantity.asQuantity)
+                        StatItem(title: "Quantity", value: privacy.quantity(liveHolding.quantity.asQuantity))
                         Divider().frame(height: 40)
-                        StatItem(title: "Avg. Price", value: (liveHolding.averageBuyPrice ?? 0).asCurrency(code: currency))
+                        StatItem(title: "Avg. Price", value: liveHolding.hasCostBasis ? (liveHolding.averageBuyPrice ?? 0).asCurrency(code: currency) : "—")
                         Divider().frame(height: 40)
                         StatItem(title: "Current Price", value: (liveHolding.currentPrice ?? 0).asCurrency(code: currency))
                     }
 
                     Divider()
 
-                    // P/L
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Profit/Loss")
-                                .font(AppFonts.caption12)
-                                .foregroundColor(AppColors.textSecondary)
+                    // P/L — only meaningful when we know the cost basis. For a
+                    // Holding-mode / transfer-in position (unknown cost) we show a
+                    // note instead of a fabricated gain.
+                    if liveHolding.hasCostBasis {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Profit/Loss")
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.textSecondary)
 
-                            HStack(spacing: 6) {
-                                Image(systemName: liveHolding.isProfit ? "arrow.up.right" : "arrow.down.right")
-                                    .font(.system(size: 14))
-                                Text(isHidden ? "••••" : liveHolding.profitLoss.asCurrency(code: currency))
-                                    .font(AppFonts.title18SemiBold)
-                            }
-                            .foregroundColor(liveHolding.isProfit ? AppColors.success : AppColors.error)
-                            .accessibilityLabel("\(liveHolding.isProfit ? "Profit" : "Loss") \(isHidden ? "hidden" : liveHolding.profitLoss.asCurrency(code: currency))")
-                        }
-
-                        Spacer()
-
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("Return")
-                                .font(AppFonts.caption12)
-                                .foregroundColor(AppColors.textSecondary)
-
-                            Text("\(liveHolding.isProfit ? "+" : "")\(liveHolding.profitLossPercentage, specifier: "%.2f")%")
-                                .font(AppFonts.title18SemiBold)
+                                HStack(spacing: 6) {
+                                    Image(systemName: liveHolding.isProfit ? "arrow.up.right" : "arrow.down.right")
+                                        .font(.system(size: 14))
+                                    Text(privacy.currency(liveHolding.profitLoss, code: currency))
+                                        .font(AppFonts.title18SemiBold)
+                                }
                                 .foregroundColor(liveHolding.isProfit ? AppColors.success : AppColors.error)
+                                .accessibilityLabel("\(liveHolding.isProfit ? "Profit" : "Loss") \(privacy.maskCurrency ? "hidden" : liveHolding.profitLoss.asCurrency(code: currency))")
+                            }
+
+                            Spacer()
+
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("Return")
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.textSecondary)
+
+                                Text("\(liveHolding.isProfit ? "+" : "")\(liveHolding.profitLossPercentage, specifier: "%.2f")%")
+                                    .font(AppFonts.title18SemiBold)
+                                    .foregroundColor(liveHolding.isProfit ? AppColors.success : AppColors.error)
+                            }
+                        }
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 13))
+                                .foregroundColor(AppColors.textSecondary)
+                            Text("No cost basis recorded, so profit/loss isn't available. Add a cost basis to track returns.")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 

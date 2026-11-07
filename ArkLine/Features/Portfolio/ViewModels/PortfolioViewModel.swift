@@ -59,7 +59,10 @@ final class PortfolioViewModel {
     }
 
     var totalProfitLoss: Double {
-        totalValue - totalCost
+        // Sum per-holding P/L so unknown-cost holdings (which return 0) stay
+        // neutral. Using totalValue − totalCost would count their full value as
+        // profit, because their cost is 0.
+        holdings.reduce(0) { $0 + $1.profitLoss }
     }
 
     var totalProfitLossPercentage: Double {
@@ -591,13 +594,16 @@ final class PortfolioViewModel {
                 let existingHolding = destHoldings.first { $0.symbol.uppercased() == holding.symbol.uppercased() }
 
                 if let existing = existingHolding {
-                    // Update existing holding with new weighted average
+                    // Blend the average over KNOWN-cost units only. If the existing
+                    // position has an unknown cost basis, treat its units as
+                    // unknown (0 known units) rather than fabricating a $0 cost,
+                    // so the new average reflects only what was actually paid.
                     var mutableHolding = existing
-                    let oldTotal = existing.quantity * (existing.averageBuyPrice ?? 0)
-                    let newTotal = quantity * pricePerUnit
-                    let newQuantity = existing.quantity + quantity
-                    mutableHolding.quantity = newQuantity
-                    mutableHolding.averageBuyPrice = (oldTotal + newTotal) / newQuantity
+                    let knownOldUnits = existing.hasCostBasis ? existing.quantity : 0
+                    let oldKnownCost = knownOldUnits * (existing.averageBuyPrice ?? 0)
+                    let newKnownUnits = knownOldUnits + quantity
+                    mutableHolding.quantity = existing.quantity + quantity
+                    mutableHolding.averageBuyPrice = newKnownUnits > 0 ? (oldKnownCost + quantity * pricePerUnit) / newKnownUnits : nil
                     let updatedHolding = mutableHolding
                     try await portfolioService.updateHolding(updatedHolding)
                 } else {
@@ -640,132 +646,100 @@ final class PortfolioViewModel {
         assetType: String,
         quantity: Double
     ) async {
-        do {
-            let existingHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
-            let existing = existingHoldings.first {
-                $0.symbol.uppercased() == symbol.uppercased() && $0.assetType == assetType
-            }
+        // Holding mode = "I own this, I don't know the cost." Represent it as a
+        // transfer-in (units in, unknown cost) and let addTransaction + the
+        // projection handle create/merge, so a holding is always a pure
+        // projection of its transactions — no separate, divergent code path.
+        let transferIn = Transaction(
+            portfolioId: portfolioId,
+            type: .transferIn,
+            assetType: assetType,
+            symbol: symbol.uppercased(),
+            quantity: quantity,
+            pricePerUnit: 0,
+            transactionDate: Date()
+        )
+        await addTransaction(transferIn, assetName: name)
 
-            let isUpdate = existing != nil
-            if let existing = existing {
-                var updated = existing
-                updated.quantity += quantity
-                try await portfolioService.updateHolding(updated)
-            } else {
-                let holding = PortfolioHolding(
-                    portfolioId: portfolioId,
-                    assetType: assetType,
-                    symbol: symbol,
-                    name: name,
-                    quantity: quantity,
-                    averageBuyPrice: nil
-                )
-                _ = try await portfolioService.addHolding(holding)
-            }
-
-            Task {
-                await AnalyticsService.shared.track("holding_added", properties: [
-                    "coin": .string(symbol),
-                    "quantity": .double(quantity),
-                    "is_update": .bool(isUpdate)
-                ])
-            }
-
-            // Refresh holdings with live prices
-            let updatedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
-            let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: updatedHoldings)
-
-            await MainActor.run {
-                self.holdings = holdingsWithPrices
-                self.allocations = self.computeAllocations(from: holdingsWithPrices)
-            }
-        } catch {
-            await MainActor.run {
-                self.error = error as? AppError ?? .unknown(message: "Failed to add holding")
-            }
+        Task {
+            await AnalyticsService.shared.track("holding_added", properties: [
+                "coin": .string(symbol),
+                "quantity": .double(quantity)
+            ])
         }
     }
 
     func addTransaction(_ transaction: Transaction, assetName: String? = nil) async {
         do {
             guard let portfolioId = portfolioId else {
-                await MainActor.run {
-                    self.error = .unknown(message: "No portfolio selected")
-                }
+                self.error = .unknown(message: "No portfolio selected")
                 return
             }
 
-            var transactionToSave = transaction
-
-            // Find or create a holding for this transaction
+            // One holding row per symbol + asset type.
             let existingHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
             let existingHolding = existingHoldings.first {
                 $0.symbol.uppercased() == transaction.symbol.uppercased() &&
                 $0.assetType == transaction.assetType
             }
 
-            if let holding = existingHolding {
-                // Update existing holding based on transaction type
-                var updatedHolding = holding
-                switch transaction.type {
-                case .buy:
-                    let oldTotal = holding.quantity * (holding.averageBuyPrice ?? 0)
-                    let newTotal = transaction.quantity * transaction.pricePerUnit
-                    let newQuantity = holding.quantity + transaction.quantity
-                    updatedHolding.quantity = newQuantity
-                    updatedHolding.averageBuyPrice = newQuantity > 0 ? (oldTotal + newTotal) / newQuantity : 0
-                case .sell:
-                    updatedHolding.quantity = max(0, holding.quantity - transaction.quantity)
-                default:
-                    break
+            let targetHolding: PortfolioHolding
+            if let existingHolding {
+                targetHolding = existingHolding
+            } else {
+                // Only an incoming transaction can open a position. A sell /
+                // transfer-out with nothing to reduce used to be saved as an
+                // orphaned transaction (holdingId == nil); reject it instead.
+                guard transaction.type.isIncoming else {
+                    self.error = .custom(message: "You don't have a position in \(transaction.symbol.uppercased()) to \(transaction.type.displayName.lowercased()).")
+                    return
                 }
-                try await portfolioService.updateHolding(updatedHolding)
-                transactionToSave = Transaction(
-                    id: transaction.id,
-                    portfolioId: transaction.portfolioId,
-                    holdingId: holding.id,
-                    type: transaction.type,
-                    assetType: transaction.assetType,
-                    symbol: transaction.symbol,
-                    quantity: transaction.quantity,
-                    pricePerUnit: transaction.pricePerUnit,
-                    gasFee: transaction.gasFee,
-                    transactionDate: transaction.transactionDate,
-                    notes: transaction.notes,
-                    emotionalState: transaction.emotionalState,
-                    costBasisPerUnit: transaction.costBasisPerUnit,
-                    realizedProfitLoss: transaction.realizedProfitLoss
-                )
-            } else if transaction.type == .buy {
-                // Create a new holding for buy transactions
-                let newHolding = PortfolioHolding(
+                // Create an empty shell; its quantity and average cost are derived
+                // from its transactions below, so there's no fabricated value here.
+                let shell = PortfolioHolding(
                     portfolioId: portfolioId,
                     assetType: transaction.assetType,
                     symbol: transaction.symbol.uppercased(),
                     name: assetName ?? transaction.symbol.uppercased(),
-                    quantity: transaction.quantity,
-                    averageBuyPrice: transaction.pricePerUnit
+                    quantity: 0,
+                    averageBuyPrice: nil
                 )
-                let createdHolding = try await portfolioService.addHolding(newHolding)
-                transactionToSave = Transaction(
-                    id: transaction.id,
-                    portfolioId: transaction.portfolioId,
-                    holdingId: createdHolding.id,
-                    type: transaction.type,
-                    assetType: transaction.assetType,
-                    symbol: transaction.symbol,
-                    quantity: transaction.quantity,
-                    pricePerUnit: transaction.pricePerUnit,
-                    gasFee: transaction.gasFee,
-                    transactionDate: transaction.transactionDate,
-                    notes: transaction.notes,
-                    emotionalState: transaction.emotionalState,
-                    costBasisPerUnit: transaction.costBasisPerUnit,
-                    realizedProfitLoss: transaction.realizedProfitLoss
-                )
+                targetHolding = try await portfolioService.addHolding(shell)
             }
 
-            let createdTransaction = try await portfolioService.addTransaction(transactionToSave)
+            // Persist the transaction, linked to its holding.
+            let linkedTransaction = Transaction(
+                id: transaction.id,
+                portfolioId: transaction.portfolioId,
+                holdingId: targetHolding.id,
+                type: transaction.type,
+                assetType: transaction.assetType,
+                symbol: transaction.symbol,
+                quantity: transaction.quantity,
+                pricePerUnit: transaction.pricePerUnit,
+                gasFee: transaction.gasFee,
+                transactionDate: transaction.transactionDate,
+                notes: transaction.notes,
+                emotionalState: transaction.emotionalState,
+                costBasisPerUnit: transaction.costBasisPerUnit,
+                realizedProfitLoss: transaction.realizedProfitLoss
+            )
+            _ = try await portfolioService.addTransaction(linkedTransaction)
+
+            // The holding is a projection of ALL its transactions — the single
+            // source of truth for quantity and average cost. This replaces the
+            // old incremental blend (which fabricated a $0 cost for unknown units)
+            // and keeps it consistent with recalculateHolding on edit/delete.
+            // Fetch the complete set fresh so a partially-loaded local array can
+            // never cause an under-count.
+            let allPortfolioTxs = try await portfolioService.fetchTransactions(portfolioId: portfolioId)
+            self.transactions = allPortfolioTxs
+            let holdingTxs = allPortfolioTxs.filter { $0.holdingId == targetHolding.id }
+            let projection = projectHolding(from: holdingTxs)
+            var updatedHolding = targetHolding
+            updatedHolding.quantity = projection.quantity
+            updatedHolding.averageBuyPrice = projection.averageBuyPrice
+            try await portfolioService.updateHolding(updatedHolding)
 
             // Track portfolio action
             Task {
@@ -776,23 +750,44 @@ final class PortfolioViewModel {
                 ])
             }
 
-            await MainActor.run {
-                self.transactions.append(createdTransaction)
-            }
-
             // Refresh holdings with live prices
             let updatedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
             let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: updatedHoldings)
-
-            await MainActor.run {
-                self.holdings = holdingsWithPrices
-                self.allocations = self.computeAllocations(from: holdingsWithPrices)
-            }
+            self.holdings = holdingsWithPrices
+            self.allocations = self.computeAllocations(from: holdingsWithPrices)
         } catch {
-            await MainActor.run {
-                self.error = error as? AppError ?? .transactionFailed
+            self.error = error as? AppError ?? .transactionFailed
+        }
+    }
+
+    /// Single source of truth for a holding's quantity and average cost, derived
+    /// from its transactions. Quantity = incoming (buys + transfers-in) minus
+    /// outgoing (sells + transfers-out). The average is computed over KNOWN-cost
+    /// buys only (a buy with price > 0); transfers-in add quantity with unknown
+    /// cost and never pollute the average. Returns a nil average when no
+    /// known-cost units exist, which the UI renders as "—" instead of a $0.
+    private func projectHolding(from transactions: [Transaction]) -> (quantity: Double, averageBuyPrice: Double?) {
+        var incoming = 0.0
+        var outgoing = 0.0
+        var knownUnits = 0.0
+        var knownSpend = 0.0
+        for tx in transactions {
+            switch tx.type {
+            case .buy:
+                incoming += tx.quantity
+                if tx.pricePerUnit > 0 {
+                    knownUnits += tx.quantity
+                    knownSpend += tx.quantity * tx.pricePerUnit
+                }
+            case .transferIn:
+                incoming += tx.quantity
+            case .sell, .transferOut:
+                outgoing += tx.quantity
             }
         }
+        let quantity = max(0, incoming - outgoing)
+        let averageBuyPrice = knownUnits > 0 ? knownSpend / knownUnits : nil
+        return (quantity, averageBuyPrice)
     }
 
     func deleteTransaction(_ transaction: Transaction) async {
@@ -841,34 +836,23 @@ final class PortfolioViewModel {
         }
     }
 
-    /// Recalculates a holding's quantity and average buy price from its transactions.
-    /// Deletes the holding if no buy/transferIn transactions remain.
+    /// Recalculates a holding's quantity and average buy price from its
+    /// transactions, using the same projection as the add path. Deletes the
+    /// holding if no incoming (buy / transfer-in) transactions remain.
     private func recalculateHolding(holdingId: UUID) async throws {
-        let remainingForHolding = await MainActor.run {
-            self.transactions.filter { $0.holdingId == holdingId }
+        let remainingForHolding = self.transactions.filter { $0.holdingId == holdingId }
+
+        guard remainingForHolding.contains(where: { $0.type.isIncoming }) else {
+            try await portfolioService.deleteHolding(holdingId: holdingId)
+            return
         }
 
-        let hasBuys = remainingForHolding.contains { $0.type == .buy || $0.type == .transferIn }
-
-        if !hasBuys {
-            try await portfolioService.deleteHolding(holdingId: holdingId)
-        } else {
-            let buyTransactions = remainingForHolding.filter { $0.type == .buy || $0.type == .transferIn }
-            let sellTransactions = remainingForHolding.filter { $0.type == .sell || $0.type == .transferOut }
-
-            let totalBought = buyTransactions.reduce(0.0) { $0 + $1.quantity }
-            let totalSold = sellTransactions.reduce(0.0) { $0 + $1.quantity }
-            let newQuantity = max(0, totalBought - totalSold)
-
-            let totalCost = buyTransactions.reduce(0.0) { $0 + ($1.quantity * $1.pricePerUnit) }
-            let avgBuyPrice = totalBought > 0 ? totalCost / totalBought : 0
-
-            if let holding = holdings.first(where: { $0.id == holdingId }) {
-                var updatedHolding = holding
-                updatedHolding.quantity = newQuantity
-                updatedHolding.averageBuyPrice = avgBuyPrice
-                try await portfolioService.updateHolding(updatedHolding)
-            }
+        let projection = projectHolding(from: remainingForHolding)
+        if let holding = holdings.first(where: { $0.id == holdingId }) {
+            var updatedHolding = holding
+            updatedHolding.quantity = projection.quantity
+            updatedHolding.averageBuyPrice = projection.averageBuyPrice
+            try await portfolioService.updateHolding(updatedHolding)
         }
     }
 
