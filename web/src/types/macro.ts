@@ -101,7 +101,7 @@ export interface MarketBreadthDetailData {
   totalTokens: number;
   btcPrice: number;
   asOf: string;
-  recentSignals: { type: 'bullish' | 'bearish'; date: string }[];
+  recentSignals: { type: 'bullish' | 'bearish'; date: string; btc: number | null }[];
   history: MarketBreadthPoint[];
 }
 

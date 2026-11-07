@@ -868,7 +868,7 @@ export async function fetchMarketBreadthDetail(days = 365): Promise<MarketBreadt
     .filter((r) => r.crossover === 'bullish_crossover' || r.crossover === 'bearish_crossover')
     .slice(-6)
     .reverse()
-    .map((r) => ({ type: (r.crossover === 'bullish_crossover' ? 'bullish' : 'bearish') as 'bullish' | 'bearish', date: r.signal_date }));
+    .map((r) => ({ type: (r.crossover === 'bullish_crossover' ? 'bullish' : 'bearish') as 'bullish' | 'bearish', date: r.signal_date, btc: r.btc_price != null ? Number(r.btc_price) : null }));
 
   return {
     breadthPct: Number(latest.breadth_pct),

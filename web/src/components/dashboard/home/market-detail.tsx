@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Area, AreaChart, ComposedChart, Line, CartesianGrid, XAxis, ResponsiveContainer, YAxis, Tooltip, ReferenceDot } from 'recharts';
+import { Area, AreaChart, ComposedChart, Line, CartesianGrid, XAxis, ResponsiveContainer, YAxis, Tooltip, ReferenceDot, ReferenceLine } from 'recharts';
 import { ArrowRight } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
 import { cn, signalChangeHint } from '@/lib/utils/format';
@@ -31,6 +31,9 @@ const BREADTH_PERIODS = [{ label: '1M', days: 30 }, { label: '3M', days: 90 }, {
 
 export function MarketBreadthDetail() {
   const [days, setDays] = useState(90);
+  // BTC overlay is off by default so the chart reads as breadth + EMAs (declutter,
+  // matching iOS). Toggle it on to spot breadth/BTC divergences.
+  const [showBtc, setShowBtc] = useState(false);
   // Always fetch the full year; the range pills only window the CHART.
   // Recent Signals must not change with the range (iOS shows the last 6
   // crossovers regardless of the selected window — a range-dependent chip
@@ -90,7 +93,7 @@ export function MarketBreadthDetail() {
           <div className="flex gap-2 overflow-x-auto pb-1">
             {data.recentSignals.map((s, i) => (
               <span key={i} className={cn('flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold', s.type === 'bullish' ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>
-                {s.type === 'bullish' ? '▲' : '▼'} {s.type} ({fmtDay(s.date)})
+                {s.type === 'bullish' ? '▲' : '▼'} {s.type} · {fmtDay(s.date)}{s.btc != null ? ` · $${Math.round(s.btc).toLocaleString()}` : ''}
               </span>
             ))}
           </div>
@@ -99,12 +102,19 @@ export function MarketBreadthDetail() {
 
       {/* Multi-line chart */}
       <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-3">
-        <div className="mb-2 flex justify-center">
+        <div className="mb-2 flex items-center justify-between">
           <div className="inline-flex rounded-full bg-ark-fill-secondary p-0.5">
             {BREADTH_PERIODS.map((p) => (
               <button key={p.label} onClick={() => setDays(p.days)} className={cn('rounded-full px-3 py-1 text-xs font-semibold transition-colors', days === p.days ? 'bg-ark-info text-white' : 'text-ark-text-tertiary')}>{p.label}</button>
             ))}
           </div>
+          <button
+            onClick={() => setShowBtc((v) => !v)}
+            className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors', showBtc ? 'bg-ark-fill-secondary text-ark-text' : 'text-ark-text-tertiary')}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: showBtc ? '#F59E0B' : 'var(--ark-text-disabled)' }} />
+            BTC
+          </button>
         </div>
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -113,6 +123,9 @@ export function MarketBreadthDetail() {
               <XAxis dataKey="date" tickLine={false} axisLine={false} ticks={firstDate && lastDate ? [firstDate, lastDate] : []} tickFormatter={fmtDay} tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }} interval="preserveStartEnd" />
               <YAxis yAxisId="b" domain={[0, 100]} hide />
               <YAxis yAxisId="btc" orientation="right" domain={[btcMin, btcMax]} hide />
+              {/* Weak/Strong zone lines (30 / 70), matching iOS */}
+              <ReferenceLine yAxisId="b" y={30} stroke="var(--ark-text-tertiary)" strokeDasharray="4 4" strokeOpacity={0.25} />
+              <ReferenceLine yAxisId="b" y={70} stroke="var(--ark-text-tertiary)" strokeDasharray="4 4" strokeOpacity={0.25} />
               <Tooltip
                 contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 11 }}
                 labelFormatter={(l) => fmtDay(String(l))}
@@ -121,7 +134,7 @@ export function MarketBreadthDetail() {
               <Line yAxisId="b" type="monotone" dataKey="breadth" stroke="var(--ark-text-tertiary)" strokeWidth={1} dot={false} opacity={0.5} />
               <Line yAxisId="b" type="monotone" dataKey="ema12" stroke="var(--ark-success)" strokeWidth={2} dot={false} />
               <Line yAxisId="b" type="monotone" dataKey="ema21" stroke="#15803D" strokeWidth={1.5} dot={false} />
-              <Line yAxisId="btc" type="monotone" dataKey="btc" stroke="#F59E0B" strokeWidth={1.5} dot={false} />
+              {showBtc && <Line yAxisId="btc" type="monotone" dataKey="btc" stroke="#F59E0B" strokeWidth={1.5} dot={false} />}
               {signals.map((s, i) => {
                 const bull = s.crossover === 'bullish_crossover';
                 const col = bull ? 'var(--ark-success)' : 'var(--ark-error)';
@@ -141,7 +154,7 @@ export function MarketBreadthDetail() {
           <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded bg-ark-text-tertiary" /> Breadth</span>
           <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded bg-ark-success" /> EMA 12</span>
           <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded" style={{ background: '#15803D' }} /> EMA 21</span>
-          <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded" style={{ background: '#F59E0B' }} /> BTC</span>
+          {showBtc && <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded" style={{ background: '#F59E0B' }} /> BTC</span>}
         </div>
       </div>
 
