@@ -16,6 +16,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { Skeleton } from '@/components/ui';
 import { formatCurrency, formatPercent, cn, localDateISO } from '@/lib/utils/format';
 import { usePortfolios, usePricedHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
+import { usePresentationMode } from '@/lib/hooks/use-presentation-mode';
 import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 
 const PERIODS = ['1H', '1D', '1W', '1M', 'YTD', '1Y', 'ALL'] as const;
@@ -29,6 +30,7 @@ export function PortfolioHero() {
   const { data: holdings, isLoading: holdingsLoading } = usePricedHoldings(portfolioId);
   const { data: history } = usePortfolioHistory(portfolioId, 365);
   const [period, setPeriod] = useState<Period>('1M');
+  const pm = usePresentationMode();
 
   const isLoading = portfoliosLoading || (!!portfolioId && holdingsLoading);
 
@@ -131,8 +133,14 @@ export function PortfolioHero() {
       {/* Value + change */}
       <div>
         <p className="fig font-[family-name:var(--font-urbanist)] text-4xl font-bold tracking-tight text-ark-text">
-          <span>$</span>
-          {currentValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {pm.maskCurrency ? (
+            '••••••'
+          ) : (
+            <>
+              <span>$</span>
+              {currentValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </>
+          )}
         </p>
         <span
           className={cn(
@@ -141,7 +149,7 @@ export function PortfolioHero() {
           )}
         >
           {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-          {formatCurrency(Math.abs(change))} ({formatPercent(changePct)})
+          {pm.money(formatCurrency(Math.abs(change)))} ({formatPercent(changePct)})
         </span>
       </div>
 
@@ -163,7 +171,7 @@ export function PortfolioHero() {
                   active && payload?.[0] ? (
                     <div className="rounded-lg border border-ark-divider bg-ark-card px-3 py-2 text-xs shadow-lg">
                       <p className="text-ark-text-tertiary">{(payload[0].payload as { date: string }).date}</p>
-                      <p className="fig font-semibold text-ark-text">{formatCurrency(payload[0].value as number)}</p>
+                      <p className="fig font-semibold text-ark-text">{pm.money(formatCurrency(payload[0].value as number))}</p>
                     </div>
                   ) : null
                 }
@@ -194,12 +202,12 @@ export function PortfolioHero() {
                   <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-ark-text">{h.name || h.symbol.toUpperCase()}</p>
                   <p className="fig text-[11px] text-ark-text-tertiary">
-                    {h.quantity} {h.symbol.toUpperCase()} · {pct.toFixed(1)}%
+                    {pm.qty(String(h.quantity))} {h.symbol.toUpperCase()} · {pct.toFixed(1)}%
                   </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="fig text-sm font-semibold text-ark-text">{formatCurrency(h.value)}</p>
+                  <p className="fig text-sm font-semibold text-ark-text">{pm.money(formatCurrency(h.value))}</p>
                   <p className={cn('fig text-[11px] font-medium', up ? 'text-ark-success' : 'text-ark-error')}>
                     {formatPercent(h.change24h)}
                   </p>

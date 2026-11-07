@@ -8,6 +8,7 @@ import { DetailDrawer, Skeleton } from '@/components/ui';
 import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { fetchHoldingHistory } from '@/lib/api/portfolio';
 import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
+import { usePresentationMode } from '@/lib/hooks/use-presentation-mode';
 import type { PortfolioHolding } from '@/types';
 
 // Same global privacy flag as the home hero, so hiding your balance anywhere
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function HoldingDetailDrawer({ holding, knownIds, onClose }: Props) {
+  const pm = usePresentationMode();
   const [period, setPeriod] = useState<Period>('1M');
   // Seed from the shared privacy flag once; toggling persists back to it.
   const [hidden, setHidden] = useState<boolean>(() => {
@@ -108,12 +110,12 @@ export function HoldingDetailDrawer({ holding, knownIds, onClose }: Props) {
           {/* Value + stats */}
           <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-5">
             <p className="text-[11px] uppercase tracking-wider text-ark-text-tertiary">Current Value</p>
-            <p className={cn('fig mt-1 text-3xl font-bold text-ark-text', blur)}>{formatCurrency(value)}</p>
+            <p className={cn('fig mt-1 text-3xl font-bold text-ark-text', blur)}>{pm.money(formatCurrency(value))}</p>
 
             <div className="mt-4 grid grid-cols-3 gap-3">
               <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/40 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">Quantity</p>
-                <p className={cn('fig mt-0.5 text-sm font-bold text-ark-text', blur)}>{holding.quantity}</p>
+                <p className={cn('fig mt-0.5 text-sm font-bold text-ark-text', blur)}>{pm.qty(String(holding.quantity))}</p>
               </div>
               <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/40 p-3">
                 <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">Avg Price</p>
@@ -129,7 +131,7 @@ export function HoldingDetailDrawer({ holding, knownIds, onClose }: Props) {
               <div>
                 <p className="text-[11px] uppercase tracking-wider text-ark-text-tertiary">Profit / Loss</p>
                 <p className={cn('fig mt-0.5 text-lg font-bold', up ? 'text-ark-success' : 'text-ark-error', blur)}>
-                  {formatCurrency(pnl)}
+                  {pm.money(formatCurrency(pnl))}
                 </p>
               </div>
               <div className="text-right">

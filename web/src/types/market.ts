@@ -334,6 +334,24 @@ export interface WeeklyDeck {
   slides: DeckSlide[];
 }
 
+// ── Support & Resistance (server-computed, support_resistance_levels table) ──
+export interface SRLevel {
+  price: number;
+  kind: 'support' | 'resistance';
+  strength: 'weak' | 'moderate' | 'strong';
+  touches: number;
+}
+
+export interface SupportResistanceAsset {
+  asset: string;   // BTC, ETH, SOL, XAU (gold), XAG (silver)
+  name: string;
+  current_price: number;
+  supports: SRLevel[];     // nearest below price first
+  resistances: SRLevel[];  // nearest above price first
+  series: { date: string; close: number }[];
+  as_of: string;
+}
+
 export type ScannerPeriod = '7d' | '30d' | '90d';
 
 export interface AltcoinScannerEntry {

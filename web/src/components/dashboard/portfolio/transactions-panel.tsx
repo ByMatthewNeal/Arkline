@@ -11,6 +11,7 @@ import { ArrowDownLeft, ArrowUpRight, ArrowRightLeft, Trash2, StickyNote } from 
 import { GlassCard, Badge, ConfirmDialog, DetailDrawer, useToast } from '@/components/ui';
 import { useDeleteTransaction } from '@/lib/hooks/use-portfolio-mutations';
 import { formatCurrency, formatDate, cn } from '@/lib/utils/format';
+import { usePresentationMode } from '@/lib/hooks/use-presentation-mode';
 import type { Transaction, TransactionType } from '@/types/transaction';
 
 const FILTERS: { key: 'all' | TransactionType; label: string }[] = [
@@ -52,6 +53,7 @@ export function TransactionsPanel({
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const deleteTx = useDeleteTransaction(portfolioId);
   const toast = useToast();
+  const pm = usePresentationMode();
 
   const filtered = transactions.filter((t) => filter === 'all' || t.type === filter);
 
@@ -117,7 +119,7 @@ export function TransactionsPanel({
                             {t.notes && <StickyNote className="ml-1.5 inline h-3 w-3 text-ark-text-disabled" />}
                           </p>
                           <p className="fig text-[11px] text-ark-text-tertiary">
-                            {t.quantity} @ {formatCurrency(t.price_per_unit)} · {formatDate(t.transaction_date)}
+                            {pm.qty(String(t.quantity))} @ {formatCurrency(t.price_per_unit)} · {formatDate(t.transaction_date)}
                           </p>
                         </div>
                       </div>
@@ -130,10 +132,10 @@ export function TransactionsPanel({
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                         <div className="text-right">
-                          <p className="fig text-sm font-semibold text-ark-text">{formatCurrency(t.total_value)}</p>
+                          <p className="fig text-sm font-semibold text-ark-text">{pm.money(formatCurrency(t.total_value))}</p>
                           {isSell && t.realized_profit_loss != null && (
                             <p className={cn('fig text-[11px] font-medium', t.realized_profit_loss >= 0 ? 'text-ark-success' : 'text-ark-error')}>
-                              {formatCurrency(t.realized_profit_loss, undefined, { sign: true })} realized
+                              {pm.money(formatCurrency(t.realized_profit_loss, undefined, { sign: true }))} realized
                             </p>
                           )}
                         </div>
@@ -162,9 +164,9 @@ export function TransactionsPanel({
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Quantity', value: `${selected.quantity} ${selected.symbol.toUpperCase()}` },
+                { label: 'Quantity', value: `${pm.qty(String(selected.quantity))} ${selected.symbol.toUpperCase()}` },
                 { label: 'Price per unit', value: formatCurrency(selected.price_per_unit) },
-                { label: 'Total value', value: formatCurrency(selected.total_value) },
+                { label: 'Total value', value: pm.money(formatCurrency(selected.total_value)) },
                 { label: 'Fee', value: formatCurrency(selected.gas_fee ?? 0) },
               ].map((row) => (
                 <div key={row.label} className="rounded-xl bg-ark-fill-secondary/40 px-3 py-2.5">
@@ -181,7 +183,7 @@ export function TransactionsPanel({
               )}>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Realized P/L</p>
                 <p className={cn('fig mt-0.5 text-lg font-bold', selected.realized_profit_loss >= 0 ? 'text-ark-success' : 'text-ark-error')}>
-                  {formatCurrency(selected.realized_profit_loss, undefined, { sign: true })}
+                  {pm.money(formatCurrency(selected.realized_profit_loss, undefined, { sign: true }))}
                 </p>
                 {selected.cost_basis_per_unit != null && (
                   <p className="fig text-[11px] text-ark-text-tertiary">Cost basis {formatCurrency(selected.cost_basis_per_unit)} / unit</p>

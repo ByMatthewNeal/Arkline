@@ -42,6 +42,7 @@ import type {
   USFuturesItem,
   PerpPremiumItem,
   DeckSlide,
+  SupportResistanceAsset,
 } from '@/types';
 
 function getSupabase() {
@@ -1046,4 +1047,17 @@ export async function fetchWeeklyDeckById(id: string): Promise<WeeklyDeck | null
   const d = data?.[0] as { week_start: string; week_end: string; status: string; slides: unknown } | undefined;
   if (error || !d) return null;
   return deckRowToWeeklyDeck(d);
+}
+
+// ── Support & Resistance (server-computed daily by compute-support-resistance) ─
+export async function fetchSupportResistanceLevels(): Promise<SupportResistanceAsset[]> {
+  if (!isSupabaseConfigured()) return [];
+  const { data, error } = await getSupabase()
+    .from('support_resistance_levels')
+    .select('asset, name, current_price, supports, resistances, series, as_of');
+  if (error || !data) return [];
+  const order = ['BTC', 'ETH', 'SOL', 'XAU', 'XAG'];
+  return (data as SupportResistanceAsset[])
+    .slice()
+    .sort((a, b) => order.indexOf(a.asset) - order.indexOf(b.asset));
 }

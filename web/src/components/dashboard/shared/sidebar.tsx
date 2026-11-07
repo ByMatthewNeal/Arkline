@@ -9,6 +9,7 @@ import {
   Bell,
   Radio,
   GraduationCap,
+  Brain,
   Settings,
   User,
   ChevronLeft,
@@ -31,6 +32,7 @@ const mainNav = [
   { label: 'Portfolio', href: '/dashboard/portfolio', icon: Briefcase },
   { label: 'DCA', href: '/dashboard/dca', icon: Bell },
   { label: 'Learn', href: '/dashboard/learn', icon: GraduationCap },
+  { label: 'Psychology', href: '/dashboard/psychology', icon: Brain },
   { label: 'Broadcasts', href: '/dashboard/broadcasts', icon: Radio },
 ];
 

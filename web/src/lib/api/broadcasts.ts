@@ -15,6 +15,18 @@ export interface Broadcast {
   video_url: string | null;
   audio_url: string | null;
   meeting_link: string | null;
+  author_id: string | null;
+}
+
+/** The author's public-facing identity (name + avatar) for update bylines.
+ *  From the `get_public_profiles` RPC — safe fields only, since members can't
+ *  read the author's full profile under RLS. */
+export interface PublicAuthor {
+  id: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  use_photo_avatar: boolean;
 }
 
 function toArray(v: unknown): string[] {
@@ -82,7 +94,7 @@ export async function fetchBroadcasts(): Promise<Broadcast[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('broadcasts')
-    .select('id, title, content, tags, published_at, created_at, is_pinned, reaction_count, view_count, images, video_url, audio_url, meeting_link')
+    .select('id, title, content, tags, published_at, created_at, is_pinned, reaction_count, view_count, images, video_url, audio_url, meeting_link, author_id')
     .eq('status', 'published')
     .order('is_pinned', { ascending: false })
     .order('published_at', { ascending: false })
@@ -102,5 +114,22 @@ export async function fetchBroadcasts(): Promise<Broadcast[]> {
     video_url: (b.video_url as string) ?? null,
     audio_url: (b.audio_url as string) ?? null,
     meeting_link: (b.meeting_link as string) ?? null,
+    author_id: (b.author_id as string) ?? null,
+  }));
+}
+
+/** Public author identities (name + avatar) for the given user ids, used to
+ *  render bylines on the opened post. Safe fields only, via SECURITY DEFINER RPC. */
+export async function fetchPublicAuthors(ids: string[]): Promise<PublicAuthor[]> {
+  if (!isSupabaseConfigured() || ids.length === 0) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('get_public_profiles', { ids });
+  if (error || !data) return [];
+  return (data as Record<string, unknown>[]).map((a) => ({
+    id: String(a.id),
+    full_name: (a.full_name as string) ?? null,
+    username: (a.username as string) ?? null,
+    avatar_url: (a.avatar_url as string) ?? null,
+    use_photo_avatar: Boolean(a.use_photo_avatar),
   }));
 }

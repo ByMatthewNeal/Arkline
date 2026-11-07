@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock, MessagesSquare, BookOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
-import { fetchBroadcasts, recordBroadcastImpression, recordBroadcastOpen, type Broadcast } from '@/lib/api/broadcasts';
+import { fetchBroadcasts, fetchPublicAuthors, recordBroadcastImpression, recordBroadcastOpen, type Broadcast, type PublicAuthor } from '@/lib/api/broadcasts';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useBroadcastSocial } from '@/lib/hooks/use-broadcast-social';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -38,7 +38,26 @@ function matchesDate(b: Broadcast, filter: DateFilter): boolean {
   return diffDays <= 31;
 }
 
-function BroadcastCard({ b, social, uid, isAdmin }: { b: Broadcast; social: Social; uid?: string; isAdmin?: boolean }) {
+function AuthorByline({ author }: { author?: PublicAuthor }) {
+  const name = author?.full_name || author?.username || 'Arkline';
+  const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase() || 'AR';
+  const photo = author?.use_photo_avatar && author?.avatar_url ? author.avatar_url : null;
+  return (
+    <div className="mt-3 flex items-center gap-2.5">
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photo} alt={name} className="h-8 w-8 rounded-full object-cover" />
+      ) : (
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-ark-accent/15 text-[11px] font-semibold text-ark-accent">
+          {initials}
+        </div>
+      )}
+      <span className="text-sm font-semibold text-ark-text">{name}</span>
+    </div>
+  );
+}
+
+function BroadcastCard({ b, social, uid, isAdmin, author }: { b: Broadcast; social: Social; uid?: string; isAdmin?: boolean; author?: PublicAuthor }) {
   const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const openRecorded = useRef(false);
@@ -105,6 +124,8 @@ function BroadcastCard({ b, social, uid, isAdmin }: { b: Broadcast; social: Soci
 
       {expanded ? (
         <>
+          {/* Author byline — your face on the opened post (matches iOS) */}
+          <AuthorByline author={author} />
           {/* Full content: rendered markdown + media (iOS parity) */}
           <Markdown content={b.content} className="mt-2" />
           {b.audio_url && <AudioPlayer src={b.audio_url} />}
@@ -186,6 +207,24 @@ export default function BroadcastsPage() {
     enabled: !isDemo,
     staleTime: 300_000,
   });
+
+  // Author identities for bylines on opened posts. Members can't read the
+  // author's profile under RLS, so this goes through the get_public_profiles RPC.
+  const authorIds = useMemo(
+    () => Array.from(new Set((broadcasts ?? []).map((b) => b.author_id).filter((x): x is string => !!x))),
+    [broadcasts],
+  );
+  const { data: authors } = useQuery({
+    queryKey: ['broadcast-authors', authorIds],
+    queryFn: () => fetchPublicAuthors(authorIds),
+    enabled: !isDemo && authorIds.length > 0,
+    staleTime: 300_000,
+  });
+  const authorsById = useMemo(() => {
+    const m = new Map<string, PublicAuthor>();
+    (authors ?? []).forEach((a) => m.set(a.id, a));
+    return m;
+  }, [authors]);
 
   const all = broadcasts ?? [];
   const filtered = all.filter((b) => {
@@ -278,12 +317,12 @@ export default function BroadcastsPage() {
           {pinned.length > 0 && (
             <div className="space-y-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Pinned</p>
-              {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} isAdmin={isAdmin} />)}
+              {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} isAdmin={isAdmin} author={b.author_id ? authorsById.get(b.author_id) : undefined} />)}
             </div>
           )}
           <div className="space-y-3">
             {pinned.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Latest</p>}
-            {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} isAdmin={isAdmin} />)}
+            {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} isAdmin={isAdmin} author={b.author_id ? authorsById.get(b.author_id) : undefined} />)}
           </div>
         </div>
       )}

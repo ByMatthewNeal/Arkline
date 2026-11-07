@@ -4,6 +4,7 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'rec
 import { Download } from 'lucide-react';
 import { GlassCard } from '@/components/ui';
 import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
+import { usePresentationMode } from '@/lib/hooks/use-presentation-mode';
 import type { PortfolioHolding, PortfolioHistoryPoint } from '@/types';
 import type { Transaction } from '@/types/transaction';
 
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export function PerformancePanel({ history, holdings, transactions, portfolioName }: Props) {
+  const pm = usePresentationMode();
   const perf = computePerf(history);
   const realized = transactions.filter((t) => t.type === 'sell').reduce((s, t) => s + (t.realized_profit_loss ?? 0), 0);
 
@@ -90,7 +92,7 @@ export function PerformancePanel({ history, holdings, transactions, portfolioNam
         <>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {metric('Total Return', formatPercent(perf.totalReturnPct), perf.totalReturnPct >= 0 ? 'var(--ark-success)' : 'var(--ark-error)')}
-            {metric('Realized P&L', formatCurrency(realized), realized >= 0 ? 'var(--ark-success)' : 'var(--ark-error)')}
+            {metric('Realized P&L', pm.money(formatCurrency(realized)), realized >= 0 ? 'var(--ark-success)' : 'var(--ark-error)')}
             {metric('Max Drawdown', `${perf.maxDrawdown.toFixed(1)}%`, 'var(--ark-error)')}
             {metric('Volatility', `${perf.volatility.toFixed(1)}%`)}
             {metric('Sharpe', perf.sharpe.toFixed(2), perf.sharpe >= 1 ? 'var(--ark-success)' : perf.sharpe >= 0 ? 'var(--ark-text)' : 'var(--ark-error)')}
@@ -113,7 +115,7 @@ export function PerformancePanel({ history, holdings, transactions, portfolioNam
                 <YAxis domain={['dataMin', 'dataMax']} hide />
                 <Tooltip contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 11 }}
                   labelFormatter={(l) => new Date(String(l)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  formatter={(v) => [formatCurrency(Number(v)), 'Value']} />
+                  formatter={(v) => [pm.money(formatCurrency(Number(v))), 'Value']} />
                 <Area type="monotone" dataKey="value" stroke={curveColor} strokeWidth={2} fill="url(#perf-curve)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>

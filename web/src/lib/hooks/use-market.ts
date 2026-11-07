@@ -30,6 +30,7 @@ import {
   fetchPerpPremiumData,
   fetchFedWatchData,
   fetchAssetSnapshots,
+  fetchSupportResistanceLevels,
 } from '@/lib/api/market';
 import {
   fetchMacroIndicators,
@@ -209,6 +210,14 @@ export function useSignalChangeHistory() {
   return useQuery({
     queryKey: ['signal-change-history'],
     queryFn: () => fetchSignalChangeHistory(),
+    staleTime: 900_000,
+  });
+}
+
+export function useSupportResistanceLevels() {
+  return useQuery({
+    queryKey: ['support-resistance-levels'],
+    queryFn: () => fetchSupportResistanceLevels(),
     staleTime: 900_000,
   });
 }

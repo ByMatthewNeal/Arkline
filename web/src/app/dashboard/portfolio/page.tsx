@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Trash2, TrendingUp, TrendingDown, Calculator } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, TrendingUp, TrendingDown, Calculator, Percent } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -27,6 +27,7 @@ import { HoldingDetailDrawer } from '@/components/dashboard/portfolio/holding-de
 import { BudgetCalculatorDrawer } from '@/components/dashboard/portfolio/budget-calculator';
 import { ReminderModal } from '@/components/dashboard/dca/reminder-modal';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
+import { usePresentationMode } from '@/lib/hooks/use-presentation-mode';
 import type { PortfolioHolding } from '@/types';
 
 const PIE_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
@@ -62,6 +63,7 @@ export default function PortfolioPage() {
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [dcaPrefill, setDcaPrefill] = useState<{ open: boolean; amount?: number }>({ open: false });
   const toast = useToast();
+  const pm = usePresentationMode();
 
   // Known symbol→CoinGecko-id pairs (from the cached top list) so the holding
   // detail chart can resolve crypto history without an extra /search round-trip.
@@ -134,6 +136,30 @@ export default function PortfolioPage() {
           Portfolio
         </h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={pm.togglePresentation}
+            title="Presentation mode: show growth, hide amounts"
+            aria-label="Presentation mode: show growth, hide amounts"
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-xl border border-ark-divider transition-colors',
+              pm.presentation ? 'bg-ark-primary/10 text-ark-primary' : 'text-ark-text-tertiary hover:bg-ark-fill-secondary',
+            )}
+          >
+            <Percent className="h-4 w-4" />
+          </button>
+          {pm.presentation && (
+            <button
+              onClick={pm.toggleHideQuantities}
+              className={cn(
+                'rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                pm.hideQuantities
+                  ? 'border-ark-primary/40 bg-ark-primary/10 text-ark-primary'
+                  : 'border-ark-divider text-ark-text-secondary hover:bg-ark-fill-secondary',
+              )}
+            >
+              Hide quantities
+            </button>
+          )}
           {(portfolios ?? []).length > 1 && (
             <div className="relative">
               <select
@@ -250,8 +276,14 @@ export default function PortfolioPage() {
                     : (portfolio?.name ?? 'Portfolio')}
                 </p>
                 <p className="fig font-[family-name:var(--font-urbanist)] text-4xl font-bold tracking-tight text-ark-text lg:text-5xl">
-                  <span>$</span>
-                  {(scrubbedPoint ? scrubbedPoint.value : stats.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {pm.maskCurrency ? (
+                    '••••••'
+                  ) : (
+                    <>
+                      <span>$</span>
+                      {(scrubbedPoint ? scrubbedPoint.value : stats.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </>
+                  )}
                 </p>
               </div>
               <div className={cn('transition-opacity duration-200', scrubbedPoint && 'opacity-30')}>
@@ -261,7 +293,7 @@ export default function PortfolioPage() {
                     stats.pnl >= 0 ? 'text-ark-success' : 'text-ark-error'
                   }`}
                 >
-                  {formatCurrency(stats.pnl)} ({formatPercent(stats.pnlPct)})
+                  {pm.money(formatCurrency(stats.pnl))} ({formatPercent(stats.pnlPct)})
                 </p>
               </div>
               <div className="w-px self-stretch bg-ark-divider" />
@@ -272,7 +304,7 @@ export default function PortfolioPage() {
                     stats.dayChange >= 0 ? 'text-ark-success' : 'text-ark-error'
                   }`}
                 >
-                  {formatCurrency(stats.dayChange)} ({formatPercent(stats.dayPct)})
+                  {pm.money(formatCurrency(stats.dayChange))} ({formatPercent(stats.dayPct)})
                 </p>
               </div>
               {scrubbedPoint && historyData[0] && (
@@ -356,7 +388,7 @@ export default function PortfolioPage() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(val) => formatCurrency(val as number)}
+                        formatter={(val) => pm.money(formatCurrency(val as number))}
                         contentStyle={{
                           background: 'var(--ark-card)',
                           border: '1px solid var(--ark-divider)',
@@ -445,7 +477,7 @@ export default function PortfolioPage() {
                         <CoinIcon symbol={h.symbol} size="lg" className="h-9 w-9" />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-ark-text">{h.symbol.toUpperCase()}</p>
-                          <p className="truncate text-xs text-ark-text-tertiary">{h.name} · <span className="fig">{h.quantity}</span> @ {formatCurrency(h.average_buy_price ?? 0)}</p>
+                          <p className="truncate text-xs text-ark-text-tertiary">{h.name} · <span className="fig">{pm.qty(String(h.quantity))}</span> @ {formatCurrency(h.average_buy_price ?? 0)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -459,9 +491,9 @@ export default function PortfolioPage() {
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                         <div className="text-right">
-                          <p className="fig text-sm font-bold text-ark-text">{formatCurrency(value)}</p>
+                          <p className="fig text-sm font-bold text-ark-text">{pm.money(formatCurrency(value))}</p>
                           <p className={`fig text-xs font-medium ${isUp ? 'text-ark-success' : 'text-ark-error'}`}>
-                            {formatCurrency(pnl)} ({formatPercent(cost > 0 ? (pnl / cost) * 100 : 0)})
+                            {pm.money(formatCurrency(pnl))} ({formatPercent(cost > 0 ? (pnl / cost) * 100 : 0)})
                           </p>
                         </div>
                       </div>

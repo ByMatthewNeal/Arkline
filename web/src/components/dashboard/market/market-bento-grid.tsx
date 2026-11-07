@@ -21,7 +21,7 @@ import {
   useMacroIndicators, useRegimeData, useCryptoPositioning, useMomentumMap,
   useTraditionalMarkets, useCryptoAssets, useAltcoinScanner, useNews,
   useUSFutures, useRiskAppetite, useSignalChanges, useTradeSignals,
-  useGlobalLiquidityIndex,
+  useGlobalLiquidityIndex, useSupportResistanceLevels,
 } from '@/lib/hooks/use-market';
 // Shared tiles with the Home grid — one implementation, both surfaces.
 import { MarketBreadthTile, FedWatchTile } from '../home/bento-grid';
@@ -38,7 +38,8 @@ type MarketWidgetKey =
   | 'macro' | 'positioning' | 'momentumMap' | 'tradMarkets' | 'topCoins'
   | 'altcoinScanner' | 'news' | 'retailSentiment' | 'funding'
   | 'futures' | 'dailyPositioning' | 'tradeSignals'
-  | 'fedWatch' | 'liquidityCycle' | 'cbLiquidity' | 'marketBreadth';
+  | 'fedWatch' | 'liquidityCycle' | 'cbLiquidity' | 'marketBreadth'
+  | 'supportResistance';
 
 /* ── Zone chips (iOS MarketZone: All / Today / Macro / Assets / Signals) ──
  * Mapping mirrors MarketWidget.swift `zone`: usFutures/sentiment/dailyNews →
@@ -70,6 +71,7 @@ const WIDGET_ZONE: Record<MarketWidgetKey, Exclude<MarketZone, 'all'>> = {
   marketBreadth: 'assets',
   altcoinScanner: 'assets',
   funding: 'assets',
+  supportResistance: 'assets',
   tradeSignals: 'signals',
 };
 
@@ -94,6 +96,7 @@ const drawerTitles: Record<MarketWidgetKey, string> = {
   news: 'Headlines',
   retailSentiment: 'Retail Sentiment',
   funding: 'Funding Rates',
+  supportResistance: 'Support & Resistance',
 };
 
 /* ── Lazy drawer loader ── */
@@ -124,6 +127,7 @@ function LazyMarketWidget({ widgetKey }: { widgetKey: MarketWidgetKey }) {
       news: () => import('../home/news-card').then(m => ({ default: m.NewsCard })),
       retailSentiment: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
       funding: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
+      supportResistance: () => import('./support-resistance-detail').then(m => ({ default: m.SupportResistanceDetail })),
     };
     loaders[widgetKey]().then(mod => {
       if (!cancelled) setWidget(() => (mod.default ?? null) as React.ComponentType | null);
@@ -1270,6 +1274,51 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
   ],
 };
 
+function SupportResistanceTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useSupportResistanceLevels();
+  const btc = data?.find((d) => d.asset === 'BTC');
+  const res = btc?.resistances[0];
+  const sup = btc?.supports[0];
+  const fmt = (v: number) => (v >= 1000 ? `$${Math.round(v).toLocaleString()}` : `$${v.toFixed(2)}`);
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-info)">
+      <AccentLine color="var(--ark-info)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crosshair className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-info" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Support &amp; Resistance</span>
+            </div>
+            <Badge variant="default">{data?.length ?? 0} assets</Badge>
+          </div>
+          {btc ? (
+            <div className="space-y-1.5">
+              {res && (
+                <div className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--ark-error)' }} />
+                  <span className="text-[10px] font-semibold text-ark-text-secondary">BTC resistance</span>
+                  <span className="fig ml-auto text-[11px] font-bold text-ark-text">{fmt(res.price)}</span>
+                </div>
+              )}
+              {sup && (
+                <div className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--ark-success)' }} />
+                  <span className="text-[10px] font-semibold text-ark-text-secondary">BTC support</span>
+                  <span className="fig ml-auto text-[11px] font-bold text-ark-text">{fmt(sup.price)}</span>
+                </div>
+              )}
+              <p className="text-[10px] text-ark-text-disabled">BTC, ETH, SOL, Gold &amp; Silver</p>
+            </div>
+          ) : (
+            <p className="text-[10px] text-ark-text-disabled">Levels unavailable</p>
+          )}
+        </>
+      )}
+    </Tile>
+  );
+}
+
 const widgetKeys: MarketWidgetKey[] = [
   // Ordered to echo the iOS "All" stack: futures/positioning first, then
   // liquidity, news/Fed, assets, signals — with the web hero row on top.
@@ -1278,7 +1327,7 @@ const widgetKeys: MarketWidgetKey[] = [
   'liquidityCycle', 'cbLiquidity', 'news', 'fedWatch',
   'sentiment', 'macro',
   // 'positioning' (Crypto Positioning) retired from view — component + data kept.
-  'tradMarkets', 'topCoins', 'marketBreadth', 'altcoinScanner',
+  'tradMarkets', 'topCoins', 'marketBreadth', 'supportResistance', 'altcoinScanner',
   'retailSentiment', 'funding', 'momentumMap', 'tradeSignals',
 ];
 
@@ -1303,6 +1352,7 @@ const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () =
   news: NewsTile,
   retailSentiment: RetailSentimentTile,
   funding: FundingTile,
+  supportResistance: SupportResistanceTile,
 };
 
 export function MarketBentoGrid() {
