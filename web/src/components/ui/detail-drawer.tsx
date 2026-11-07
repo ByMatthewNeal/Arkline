@@ -66,7 +66,7 @@ export function DetailDrawer({ open, onClose, title, children }: DetailDrawerPro
           <motion.div
             className={`fixed z-50 flex flex-col bg-[var(--ark-bg)] border border-ark-divider shadow-2xl
               ${isMobile
-                ? 'inset-x-4 bottom-4 top-4 rounded-2xl'
+                ? 'inset-x-4 top-4 bottom-[max(1rem,env(safe-area-inset-bottom))] rounded-2xl'
                 : 'left-1/2 top-1/2 max-h-[90vh] w-[min(94vw,1100px)] rounded-2xl'
               }`}
             initial={isMobile
@@ -99,8 +99,9 @@ export function DetailDrawer({ open, onClose, title, children }: DetailDrawerPro
               </button>
             </div>
 
-            {/* Content — scrollable */}
-            <div className="flex-1 overflow-y-auto p-5">
+            {/* Content — scrollable; extra bottom padding clears the mobile home
+                indicator / browser toolbar so the last section isn't cut off. */}
+            <div className="flex-1 overflow-y-auto p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               {children}
             </div>
           </motion.div>
