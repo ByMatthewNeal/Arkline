@@ -257,32 +257,50 @@ async function checkCryptoCache(
 async function checkBriefing(
   supabase: ReturnType<typeof createClient>
 ): Promise<CheckResult> {
-  // Use ET date so we don't check for tomorrow's briefing when UTC rolls over
-  const todayET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }))
-    .toISOString().split("T")[0]
-  const estHour = getESTHour(new Date())
+  const now = new Date()
+  const estHour = getESTHour(now)
+  // ET offset in ms (handles EST/EDT) → derive the ET weekday, the ET date, and
+  // the real UTC instant of ET midnight.
+  const estOffsetMs = ((now.getUTCHours() - estHour + 24) % 24) * 3600000
+  const etWall = new Date(now.getTime() - estOffsetMs) // UTC fields read ET wall clock
+  const etWeekday = etWall.getUTCDay() // 0 = Sun … 6 = Sat
+  const todayET = etWall.toISOString().split("T")[0]
+  const startOfTodayET = new Date(
+    Date.UTC(etWall.getUTCFullYear(), etWall.getUTCMonth(), etWall.getUTCDate()) + estOffsetMs,
+  )
 
+  // Match a briefing by when it was GENERATED (within today's ET day), not by
+  // summary_date. The Sunday-evening briefing fires at 7pm ET = 00:00 UTC and is
+  // stored under the *next* UTC date, so a summary_date == todayET lookup would
+  // never find it and would false-alarm every Sunday.
   const { data, error } = await supabase
     .from("market_summaries")
     .select("slot, generated_at")
-    .eq("summary_date", todayET)
+    .gte("generated_at", startOfTodayET.toISOString())
     .order("generated_at", { ascending: false })
 
   if (error) return { name: "Daily Briefing", ok: false, detail: error.message }
-  if (!data || data.length === 0) {
-    // Weekdays: first slot at 10 AM ET, flag after 11 AM
-    // Weekends: only slot at 12 PM ET, flag after 1 PM
-    const dayOfWeek = new Date().getUTCDay()
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-    const alertAfter = isWeekend ? 13 : 11
-    if (estHour >= alertAfter) {
-      return { name: "Daily Briefing", ok: false, detail: `No briefing generated for ${todayUTC}` }
-    }
-    return { name: "Daily Briefing", ok: true, detail: isWeekend ? "Weekend — due at 12pm ET" : "Not yet due today" }
+
+  if (data && data.length > 0) {
+    const slots = data.map((d: { slot: string }) => d.slot).join(", ")
+    return { name: "Daily Briefing", ok: true, detail: `Slots: ${slots}` }
   }
 
-  const slots = data.map((d: { slot: string }) => d.slot).join(", ")
-  return { name: "Daily Briefing", ok: true, detail: `Slots: ${slots}` }
+  // Nothing generated yet today — flag only once the day's briefing is actually
+  // overdue, per the real schedule:
+  //   Weekdays: morning at 10am ET → flag after 11am
+  //   Saturday: single briefing at 12pm ET → flag after 1pm
+  //   Sunday:   single briefing at 7pm ET  → flag after 8pm
+  const alertAfter = etWeekday === 6 ? 13 : etWeekday === 0 ? 20 : 11
+  const dueText = etWeekday === 6
+    ? "Saturday — due at 12pm ET"
+    : etWeekday === 0
+      ? "Sunday — due at 7pm ET"
+      : "Not yet due today"
+  if (estHour >= alertAfter) {
+    return { name: "Daily Briefing", ok: false, detail: `No briefing generated for ${todayET}` }
+  }
+  return { name: "Daily Briefing", ok: true, detail: dueText }
 }
 
 async function checkSignalPipeline(
@@ -368,15 +386,16 @@ function pushResult(
   }
 }
 
+// Exact America/New_York hour from the IANA tz database — handles the EST/EDT
+// switch on the real DST dates, unlike the old month/day heuristic (which
+// assumed DST ends ~Nov 7 and was an hour off for early November).
 function getESTHour(date: Date): number {
-  const utc = date.getUTCHours()
-  const jan = new Date(date.getFullYear(), 0, 1)
-  const jul = new Date(date.getFullYear(), 6, 1)
-  const isDST = date.getTimezoneOffset() < Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset())
-    || (date.getMonth() > 2 && date.getMonth() < 10) // rough DST: Mar-Oct
-    || (date.getMonth() === 2 && date.getDate() >= 8)
-    || (date.getMonth() === 10 && date.getDate() < 7)
-  return (utc - (isDST ? 4 : 5) + 24) % 24
+  const h = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    hour12: false,
+  }).format(date)
+  return parseInt(h, 10) % 24
 }
 
 function json(body: unknown, status = 200) {
