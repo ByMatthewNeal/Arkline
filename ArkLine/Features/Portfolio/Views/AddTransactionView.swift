@@ -209,7 +209,11 @@ struct AddTransactionView: View {
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.error)
                                 .fixedSize(horizontal: false, vertical: true)
-                        } else if !isSearching, searchResults.isEmpty, symbol.count >= 2 {
+                        } else if !isSearching, searchResults.isEmpty, symbol.count >= 2, name.isEmpty {
+                            // Only nag about no matches while the user is still
+                            // searching. Once an asset is chosen (name filled, via a
+                            // tapped result or typed by hand) the results list is
+                            // cleared, and this message must not linger.
                             Text("No matches for \"\(symbol)\".")
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textSecondary)
