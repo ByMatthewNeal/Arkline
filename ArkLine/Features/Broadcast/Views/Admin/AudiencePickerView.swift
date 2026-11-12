@@ -431,7 +431,7 @@ private struct UserSearchSheet: View {
     private func loadAllMembers() async {
         isLoading = true
         do {
-            let response = try await adminService.fetchMembers(search: nil, status: nil, page: 1)
+            let response = try await adminService.fetchMembers(search: nil, status: nil, page: 1, includeInternal: false)
             allMembers = response.members.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
         } catch {
             logError("Failed to load members: \(error)", category: .data)

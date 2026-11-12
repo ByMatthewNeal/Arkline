@@ -41,12 +41,27 @@ final class VoiceStudioViewModel {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
+
+    /// Persist a chosen title onto a note and reflect it in the library list.
+    func updateTitle(noteId: UUID, title: String) async {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if let idx = notes.firstIndex(where: { $0.id == noteId }) {
+            notes[idx].title = trimmed
+        }
+        do {
+            try await library.rename(id: noteId, title: trimmed)
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
 }
 
 // MARK: - Generate Target
 
 private struct GenerateTarget: Identifiable {
     let id = UUID()
+    let noteId: UUID?
     let transcript: String
     let title: String
 }
@@ -114,7 +129,15 @@ struct VoiceStudioView: View {
                 }
             }
             .sheet(item: $generateTarget) { target in
-                ContentGenerateSheet(input: target.transcript, title: target.title)
+                ContentGenerateSheet(
+                    input: target.transcript,
+                    title: target.title,
+                    noteId: target.noteId,
+                    onTitleSaved: { newTitle in
+                        guard let noteId = target.noteId else { return }
+                        Task { await viewModel.updateTitle(noteId: noteId, title: newTitle) }
+                    }
+                )
             }
             .task { await reload() }
             .refreshable { await reload() }
@@ -224,7 +247,7 @@ struct VoiceStudioView: View {
 
     private func noteRow(_ note: VoiceNote) -> some View {
         Button {
-            generateTarget = GenerateTarget(transcript: note.transcript, title: note.displayTitle)
+            generateTarget = GenerateTarget(noteId: note.id, transcript: note.transcript, title: note.title ?? "")
         } label: {
             VStack(alignment: .leading, spacing: ArkSpacing.xs) {
                 HStack(spacing: ArkSpacing.xs) {
@@ -304,7 +327,7 @@ struct VoiceStudioView: View {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         if let note = await viewModel.save(transcript: trimmed, source: source, authorId: authorId) {
-            generateTarget = GenerateTarget(transcript: note.transcript, title: note.displayTitle)
+            generateTarget = GenerateTarget(noteId: note.id, transcript: note.transcript, title: note.title ?? "")
         }
     }
 }

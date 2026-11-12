@@ -357,6 +357,16 @@ final class BroadcastService: BroadcastServiceProtocol {
             .value
     }
 
+    /// Public author identities (name + avatar) for the given user ids, used to
+    /// render bylines on update cards. Safe fields only, via SECURITY DEFINER RPC.
+    func fetchPublicAuthors(ids: [UUID]) async throws -> [PublicAuthor] {
+        guard supabase.isConfigured, !ids.isEmpty else { return [] }
+        return try await supabase.database
+            .rpc("get_public_profiles", params: ["ids": ids.map { $0.uuidString }])
+            .execute()
+            .value
+    }
+
     func fetchReaders(for broadcastId: UUID) async throws -> [BroadcastReader] {
         guard supabase.isConfigured else {
             throw AppError.supabaseNotConfigured

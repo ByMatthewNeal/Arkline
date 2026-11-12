@@ -58,6 +58,30 @@ final class ContentStudioService {
         let error: String?
     }
 
+    /// Three tailored title/subject ideas per destination for one thought.
+    struct TitleIdeas: Equatable {
+        var broadcast: [String] = []
+        var x: [String] = []
+        var instagram: [String] = []
+
+        var isEmpty: Bool { broadcast.isEmpty && x.isEmpty && instagram.isEmpty }
+    }
+
+    private struct TitlesRequest: Encodable {
+        let transcript: String
+        let mode: String
+    }
+
+    private struct TitlesResponse: Decodable {
+        struct Ideas: Decodable {
+            let broadcast: [String]?
+            let x: [String]?
+            let instagram: [String]?
+        }
+        let titles: Ideas?
+        let error: String?
+    }
+
     /// Generate content for `format` from `transcript`.
     func generate(transcript: String, format: Format, title: String? = nil) async throws -> String {
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -85,5 +109,37 @@ final class ContentStudioService {
             throw RefineError.emptyResponse
         }
         return content
+    }
+
+    /// Generate 3 tailored title/subject ideas per destination from `transcript`.
+    func generateTitles(transcript: String) async throws -> TitleIdeas {
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw RefineError.emptyInput }
+        guard SupabaseManager.shared.isConfigured else { throw RefineError.notConfigured }
+
+        let payload = TitlesRequest(transcript: trimmed, mode: "titles")
+
+        let data: Data = try await SupabaseManager.shared.functions.invoke(
+            "generate-content",
+            options: FunctionInvokeOptions(body: payload),
+            decode: { data, _ in data }
+        )
+
+        let response = try JSONDecoder().decode(TitlesResponse.self, from: data)
+        if let error = response.error, !error.isEmpty {
+            throw RefineError.server(error)
+        }
+        let clean: ([String]?) -> [String] = { arr in
+            (arr ?? [])
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        }
+        let ideas = TitleIdeas(
+            broadcast: clean(response.titles?.broadcast),
+            x: clean(response.titles?.x),
+            instagram: clean(response.titles?.instagram)
+        )
+        guard !ideas.isEmpty else { throw RefineError.emptyResponse }
+        return ideas
     }
 }

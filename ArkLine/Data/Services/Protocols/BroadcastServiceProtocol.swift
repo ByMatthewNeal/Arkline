@@ -92,6 +92,10 @@ protocol BroadcastServiceProtocol {
     /// - Returns: BroadcastAnalyticsSummary with totals
     func fetchAnalyticsSummary(periodDays: Int) async throws -> BroadcastAnalyticsSummary
 
+    /// Public author identities (name + avatar) for the given user ids, for
+    /// rendering update bylines. Backed by the `get_public_profiles` RPC.
+    func fetchPublicAuthors(ids: [UUID]) async throws -> [PublicAuthor]
+
     /// Admin-only: the list of users who have read a given broadcast, newest first.
     /// Backed by the `get_broadcast_readers` RPC, which enforces the admin gate.
     func fetchReaders(for broadcastId: UUID) async throws -> [BroadcastReader]

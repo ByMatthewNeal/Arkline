@@ -12,6 +12,17 @@ struct ContentGenerateSheet: View {
 
     let input: String
     var title: String = ""
+    var noteId: UUID? = nil
+    var onTitleSaved: ((String) -> Void)? = nil
+
+    init(input: String, title: String = "", noteId: UUID? = nil, onTitleSaved: ((String) -> Void)? = nil) {
+        self.input = input
+        self.title = title
+        self.noteId = noteId
+        self.onTitleSaved = onTitleSaved
+        _titleText = State(initialValue: title)
+        _lastSavedTitle = State(initialValue: title)
+    }
 
     @State private var format: ContentStudioService.Format = .broadcast
     @State private var output: String = ""
@@ -21,6 +32,14 @@ struct ContentGenerateSheet: View {
     @State private var showOriginal = false
     @State private var generatedFormats: Set<ContentStudioService.Format> = []
 
+    // Title / subject
+    @State private var titleText: String
+    @State private var titleIdeas: ContentStudioService.TitleIdeas?
+    @State private var isLoadingTitles = false
+    @State private var titlesError: String?
+    @State private var didSaveTitle = false
+    @State private var lastSavedTitle: String
+
     private var charCount: Int { output.count }
     private var isOverTwitterLimit: Bool { format == .twitterPost && charCount > 280 }
 
@@ -29,6 +48,7 @@ struct ContentGenerateSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: ArkSpacing.lg) {
                     intro
+                    titleSection
                     formatPicker
                     originalDisclosure
                     resultSection
@@ -46,6 +66,8 @@ struct ContentGenerateSheet: View {
             .task {
                 if !generatedFormats.contains(format) { await generate() }
             }
+            .task { await loadTitlesIfNeeded() }
+            .onDisappear { saveTitleToNote() }
         }
     }
 
@@ -64,6 +86,123 @@ struct ContentGenerateSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppColors.accent.opacity(0.08))
         .cornerRadius(ArkSpacing.sm)
+    }
+
+    // MARK: - Title / Subject
+
+    private var titleSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            HStack {
+                Text("Title / Subject")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                Spacer()
+                if didSaveTitle {
+                    Label("Saved", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(AppColors.success)
+                }
+            }
+
+            HStack(spacing: ArkSpacing.sm) {
+                TextField("Give it a title", text: $titleText)
+                    .font(ArkFonts.body)
+                    .submitLabel(.done)
+                    .onSubmit { saveTitleToNote() }
+                    .padding(ArkSpacing.sm)
+                    .background(AppColors.cardBackground(colorScheme))
+                    .cornerRadius(ArkSpacing.sm)
+
+                if noteId != nil && !titleText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Button { saveTitleToNote() } label: {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.body)
+                            .foregroundColor(AppColors.accent)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            titleIdeasArea
+        }
+    }
+
+    @ViewBuilder
+    private var titleIdeasArea: some View {
+        if isLoadingTitles {
+            HStack(spacing: ArkSpacing.xs) {
+                ProgressView().scaleEffect(0.8)
+                Text("Coming up with title ideas…")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.top, ArkSpacing.xxs)
+        } else if let titlesError {
+            HStack(spacing: ArkSpacing.xs) {
+                Text(titlesError)
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textTertiary)
+                Button("Retry") { Task { await loadTitles() } }
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.accent)
+            }
+        } else if let ideas = titleIdeas, !ideas.isEmpty {
+            VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                ideaGroup("Insights / Broadcast", ideas.broadcast)
+                ideaGroup("X (Twitter)", ideas.x)
+                ideaGroup("Instagram", ideas.instagram)
+                Button { Task { await loadTitles() } } label: {
+                    HStack(spacing: ArkSpacing.xxs) {
+                        Image(systemName: "arrow.clockwise").font(.caption2)
+                        Text("More ideas").font(ArkFonts.caption)
+                    }
+                    .foregroundColor(AppColors.accent)
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoadingTitles)
+            }
+            .padding(.top, ArkSpacing.xxs)
+        } else {
+            Button { Task { await loadTitles() } } label: {
+                HStack(spacing: ArkSpacing.xxs) {
+                    Image(systemName: "wand.and.stars").font(.caption)
+                    Text("Suggest title ideas").font(ArkFonts.caption)
+                }
+                .foregroundColor(AppColors.accent)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private func ideaGroup(_ label: String, _ ideas: [String]) -> some View {
+        if !ideas.isEmpty {
+            VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
+                Text(label.uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(AppColors.textTertiary)
+                ForEach(ideas, id: \.self) { idea in
+                    Button { applyTitle(idea) } label: {
+                        HStack(spacing: ArkSpacing.xs) {
+                            Image(systemName: titleText == idea ? "checkmark.circle.fill" : "plus.circle")
+                                .font(.caption)
+                                .foregroundColor(AppColors.accent)
+                            Text(idea)
+                                .font(ArkFonts.caption)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, ArkSpacing.xs)
+                        .padding(.horizontal, ArkSpacing.sm)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(AppColors.accent.opacity(0.08))
+                        .cornerRadius(ArkSpacing.sm)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
     }
 
     private var formatPicker: some View {
@@ -272,13 +411,47 @@ struct ContentGenerateSheet: View {
             let result = try await ContentStudioService.shared.generate(
                 transcript: trimmed,
                 format: format,
-                title: title
+                title: titleText
             )
             output = result
             generatedFormats.insert(format)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
+    }
+
+    private func loadTitlesIfNeeded() async {
+        guard titleIdeas == nil, !isLoadingTitles else { return }
+        await loadTitles()
+    }
+
+    @MainActor
+    private func loadTitles() async {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        isLoadingTitles = true
+        titlesError = nil
+        defer { isLoadingTitles = false }
+        do {
+            titleIdeas = try await ContentStudioService.shared.generateTitles(transcript: trimmed)
+        } catch {
+            titlesError = (error as? LocalizedError)?.errorDescription ?? "Couldn't get title ideas"
+        }
+    }
+
+    private func applyTitle(_ idea: String) {
+        titleText = idea
+        saveTitleToNote()
+    }
+
+    /// Persist the current title back onto the source note (if any), once per change.
+    private func saveTitleToNote() {
+        let trimmed = titleText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != lastSavedTitle else { return }
+        lastSavedTitle = trimmed
+        onTitleSaved?(trimmed)
+        didSaveTitle = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { didSaveTitle = false }
     }
 
     private func copyToClipboard() {

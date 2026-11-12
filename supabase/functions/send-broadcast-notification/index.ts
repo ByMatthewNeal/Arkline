@@ -201,6 +201,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     )
 
+    // Idempotency guard: refuse to send the same message twice inside a short
+    // window. Protects against client retries, double-taps, or two publish paths
+    // firing duplicate pushes for one publish. The key includes the body, so a
+    // genuinely different alert for the same id still goes out; recurring ids
+    // (e.g. daily "core"/"edge" rebalances) are safe because they're >10min apart.
+    const dedupeKey = `${event_type ?? "none"}|${broadcast_id}|${title}|${(body ?? "").slice(0, 200)}`
+    try {
+      const { data: claimed, error: claimErr } = await supabaseAdmin
+        .rpc("claim_notification_send", { p_key: dedupeKey, p_window_seconds: 600 })
+      if (!claimErr && claimed === false) {
+        console.log(`[send-broadcast-notification] Skipped duplicate: ${dedupeKey.slice(0, 120)}`)
+        return new Response(
+          JSON.stringify({ sent: 0, skipped: true, reason: "duplicate within window" }),
+          { headers: corsHeaders }
+        )
+      }
+    } catch (e) {
+      // Dedupe is best-effort — never block a legitimate send if it errors.
+      console.error("[send-broadcast-notification] dedupe check failed (continuing):", e)
+    }
+
     // Build device token query based on audience (iOS/APNs + web/VAPID)
     let deviceQuery = supabaseAdmin
       .from("user_devices")
@@ -256,7 +277,18 @@ Deno.serve(async (req) => {
         for (const profile of profiles) {
           const prefs = profile.notification_preferences as Record<string, boolean> | null
           // null prefs = all enabled (default). Only block if explicitly set to false.
-          if (prefs && prefs[event_type] === false) {
+          if (!prefs) continue
+          let optedOut = prefs[event_type] === false
+          // Some trade-signal alerts (e.g. signal_consider_profit, signal_t2_hit)
+          // have no dedicated toggle in the app, so their key is absent from a
+          // user's prefs. They still belong to "Trade Signals", which the app
+          // mirrors onto signal_new — so for any signal_* type whose specific key
+          // isn't set, fall back to signal_new. This makes turning off Trade
+          // Signals silence every signal_* push, present and future.
+          if (!optedOut && prefs[event_type] === undefined && event_type.startsWith("signal_")) {
+            optedOut = prefs["signal_new"] === false
+          }
+          if (optedOut) {
             blockedUsers.add(profile.id)
           }
         }
@@ -278,11 +310,23 @@ Deno.serve(async (req) => {
     // device_token holds the serialized PushSubscription JSON. Handled before
     // APNs so web delivery works even when APNs isn't configured.
 
-    const webDevices = filteredDevices.filter(
+    const webSeen = new Set<string>()
+    const webDevices = (filteredDevices.filter(
       (d: { platform?: string }) => d.platform === "web"
-    ) as { user_id: string; device_token: string }[]
+    ) as { user_id: string; device_token: string }[])
+      .filter((d) => (webSeen.has(d.device_token) ? false : (webSeen.add(d.device_token), true)))
+
     filteredDevices = filteredDevices.filter(
       (d: { platform?: string }) => d.platform !== "web"
+    )
+
+    // A single physical device token can end up registered under more than one
+    // user_id (e.g. signing into a second account on the same phone). Collapse to
+    // one row per token — newest wins, since the list is ordered updated_at DESC —
+    // so a device is pushed exactly once no matter how many accounts claim it.
+    const seenTokens = new Set<string>()
+    filteredDevices = filteredDevices.filter((d: { device_token: string }) =>
+      seenTokens.has(d.device_token) ? false : (seenTokens.add(d.device_token), true)
     )
 
     let webSent = 0

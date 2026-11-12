@@ -17,6 +17,8 @@ class BroadcastViewModel: ObservableObject {
     @Published var readBroadcastIds: Set<UUID> = []
     @Published var userHeartedBroadcastIds: Set<UUID> = []
     @Published var bookmarkedBroadcastIds: Set<UUID> = []
+    /// Author identity (name + avatar) per author id, for update bylines.
+    @Published var authorsById: [UUID: PublicAuthor] = [:]
 
     // MARK: - Dependencies
 
@@ -56,6 +58,7 @@ class BroadcastViewModel: ObservableObject {
         do {
             broadcasts = try await broadcastService.fetchAllBroadcasts()
             logInfo("Loaded \(broadcasts.count) broadcasts", category: .data)
+            await loadAuthors()
         } catch {
             errorMessage = AppError.from(error).userMessage
             logError("Failed to load broadcasts: \(error)", category: .data)
@@ -76,12 +79,28 @@ class BroadcastViewModel: ObservableObject {
                 offset: offset
             )
             logInfo("Loaded \(broadcasts.count) published broadcasts", category: .data)
+            await loadAuthors()
         } catch {
             errorMessage = AppError.from(error).userMessage
             logError("Failed to load published broadcasts: \(error)", category: .data)
         }
 
         isLoading = false
+    }
+
+    /// Load the public author identity (name + avatar) for the authors of the
+    /// currently loaded broadcasts, so cards can show a byline. Best-effort.
+    private func loadAuthors() async {
+        let ids = Array(Set(broadcasts.map { $0.authorId }))
+        guard !ids.isEmpty else { return }
+        do {
+            let authors = try await broadcastService.fetchPublicAuthors(ids: ids)
+            var map: [UUID: PublicAuthor] = [:]
+            for a in authors { map[a.id] = a }
+            authorsById = map
+        } catch {
+            logWarning("Failed to load broadcast authors: \(error.localizedDescription)", category: .data)
+        }
     }
 
     /// Update unread count for a user

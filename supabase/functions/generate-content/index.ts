@@ -41,11 +41,13 @@ Deno.serve(async (req) => {
   let transcript = ""
   let format: Format = "broadcast"
   let title = ""
+  let mode = "content" // "content" (default) | "titles"
   const validFormats: Format[] = ["broadcast", "instagram", "twitter_post", "twitter_thread"]
   try {
     const parsed = await req.json()
     transcript = String(parsed.transcript ?? "").trim()
     title = String(parsed.title ?? "").trim()
+    if (parsed.mode === "titles") mode = "titles"
     if (validFormats.includes(parsed.format)) format = parsed.format
   } catch {
     return json({ error: "Invalid request body" }, 400)
@@ -100,6 +102,84 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("Voice-example fetch failed (continuing without):", e)
+  }
+
+  const voiceHint = voiceExamples
+    ? `Here is how the author actually talks and writes. Mirror their voice and vocabulary, do not copy the content:\n\n${voiceExamples}\n\n`
+    : ""
+
+  // --- Titles mode: 3 tailored subject/title ideas per destination ---
+  if (mode === "titles") {
+    const titlesSystem = `You are the content voice-engine for the founder of ArkLine, a crypto and macro market app. From one raw spoken thought, generate SHORT title / subject ideas tailored to three destinations, always sounding like THEM.
+
+Output ONLY valid JSON — no prose, no code fences — in exactly this shape:
+{"broadcast":["","",""],"x":["","",""],"instagram":["","",""]}
+
+Rules:
+- "broadcast": 3 clean, specific headlines for an in-app market insight to their members (title case, no hashtags, roughly 3 to 8 words).
+- "x": 3 scroll-stopping hooks for a post on X (punchy, at most one cashtag, under about 70 characters, no hashtag spam).
+- "instagram": 3 catchy caption openers for Instagram (friendly, at most one emoji, no hashtags).
+- Base every idea only on what they actually said. Never invent facts, prices, tickers, or claims.
+- Each idea is a single line. No numbering, no surrounding quotes inside a value.
+${voiceHint}`
+
+    const titlesUser = `${title ? `Topic: ${title}\n\n` : ""}Here is what I said:\n\n"""\n${transcript}\n"""\n\nReturn the JSON of title ideas.`
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: ANTHROPIC_MODEL,
+          max_tokens: 500,
+          system: titlesSystem,
+          messages: [{ role: "user", content: titlesUser }],
+        }),
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error(`Claude API error (titles): ${res.status} ${errorText}`)
+        return json({ error: "Failed to generate titles — please try again" }, 502)
+      }
+
+      const data = await res.json()
+      let raw: string = (data.content?.[0]?.text ?? "").trim()
+      // Strip any accidental code fences before parsing.
+      raw = raw.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim()
+
+      const clean = (arr: unknown): string[] =>
+        Array.isArray(arr)
+          ? arr.map((s) => String(s).trim()).filter((s) => s.length > 0).slice(0, 3)
+          : []
+
+      let titles = { broadcast: [] as string[], x: [] as string[], instagram: [] as string[] }
+      try {
+        const parsed = JSON.parse(raw)
+        titles = {
+          broadcast: clean(parsed.broadcast),
+          x: clean(parsed.x),
+          instagram: clean(parsed.instagram),
+        }
+      } catch (e) {
+        console.error("Titles JSON parse failed:", e, raw.slice(0, 300))
+        return json({ error: "Came back malformed — please try again" }, 502)
+      }
+
+      if (titles.broadcast.length + titles.x.length + titles.instagram.length === 0) {
+        return json({ error: "Came back empty — please try again" }, 502)
+      }
+
+      console.log(`Generated titles for ${user.id} (in=${transcript.length})`)
+      return json({ titles })
+    } catch (e) {
+      console.error("generate-content titles threw:", e)
+      return json({ error: "Failed to generate titles — please try again" }, 500)
+    }
   }
 
   // --- Format directives ---

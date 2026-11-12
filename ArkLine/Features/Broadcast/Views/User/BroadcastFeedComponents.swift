@@ -32,9 +32,6 @@ struct BroadcastCardView: View {
                             .foregroundColor(AppColors.accent)
                     }
 
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .foregroundColor(AppColors.accent)
-
                     Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
                         .font(ArkFonts.caption)
                         .foregroundColor(AppColors.textSecondary)
@@ -228,6 +225,35 @@ struct BroadcastDetailView: View {
                 VStack(alignment: .leading, spacing: ArkSpacing.lg) {
                     // Header
                     VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                        // Author byline (your face on the update)
+                        if let author = viewModel.authorsById[broadcast.authorId] {
+                            HStack(spacing: ArkSpacing.sm) {
+                                Group {
+                                    if let url = author.photoURL {
+                                        KFImage(url)
+                                            .resizable()
+                                            .scaledToFill()
+                                    } else {
+                                        ZStack {
+                                            Circle().fill(AppColors.accent.opacity(0.15))
+                                            Text(author.initials)
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .foregroundColor(AppColors.accent)
+                                        }
+                                    }
+                                }
+                                .frame(width: 36, height: 36)
+                                .clipShape(Circle())
+
+                                Text(author.displayName)
+                                    .font(ArkFonts.bodySemibold)
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                                Spacer()
+                            }
+                            .padding(.bottom, 2)
+                        }
+
                         HStack {
                             Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
                                 .font(ArkFonts.caption)

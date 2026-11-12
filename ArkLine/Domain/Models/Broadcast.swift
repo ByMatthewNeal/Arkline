@@ -1155,6 +1155,43 @@ struct BroadcastAnalyticsSummary: Codable, Equatable {
     }
 }
 
+// MARK: - Public Author
+
+/// The author's public-facing identity (name + avatar) for update bylines.
+/// Comes from the `get_public_profiles` RPC, which exposes only these safe
+/// fields — members can't read the author's full profile under RLS.
+struct PublicAuthor: Decodable, Identifiable, Equatable {
+    let id: UUID
+    let fullName: String?
+    let username: String?
+    let avatarUrl: String?
+    let usePhotoAvatar: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fullName = "full_name"
+        case username
+        case avatarUrl = "avatar_url"
+        case usePhotoAvatar = "use_photo_avatar"
+    }
+
+    var displayName: String { fullName ?? username ?? "Arkline" }
+
+    var initials: String {
+        let parts = displayName.split(separator: " ")
+        if parts.count >= 2 {
+            return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased()
+        }
+        return String(displayName.prefix(2)).uppercased()
+    }
+
+    /// Photo URL only when the author opted into a photo avatar and one exists.
+    var photoURL: URL? {
+        guard usePhotoAvatar, let s = avatarUrl, !s.isEmpty else { return nil }
+        return URL(string: s)
+    }
+}
+
 // MARK: - Broadcast Tag
 
 /// Predefined tags for categorizing broadcasts
