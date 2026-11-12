@@ -15,8 +15,6 @@ struct PreciousMetalsSection: View {
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
             HStack {
-                Image(systemName: "cube.fill")
-                    .foregroundColor(Color(hex: "F59E0B"))
                 Text("Precious Metals")
                     .font(.headline)
                     .foregroundColor(textPrimary)

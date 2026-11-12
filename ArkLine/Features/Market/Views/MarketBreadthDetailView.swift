@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 // MARK: - Market Breadth Detail View
 struct MarketBreadthDetailView: View {
@@ -8,6 +9,8 @@ struct MarketBreadthDetailView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var selectedRange: TimeRange = .threeMonths
+    @State private var selected: MarketBreadthPoint?
+    @State private var showBTC = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBackground: Color {
@@ -61,7 +64,9 @@ struct MarketBreadthDetailView: View {
                 // How it works (always available)
                 howItWorks
             }
-            .padding(.vertical)
+            .padding(.top)
+            // Clear the floating tab bar so the last section isn't covered.
+            .padding(.bottom, 100)
         }
         .navigationTitle("Market Breadth")
         .navigationBarTitleDisplayMode(.inline)
@@ -79,6 +84,7 @@ struct MarketBreadthDetailView: View {
     private func loadData() async {
         isLoading = true
         errorMessage = nil
+        selected = nil
         let service = ServiceContainer.shared.marketBreadthService
 
         // History drives the entire view, so fetch it on its own and never let a
@@ -239,8 +245,13 @@ struct MarketBreadthDetailView: View {
                         HStack(spacing: 4) {
                             Image(systemName: point.isBullishCrossover ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
                                 .font(.system(size: 8))
-                            Text("\(point.isBullishCrossover ? "bullish" : "bearish") (\(point.shortDateDisplay))")
+                            Text("\(point.isBullishCrossover ? "bullish" : "bearish") · \(point.shortDateDisplay)")
                                 .font(.system(size: 11, weight: .medium))
+                            // Show the BTC price the signal fired at (older rows may lack it).
+                            if point.btcPrice != nil {
+                                Text("· \(point.btcPriceFormatted)")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
                         }
                         .foregroundColor(point.isBullishCrossover ? AppColors.success : AppColors.error)
                         .padding(.horizontal, 8)
@@ -260,32 +271,22 @@ struct MarketBreadthDetailView: View {
 
     private var chartSection: some View {
         VStack(spacing: 12) {
-            // Time range picker
+            // Controls: time range + BTC overlay toggle
             HStack {
                 timeRangePicker
                 Spacer()
+                btcToggle
             }
             .padding(.horizontal)
 
-            // Chart with proper insets for axis labels
-            HStack(alignment: .top, spacing: 0) {
-                // Left Y-axis (breadth %)
-                yAxisColumn
-                    .frame(width: 32)
+            // Native Swift Charts chart
+            breadthChart
+                .frame(height: 260)
+                .padding(.horizontal, 8)
 
-                // Main chart area
-                breadthChart
-                    .frame(height: 240)
-
-                // Right Y-axis (BTC price)
-                btcAxisColumn
-                    .frame(width: 36)
-            }
-            .padding(.horizontal, 8)
-
-            // X-axis date labels
-            xAxisDates
-                .padding(.horizontal, 48)
+            // Drag-to-inspect readout
+            readout
+                .padding(.horizontal)
 
             // Legend
             chartLegend
@@ -319,172 +320,253 @@ struct MarketBreadthDetailView: View {
         .background(Capsule().fill(textPrimary.opacity(0.06)))
     }
 
-    // MARK: - Chart
+    private var btcToggle: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { showBTC.toggle() }
+        } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(showBTC ? Color.orange : AppColors.textTertiary.opacity(0.4))
+                    .frame(width: 7, height: 7)
+                Text("BTC")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(showBTC ? textPrimary : AppColors.textSecondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(textPrimary.opacity(showBTC ? 0.10 : 0.06)))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Chart (Swift Charts)
+
+    /// Breadth y-domain: zoom to the data but always keep the 30/70 zone lines in
+    /// view so the Weak/Mixed/Strong bands stay meaningful.
+    private var breadthDomain: (lo: Double, hi: Double) {
+        let values = history.map(\.breadthPct) + history.compactMap(\.ema12) + history.compactMap(\.ema21)
+        let dataMin = values.min() ?? 0
+        let dataMax = values.max() ?? 100
+        let lo = max(0, min(dataMin, 25) - 4)
+        let hi = min(100, max(dataMax, 75) + 4)
+        return (lo, hi)
+    }
+
+    private var btcRange: (min: Double, max: Double) {
+        let btc = history.compactMap(\.btcPrice)
+        let lo = (btc.min() ?? 0) * 0.98
+        let hi = (btc.max() ?? 1) * 1.02
+        return (lo, max(hi, lo + 1))
+    }
+
+    /// Map a BTC price into the breadth y-domain so it can share one axis without
+    /// a second scale (the real price is always shown in the readout/legend).
+    private func btcToBreadth(_ price: Double) -> Double {
+        let b = btcRange
+        let d = breadthDomain
+        let frac = (price - b.min) / (b.max - b.min)
+        return d.lo + frac * (d.hi - d.lo)
+    }
 
     private var breadthChart: some View {
-        let breadthValues = history.map { $0.breadthPct }
-        let ema12Values = history.compactMap { $0.ema12 }
-        let ema21Values = history.compactMap { $0.ema21 }
-        let btcValues = history.compactMap { $0.btcPrice }
+        let domain = breadthDomain
+        let trendUp = history.last?.isBullish == true
+        let emaColor = trendUp ? AppColors.success : AppColors.error
 
-        let minBreadth = max(0, (breadthValues.min() ?? 0) - 5)
-        let maxBreadth = min(100, (breadthValues.max() ?? 100) + 5)
-        let breadthRange = maxBreadth - minBreadth
-
-        let minBtc = (btcValues.min() ?? 0) * 0.98
-        let maxBtc = (btcValues.max() ?? 1) * 1.02
-        let btcRange = maxBtc - minBtc
-
-        return GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-
-            ZStack {
-                // 30% and 70% zone lines
-                if breadthRange > 0 {
-                    zoneLine(at: 30, min: minBreadth, range: breadthRange, height: h, width: w)
-                    zoneLine(at: 70, min: minBreadth, range: breadthRange, height: h, width: w)
+        return Chart {
+            // Zone reference lines (only when inside the visible domain)
+            ForEach([30.0, 70.0], id: \.self) { level in
+                if level >= domain.lo && level <= domain.hi {
+                    RuleMark(y: .value("Zone", level))
+                        .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
+                        .foregroundStyle(textPrimary.opacity(0.12))
                 }
+            }
 
-                // Raw breadth line (light, thin)
-                linePath(values: breadthValues, min: minBreadth, range: breadthRange, w: w, h: h)
-                    .stroke(textPrimary.opacity(0.15), lineWidth: 1)
+            // Raw breadth: faint area + thin line (context under the EMAs)
+            ForEach(history) { p in
+                AreaMark(
+                    x: .value("Date", p.date),
+                    y: .value("Breadth", p.breadthPct)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [AppColors.accent.opacity(0.14), AppColors.accent.opacity(0.01)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .interpolationMethod(.catmullRom)
+            }
+            ForEach(history) { p in
+                LineMark(
+                    x: .value("Date", p.date),
+                    y: .value("Breadth", p.breadthPct),
+                    series: .value("Series", "Breadth")
+                )
+                .foregroundStyle(textPrimary.opacity(0.18))
+                .lineStyle(StrokeStyle(lineWidth: 1))
+                .interpolationMethod(.catmullRom)
+            }
 
-                // EMA 12 line (bold)
-                if ema12Values.count == history.count {
-                    linePath(values: ema12Values, min: minBreadth, range: breadthRange, w: w, h: h)
-                        .stroke(
-                            history.last?.isBullish == true ? AppColors.success : AppColors.error,
-                            lineWidth: 2
+            // EMA 12 (bold, trend-colored)
+            ForEach(history) { p in
+                if let ema = p.ema12 {
+                    LineMark(
+                        x: .value("Date", p.date),
+                        y: .value("EMA 12", ema),
+                        series: .value("Series", "EMA 12")
+                    )
+                    .foregroundStyle(emaColor)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .interpolationMethod(.catmullRom)
+                }
+            }
+            // EMA 21 (lighter)
+            ForEach(history) { p in
+                if let ema = p.ema21 {
+                    LineMark(
+                        x: .value("Date", p.date),
+                        y: .value("EMA 21", ema),
+                        series: .value("Series", "EMA 21")
+                    )
+                    .foregroundStyle(emaColor.opacity(0.4))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5))
+                    .interpolationMethod(.catmullRom)
+                }
+            }
+
+            // BTC overlay (optional, scaled into the breadth domain)
+            if showBTC {
+                ForEach(history) { p in
+                    if let btc = p.btcPrice {
+                        LineMark(
+                            x: .value("Date", p.date),
+                            y: .value("BTC", btcToBreadth(btc)),
+                            series: .value("Series", "BTC")
                         )
+                        .foregroundStyle(Color.orange.opacity(0.55))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+                        .interpolationMethod(.catmullRom)
+                    }
                 }
+            }
 
-                // EMA 21 line (lighter)
-                if ema21Values.count == history.count {
-                    linePath(values: ema21Values, min: minBreadth, range: breadthRange, w: w, h: h)
-                        .stroke(
-                            (history.last?.isBullish == true ? AppColors.success : AppColors.error).opacity(0.4),
-                            lineWidth: 1.5
-                        )
+            // Crossover markers
+            ForEach(history.filter { $0.isCrossover }) { p in
+                PointMark(
+                    x: .value("Date", p.date),
+                    y: .value("Crossover", p.ema12 ?? p.breadthPct)
+                )
+                .foregroundStyle(p.isBullishCrossover ? AppColors.success : AppColors.error)
+                .symbol {
+                    Image(systemName: p.isBullishCrossover ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(p.isBullishCrossover ? AppColors.success : AppColors.error)
                 }
+            }
 
-                // BTC price line (orange)
-                if btcValues.count == history.count && btcRange > 0 {
-                    linePath(values: btcValues, min: minBtc, range: btcRange, w: w, h: h)
-                        .stroke(Color.orange.opacity(0.5), lineWidth: 1.5)
-                }
-
-                // Crossover markers
-                let count = CGFloat(max(1, history.count - 1))
-                ForEach(Array(history.enumerated()), id: \.offset) { i, point in
-                    if point.isCrossover {
-                        let x = w * CGFloat(i) / count
-                        let emaVal = point.ema12 ?? point.breadthPct
-                        let y = breadthRange > 0
-                            ? h * (1 - (emaVal - minBreadth) / breadthRange)
-                            : h / 2
-
-                        Image(systemName: point.isBullishCrossover ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(point.isBullishCrossover ? AppColors.success : AppColors.error)
-                            .background(
-                                Circle()
-                                    .fill(cardBackground)
-                                    .frame(width: 16, height: 16)
-                            )
-                            .position(x: x, y: max(12, min(h - 12, y - 14)))
+            // Drag-to-inspect crosshair
+            if let sel = selected {
+                RuleMark(x: .value("Date", sel.date))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
+                    .foregroundStyle(AppColors.textSecondary.opacity(0.5))
+                PointMark(
+                    x: .value("Date", sel.date),
+                    y: .value("Breadth", sel.breadthPct)
+                )
+                .foregroundStyle(AppColors.accent)
+                .symbolSize(70)
+            }
+        }
+        .chartYScale(domain: domain.lo...domain.hi)
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
+                AxisGridLine().foregroundStyle(textPrimary.opacity(0.04))
+                AxisValueLabel {
+                    if let v = value.as(Double.self) {
+                        Text("\(Int(v))%")
+                            .font(.system(size: 9, design: .rounded))
+                            .foregroundColor(AppColors.textTertiary)
                     }
                 }
             }
         }
-    }
-
-    // MARK: - Axis Labels
-
-    private var yAxisColumn: some View {
-        let breadthValues = history.map { $0.breadthPct }
-        let minVal = max(0, (breadthValues.min() ?? 0) - 5)
-        let maxVal = min(100, (breadthValues.max() ?? 100) + 5)
-
-        return GeometryReader { geo in
-            let h = geo.size.height
-            let steps = [0.0, 0.25, 0.5, 0.75, 1.0]
-            ForEach(steps, id: \.self) { frac in
-                let val = minVal + (maxVal - minVal) * frac
-                Text(String(format: "%.0f%%", val))
-                    .font(.system(size: 8, design: .rounded))
-                    .foregroundColor(AppColors.textTertiary)
-                    .position(x: 16, y: h * (1 - frac))
-            }
-        }
-        .frame(height: 240)
-    }
-
-    private var btcAxisColumn: some View {
-        let btcValues = history.compactMap { $0.btcPrice }
-        let minBtc = (btcValues.min() ?? 0) * 0.98
-        let maxBtc = (btcValues.max() ?? 1) * 1.02
-
-        return GeometryReader { geo in
-            let h = geo.size.height
-            if !btcValues.isEmpty {
-                ForEach([0.0, 0.5, 1.0], id: \.self) { frac in
-                    let val = minBtc + (maxBtc - minBtc) * frac
-                    Text("$\(Int(val / 1000))K")
-                        .font(.system(size: 8, design: .rounded))
-                        .foregroundColor(Color.orange.opacity(0.6))
-                        .position(x: 18, y: h * (1 - frac))
+        .chartXAxis {
+            AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { value in
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(date, format: .dateTime.month(.abbreviated).day())
+                            .font(.system(size: 9))
+                            .foregroundColor(AppColors.textTertiary)
+                    }
                 }
             }
         }
-        .frame(height: 240)
-    }
-
-    private var xAxisDates: some View {
-        HStack {
-            if let first = history.first {
-                Text(first.shortDateDisplay)
-                    .font(.system(size: 9))
-                    .foregroundColor(AppColors.textTertiary)
-            }
-            Spacer()
-            if history.count > 2 {
-                let mid = history[history.count / 2]
-                Text(mid.shortDateDisplay)
-                    .font(.system(size: 9))
-                    .foregroundColor(AppColors.textTertiary)
-            }
-            Spacer()
-            if let last = history.last {
-                Text(last.shortDateDisplay)
-                    .font(.system(size: 9))
-                    .foregroundColor(AppColors.textTertiary)
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                Rectangle().fill(Color.clear).contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                guard let plotFrame = proxy.plotFrame else { return }
+                                let x = value.location.x - geo[plotFrame].origin.x
+                                guard let date = proxy.value(atX: x, as: Date.self) else { return }
+                                selected = nearestPoint(to: date)
+                            }
+                            .onEnded { _ in selected = nil }
+                    )
             }
         }
     }
 
-    // MARK: - Chart Helpers
-
-    private func linePath(values: [Double], min: Double, range: Double, w: CGFloat, h: CGFloat) -> Path {
-        Path { path in
-            let count = CGFloat(max(1, values.count - 1))
-            for (i, val) in values.enumerated() {
-                let x = w * CGFloat(i) / count
-                let y = range > 0 ? h * (1 - (val - min) / range) : h / 2
-                if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
-                else { path.addLine(to: CGPoint(x: x, y: y)) }
-            }
-        }
+    private func nearestPoint(to date: Date) -> MarketBreadthPoint? {
+        history.min(by: {
+            abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
+        })
     }
 
-    private func zoneLine(at pct: Double, min: Double, range: Double, height: CGFloat, width: CGFloat) -> some View {
-        let y = height * (1 - (pct - min) / range)
-        return Path { path in
-            path.move(to: CGPoint(x: 0, y: y))
-            path.addLine(to: CGPoint(x: width, y: y))
+    // MARK: - Readout (drag-to-inspect)
+
+    private var readout: some View {
+        Group {
+            if let sel = selected {
+                HStack(spacing: 10) {
+                    Text(sel.date, format: .dateTime.month(.abbreviated).day().year())
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(textPrimary)
+                    Spacer()
+                    readoutChip("Breadth", sel.breadthFormatted, color: breadthColor(sel.breadthPct))
+                    readoutChip("EMA12", sel.ema12Formatted, color: trendColor(sel))
+                    readoutChip("EMA21", sel.ema21Formatted, color: trendColor(sel).opacity(0.7))
+                    if sel.btcPrice != nil {
+                        readoutChip("BTC", sel.btcPriceFormatted, color: .orange)
+                    }
+                }
+            } else {
+                HStack(spacing: 6) {
+                    Image(systemName: "hand.draw")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textTertiary)
+                    Text("Drag across the chart to read any day")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textTertiary)
+                    Spacer()
+                }
+            }
         }
-        .stroke(style: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
-        .foregroundColor(textPrimary.opacity(0.12))
+        .frame(height: 24)
+    }
+
+    private func readoutChip(_ label: String, _ value: String, color: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(label)
+                .font(.system(size: 8, weight: .medium))
+                .foregroundColor(AppColors.textTertiary)
+            Text(value)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundColor(color)
+        }
     }
 
     // MARK: - Chart Legend
@@ -494,7 +576,10 @@ struct MarketBreadthDetailView: View {
             legendItem(color: textPrimary.opacity(0.2), label: "Breadth")
             legendItem(color: history.last?.isBullish == true ? AppColors.success : AppColors.error, label: "EMA 12")
             legendItem(color: (history.last?.isBullish == true ? AppColors.success : AppColors.error).opacity(0.4), label: "EMA 21")
-            legendItem(color: Color.orange.opacity(0.5), label: "BTC")
+            if showBTC {
+                legendItem(color: Color.orange.opacity(0.55), label: "BTC")
+            }
+            Spacer()
         }
         .font(.system(size: 10))
     }
@@ -521,7 +606,7 @@ struct MarketBreadthDetailView: View {
             bulletPoint("EMA 12/21 crossover on the breadth data identifies trend direction and momentum shifts.")
             bulletPoint("Green EMAs = bullish trend (breadth improving). Red EMAs = bearish trend (breadth declining).")
             bulletPoint("Triangle markers show crossover points, potential turning points in market breadth.")
-            bulletPoint("BTC price (orange) provides context for divergences between breadth and the leading asset.")
+            bulletPoint("Toggle BTC (orange) to spot divergences between breadth and the leading asset.")
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 12).fill(cardBackground))
@@ -542,6 +627,12 @@ struct MarketBreadthDetailView: View {
 
     private func trendColor(_ point: MarketBreadthPoint) -> Color {
         point.isBullish ? AppColors.success : point.isBearish ? AppColors.error : AppColors.warning
+    }
+
+    private func breadthColor(_ pct: Double) -> Color {
+        if pct >= 70 { return AppColors.success }
+        if pct <= 30 { return AppColors.error }
+        return AppColors.warning
     }
 
     private func breadthGradient(_ pct: Double) -> LinearGradient {

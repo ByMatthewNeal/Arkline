@@ -29,10 +29,6 @@ struct TopCoinsSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack(spacing: 8) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppColors.accent)
-
                 Text("Top Coins")
                     .font(.headline)
                     .foregroundColor(textPrimary)

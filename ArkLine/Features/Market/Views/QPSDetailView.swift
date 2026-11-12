@@ -6,9 +6,37 @@ struct QPSDetailView: View {
     let asset: String
     @State private var history: [DailyPositioningSignal] = []
     @State private var isLoading = true
+    @State private var days: Int = 30
     @Environment(\.colorScheme) var colorScheme
 
     private let service = PositioningSignalService()
+    private let dayOptions = [30, 90, 180]
+
+    // Newest first.
+    private var sortedDesc: [DailyPositioningSignal] {
+        history.sorted { $0.signalDate > $1.signalDate }
+    }
+
+    /// Days the current stance has held within the loaded window.
+    private var currentRunDays: Int {
+        guard let current = sortedDesc.first?.positioningSignal.label else { return 0 }
+        var count = 0
+        for s in sortedDesc {
+            if s.positioningSignal.label == current { count += 1 } else { break }
+        }
+        return count
+    }
+
+    /// True when the current stance fills the whole window, so its true start
+    /// is older than the loaded range (show "N+ days").
+    private var runIsAtLeast: Bool {
+        !history.isEmpty && currentRunDays == history.count
+    }
+
+    /// The days the signal flipped from the prior day, newest first.
+    private var shifts: [DailyPositioningSignal] {
+        sortedDesc.filter { $0.hasChanged && $0.prevPositioningSignal != nil }
+    }
 
     var body: some View {
         ScrollView {
@@ -23,13 +51,13 @@ struct QPSDetailView: View {
                 .padding(.top, 80)
             } else {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Current signal header
                     if let latest = history.last {
                         currentSignalCard(latest)
                     }
 
-                    // History
                     if history.count > 1 {
+                        rangePicker
+                        shiftsSection
                         historySection
                     }
 
@@ -49,67 +77,51 @@ struct QPSDetailView: View {
                 .padding(20)
             }
         }
-        .refreshable {
-            do {
-                history = try await service.fetchSignalHistory(asset: asset, days: 30)
-            } catch {
-                logWarning("QPS history refresh failed: \(error.localizedDescription)", category: .network)
-            }
-        }
+        .refreshable { await load() }
         .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
         .navigationTitle("\(asset) Positioning")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task {
-            do {
-                history = try await service.fetchSignalHistory(asset: asset, days: 30)
-            } catch {
-                logWarning("QPS history fetch failed: \(error.localizedDescription)", category: .network)
-            }
-            isLoading = false
-        }
+        .task { await load(initial: true) }
+        .onChange(of: days) { _, _ in Task { await load() } }
     }
+
+    private func load(initial: Bool = false) async {
+        do {
+            history = try await service.fetchSignalHistory(asset: asset, days: days)
+        } catch {
+            logWarning("QPS history fetch failed: \(error.localizedDescription)", category: .network)
+        }
+        if initial { isLoading = false }
+    }
+
+    // MARK: - Current Signal
 
     private func currentSignalCard(_ signal: DailyPositioningSignal) -> some View {
         VStack(spacing: 12) {
-            HStack {
-                Image(systemName: signal.positioningSignal.icon)
-                    .font(.system(size: 24))
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(signal.positioningSignal.color)
+                    .frame(width: 10, height: 10)
+
+                Text(signal.positioningSignal.label)
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundColor(signal.positioningSignal.color)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(signal.positioningSignal.label)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(signal.positioningSignal.color)
-
-                    if let change = signal.changeDescription {
-                        Text(change)
-                            .font(AppFonts.caption12Medium)
-                            .foregroundColor(AppColors.warning)
-                    }
-                }
-
                 Spacer()
+
+                Text("Holding \(currentRunDays)\(runIsAtLeast ? "+" : "") day\(currentRunDays == 1 ? "" : "s")")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
             }
 
-            // Action guidance
-            HStack(spacing: 8) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(signal.positioningSignal.color.opacity(0.7))
-
-                if signal.hasChanged, let prev = signal.prevPositioningSignal {
-                    Text(signal.positioningSignal.changeHint(from: prev))
-                        .font(.system(size: 12))
-                        .foregroundColor(AppColors.textSecondary)
-                } else {
-                    Text(signal.positioningSignal.actionGuidance)
-                        .font(.system(size: 12))
-                        .foregroundColor(AppColors.textSecondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(signal.hasChanged && signal.prevPositioningSignal != nil
+                 ? signal.positioningSignal.changeHint(from: signal.prevPositioningSignal!)
+                 : signal.positioningSignal.actionGuidance)
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Text("$\(String(format: "%.2f", signal.price))")
                 .font(AppFonts.caption12)
@@ -127,14 +139,94 @@ struct QPSDetailView: View {
         )
     }
 
+    // MARK: - Range Picker
+
+    private var rangePicker: some View {
+        HStack(spacing: 8) {
+            ForEach(dayOptions, id: \.self) { opt in
+                Button { days = opt } label: {
+                    Text("\(opt)D")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(days == opt ? .white : AppColors.textSecondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule().fill(days == opt ? AppColors.accent : AppColors.textSecondary.opacity(0.1))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+    }
+
+    // MARK: - Signal Changes (shifts)
+
+    private var shiftsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Signal Changes")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            if shifts.isEmpty {
+                Text("No changes in the last \(days) days. \(history.last?.positioningSignal.label ?? "The stance") held throughout.")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 4)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(shifts.enumerated()), id: \.element.id) { index, shift in
+                        HStack(spacing: 10) {
+                            Text(formatDate(shift.signalDate))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(AppColors.textSecondary)
+                                .frame(width: 60, alignment: .leading)
+
+                            if let prev = shift.prevPositioningSignal {
+                                Text(prev.label)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(prev.color)
+                                Text("→")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(AppColors.textTertiary)
+                            }
+                            Text(shift.positioningSignal.label)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(shift.positioningSignal.color)
+
+                            Spacer()
+
+                            Text(formatPrice(shift.price, category: shift.assetCategory))
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                        }
+                        .padding(.vertical, 9)
+                        .padding(.horizontal, 12)
+
+                        if index != shifts.count - 1 {
+                            Divider().opacity(0.1)
+                        }
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                )
+            }
+        }
+    }
+
+    // MARK: - Full History
+
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("30-Day History")
+            Text("\(days)-Day History")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             VStack(spacing: 0) {
-                ForEach(history.suffix(30).reversed()) { signal in
+                ForEach(Array(sortedDesc.enumerated()), id: \.element.id) { index, signal in
                     HStack {
                         Text(formatDate(signal.signalDate))
                             .font(.system(size: 12, weight: .medium))
@@ -149,22 +241,24 @@ struct QPSDetailView: View {
                             .background(signal.positioningSignal.color)
                             .cornerRadius(4)
 
+                        if signal.hasChanged {
+                            Circle()
+                                .fill(AppColors.warning)
+                                .frame(width: 5, height: 5)
+                        }
+
                         Spacer()
 
-                        Text(formatPrice(signal.price))
+                        Text(formatPrice(signal.price, category: signal.assetCategory))
                             .font(.system(size: 11, design: .monospaced))
                             .foregroundColor(AppColors.textSecondary.opacity(0.7))
-
-                        if signal.hasChanged {
-                            Image(systemName: "waveform.path.ecg")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(AppColors.warning)
-                        }
                     }
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
 
-                    Divider().opacity(0.1)
+                    if index != sortedDesc.count - 1 {
+                        Divider().opacity(0.1)
+                    }
                 }
             }
             .background(
@@ -180,15 +274,12 @@ struct QPSDetailView: View {
         return formatter.string(from: date)
     }
 
-    private func formatPrice(_ price: Double) -> String {
-        if price >= 10_000 {
-            return "$\(Int(price).formatted())"
-        } else if price >= 100 {
-            return String(format: "$%.0f", price)
-        } else if price >= 1 {
-            return String(format: "$%.2f", price)
-        } else {
-            return String(format: "$%.4f", price)
+    private func formatPrice(_ price: Double, category: QPSAssetCategory) -> String {
+        // Crypto keeps tiered decimals (small coins need more precision); stocks,
+        // indices, and commodities always show cents with thousands separators.
+        if category == .crypto || category == .alt_btc {
+            return price.asCryptoPrice(code: "USD")
         }
+        return price.asCurrency
     }
 }

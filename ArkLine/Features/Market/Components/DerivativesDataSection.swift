@@ -14,8 +14,6 @@ struct DerivativesDataSection: View {
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
             HStack {
-                Image(systemName: "chart.bar.doc.horizontal")
-                    .foregroundColor(AppColors.accent)
                 Text("Derivatives")
                     .font(.headline)
                     .foregroundColor(AppColors.textPrimary(colorScheme))

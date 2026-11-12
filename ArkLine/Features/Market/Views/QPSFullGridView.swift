@@ -186,7 +186,7 @@ struct QPSFullGridView: View {
                             .font(.system(size: 10))
                             .foregroundColor(AppColors.textSecondary.opacity(0.3))
 
-                        Text(formatSignalPrice(signal.price))
+                        Text(formatSignalPrice(signal.price, category: signal.assetCategory))
                             .font(.system(size: 10, design: .monospaced))
                             .foregroundColor(AppColors.textSecondary.opacity(0.6))
                     }
@@ -215,16 +215,13 @@ struct QPSFullGridView: View {
         .padding(.vertical, 10)
     }
 
-    private func formatSignalPrice(_ price: Double) -> String {
-        if price >= 10_000 {
-            return "$\(Int(price).formatted())"
-        } else if price >= 100 {
-            return String(format: "$%.0f", price)
-        } else if price >= 1 {
-            return String(format: "$%.2f", price)
-        } else {
-            return String(format: "$%.4f", price)
+    private func formatSignalPrice(_ price: Double, category: QPSAssetCategory) -> String {
+        // Crypto keeps tiered decimals (small coins need more precision); stocks,
+        // indices, and commodities always show cents with thousands separators.
+        if category == .crypto || category == .alt_btc {
+            return price.asCryptoPrice(code: "USD")
         }
+        return price.asCurrency
     }
 
     private func trendStrengthLabel(_ score: Double) -> String {

@@ -334,6 +334,11 @@ struct DailyRankingsCard: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(AppColors.textSecondary.opacity(0.1), lineWidth: 1)
                     )
+
+                    Text("BTC price is a once-daily snapshot recorded with each ranking, not a live quote.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textTertiary)
+                        .padding(.top, 10)
                 }
             }
         }

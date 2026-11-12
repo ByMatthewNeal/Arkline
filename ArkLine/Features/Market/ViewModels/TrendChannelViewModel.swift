@@ -57,10 +57,19 @@ class TrendChannelViewModel {
                     interval: "1d",
                     range: "5d"
                 )
-                let price = dailyResult.currentPrice
+                var price = dailyResult.currentPrice
                 var change = 0.0
                 if let prevClose = dailyResult.previousClose, prevClose > 0 {
                     change = ((price - prevClose) / prevClose) * 100
+                }
+                // Brent: use FMP's front-month Brent quote (BZUSD) for the headline
+                // price. It tracks broker "spot Brent" CFD feeds more closely than
+                // Yahoo's BZ=F continuous. Chart bars stay on Yahoo (intraday-capable).
+                if symbol == "BZ=F",
+                   let fmp = try? await FMPService.shared.fetchCommodityQuotes(symbols: ["BZUSD"]).first,
+                   fmp.price > 0 {
+                    price = fmp.price
+                    change = fmp.changePercentage ?? change
                 }
                 cachedDailyQuote[symbol] = (price: price, change: change)
             }

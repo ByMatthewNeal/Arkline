@@ -19,8 +19,6 @@ struct TraditionalMarketsSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Section Header
             HStack {
-                Image(systemName: "building.2.fill")
-                    .foregroundColor(AppColors.accent)
                 Text("Traditional Markets")
                     .font(.headline)
                     .foregroundColor(textPrimary)

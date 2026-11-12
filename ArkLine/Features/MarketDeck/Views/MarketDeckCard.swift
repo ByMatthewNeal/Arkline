@@ -12,10 +12,6 @@ struct MarketDeckCard: View {
             Button(action: { showViewer = true }) {
                 VStack(alignment: .leading, spacing: ArkSpacing.sm) {
                     HStack {
-                        Image(systemName: "doc.richtext")
-                            .font(.system(size: 16))
-                            .foregroundColor(AppColors.accent)
-
                         Text("Weekly Market Update")
                             .font(AppFonts.body14Medium)
                             .foregroundColor(AppColors.textPrimary(colorScheme))

@@ -40,10 +40,6 @@ struct FedWatchSection: View {
             // Header
             HStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "building.columns.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(AppColors.accent)
-
                     Text("Fed Watch")
                         .font(.subheadline)
                         .fontWeight(.semibold)

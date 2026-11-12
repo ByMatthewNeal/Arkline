@@ -109,8 +109,6 @@ struct QPSGridSection: View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
             HStack {
-                Image(systemName: "waveform.path.ecg")
-                    .foregroundColor(AppColors.accent)
                 Text("Daily Positioning")
                     .font(.headline)
                     .foregroundColor(AppColors.textPrimary(colorScheme))

@@ -87,7 +87,7 @@ struct MarketOverviewView: View {
                 }
             } // ScrollViewReader
             }
-            .navigationTitle("Market Overview")
+            .navigationTitle("Overview")
             .task {
                 // Start market + sentiment refresh in parallel
                 async let market: () = viewModel.refresh()

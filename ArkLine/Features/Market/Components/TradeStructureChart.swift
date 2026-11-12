@@ -90,9 +90,6 @@ struct TradeStructureChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 14))
-                    .foregroundColor(AppColors.accent)
                 Text("Trade Structure")
                     .font(.headline.weight(.semibold))
                     .foregroundColor(textPrimary)

@@ -13,16 +13,11 @@ struct SwingSetupsSummarySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
-            HStack {
-                Image(systemName: "scope")
-                    .foregroundColor(AppColors.accent)
-                Text("Trade Signals")
-                    .font(.headline)
-                    .foregroundColor(textPrimary)
-
-                Spacer()
-            }
-            .padding(.horizontal)
+            Text("Trade Signals")
+                .font(.headline)
+                .foregroundColor(textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
 
             NavigationLink {
                 SwingSetupsDetailView()
@@ -85,13 +80,14 @@ struct SwingSetupsSummarySection: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(AppColors.success)
-                Text("Standing By")
-                    .font(AppFonts.body14Bold)
+        VStack(spacing: 8) {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(AppColors.success)
+                    .frame(width: 7, height: 7)
+                Text("STANDING BY")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1.2)
                     .foregroundColor(textPrimary)
             }
 

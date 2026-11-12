@@ -18,8 +18,6 @@ struct FMPMarketMoversSection: View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
             HStack {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .foregroundColor(AppColors.accent)
                 Text("Market Movers")
                     .font(.headline)
                     .fontWeight(.bold)
