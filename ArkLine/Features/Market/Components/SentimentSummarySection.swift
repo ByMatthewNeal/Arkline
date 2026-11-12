@@ -16,8 +16,6 @@ struct SentimentSummarySection: View {
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
             HStack {
-                Image(systemName: "gauge.with.needle")
-                    .foregroundColor(AppColors.accent)
                 Text("Market Sentiment")
                     .font(.headline)
                     .foregroundColor(textPrimary)

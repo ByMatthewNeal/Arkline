@@ -60,38 +60,75 @@ private struct RegimeHeaderSection: View {
     @Environment(\.colorScheme) var colorScheme
     let data: SentimentRegimeData
 
+    /// US long format, e.g. "September 19, 2026".
+    static func asOfString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US")
+        f.dateFormat = "MMMM d, yyyy"
+        return f.string(from: date)
+    }
+
+    /// A calm psychology reminder matched to the live regime. This is the point
+    /// of the screen: naming the emotion the crowd is feeling right now.
+    static func mindset(for regime: SentimentRegime) -> String {
+        switch regime {
+        case .fomo: return "Greed disguises itself as confidence. Tops are an act of discipline, not courage."
+        case .panic: return "The loudest fear and the deepest value tend to arrive together. Bravery isn't required here, just calm."
+        case .apathy: return "Quiet and hated is where patient buyers have been rewarded. Comfort and opportunity rarely share a seat."
+        case .complacency: return "Thin, greedy calm is vulnerable to sudden moves. Mind your position size before the move, not after."
+        }
+    }
+
     var body: some View {
         VStack(spacing: 16) {
-            HStack(spacing: 16) {
-                // Regime Icon
-                ZStack {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 9) {
                     Circle()
-                        .fill(Color(hex: data.currentRegime.colorHex).opacity(0.15))
-                        .frame(width: 56, height: 56)
-
-                    Image(systemName: data.currentRegime.icon)
-                        .font(.system(size: 24))
-                        .foregroundColor(Color(hex: data.currentRegime.colorHex))
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
+                        .fill(Color(hex: data.currentRegime.colorHex))
+                        .frame(width: 9, height: 9)
                     Text(data.currentRegime.rawValue)
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                    Text(data.currentRegime.description)
-                        .font(.caption)
-                        .foregroundColor(AppColors.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
+
+                Text(data.currentRegime.description(intensity: SentimentRegime.intensity(
+                    emotion: data.currentPoint.emotionScore,
+                    engagement: data.currentPoint.engagementScore)))
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             // Values
             HStack(spacing: 24) {
                 ValuePill(label: "Emotion", value: String(format: "%.0f", data.currentPoint.emotionScore))
                 ValuePill(label: "Engagement", value: String(format: "%.0f", data.currentPoint.engagementScore))
             }
+
+            Text("As of \(Self.asOfString(data.currentPoint.date)) · updates Sundays and Wednesdays")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            HStack(alignment: .top, spacing: 10) {
+                Rectangle()
+                    .fill(AppColors.accent.opacity(0.55))
+                    .frame(width: 3)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("MINDSET")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(1)
+                        .foregroundColor(AppColors.accent)
+                    Text(Self.mindset(for: data.currentRegime))
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
         }
         .padding(20)
         .frame(maxWidth: .infinity)
@@ -152,6 +189,12 @@ struct SentimentQuadrantChart: View {
                 .glassCard(cornerRadius: 16)
                 .padding(.horizontal, 20)
                 .onTapGesture { showFullscreen = true }
+
+            Text("The trail plots the Fear & Greed and volume path, the two signals with long history. The Now marker also folds in today's risk, funding, open interest, and attention, so it is the fullest read and can sit apart from the trail behind it.")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 20)
         }
         .fullScreenCover(isPresented: $showFullscreen) {
             FullscreenQuadrantView(data: data)
@@ -481,6 +524,11 @@ private struct MilestonesSection: View {
                     milestoneRow(label: "3 Months Ago", point: point)
                 }
             }
+
+            Text("Now is the full composite; earlier points use the core Fear & Greed and volume model, so compare direction, not exact regime.")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
         .glassCard(cornerRadius: 16)
@@ -533,10 +581,11 @@ private struct RegimeGuideSection: View {
             VStack(spacing: 8) {
                 ForEach(SentimentRegime.allCases, id: \.rawValue) { regime in
                     HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: regime.icon)
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: regime.colorHex))
-                            .frame(width: 20)
+                        Circle()
+                            .fill(Color(hex: regime.colorHex))
+                            .frame(width: 8, height: 8)
+                            .frame(width: 20, alignment: .center)
+                            .offset(y: 6)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(regime.rawValue)
@@ -595,15 +644,9 @@ private struct RegimeUpdateInfoSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "clock.arrow.2.circlepath")
-                    .font(.system(size: 13))
-                    .foregroundColor(AppColors.textSecondary)
-
-                Text("Updated twice weekly")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-            }
+            Text("Updated twice weekly")
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
 
             Text(localScheduleText)
                 .font(.caption)
@@ -652,13 +695,6 @@ private struct RegimeNotificationToggle: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "bell.badge.fill")
-                .font(.system(size: 16))
-                .foregroundColor(AppColors.accent)
-                .frame(width: 32, height: 32)
-                .background(AppColors.accent.opacity(0.12))
-                .clipShape(Circle())
-
             VStack(alignment: .leading, spacing: 2) {
                 Text("Regime Shift Alerts")
                     .font(.subheadline.weight(.medium))

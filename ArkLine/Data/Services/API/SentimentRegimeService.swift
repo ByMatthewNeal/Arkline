@@ -13,8 +13,8 @@ import Foundation
 /// **Engagement axis** (Low → High) composites:
 ///   - BTC Volume vs 30d SMA (25%) — core trading activity
 ///   - BTC Open Interest change (20%) — derivatives leverage activity
-///   - Search Interest (15%) — public attention
-///   - App Store Rankings (15%) — retail FOMO/interest
+///   - Public attention (15%) — Wikipedia Bitcoin pageviews
+///   - Coinbase App Store rank (15%) — retail FOMO/interest
 ///   - BTC Realized Vol (15%) — vol expansion/compression regime
 ///   - Funding Rate magnitude (10%) — high absolute rate = active market
 ///
@@ -231,14 +231,14 @@ enum SentimentRegimeService {
             components.append((normalized, EngagementWeights.openInterest, "Open Interest"))
         }
 
-        // Search Interest — 0-100 direct
+        // Public attention — Wikipedia "Bitcoin" pageviews, 0-100 normalized
         if let search = indicators.searchInterest {
-            components.append((Double(search), EngagementWeights.searchInterest, "Search Trends"))
+            components.append((Double(search), EngagementWeights.searchInterest, "Public Attention"))
         }
 
-        // App Store Rankings — higher score = more retail interest/engagement
+        // Coinbase App Store rank — higher score = more retail interest/engagement
         if let score = indicators.appStoreScore {
-            components.append((score, EngagementWeights.appStore, "App Store"))
+            components.append((score, EngagementWeights.appStore, "Coinbase Rank"))
         }
 
         // Realized Volatility — vol expansion/compression regime

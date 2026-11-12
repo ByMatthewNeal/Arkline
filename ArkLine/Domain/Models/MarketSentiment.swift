@@ -484,6 +484,39 @@ enum SentimentRegime: String, CaseIterable, Codable {
         }
     }
 
+    /// How deep the reading sits in its quadrant. A regime needs both of its
+    /// conditions, so depth is the weaker of the two axis distances from center.
+    enum Intensity { case mild, moderate, strong }
+
+    static func intensity(emotion: Double, engagement: Double) -> Intensity {
+        let depth = Swift.min(abs(emotion - 50), abs(engagement - 50))
+        if depth >= 18 { return .strong }
+        if depth >= 8 { return .moderate }
+        return .mild
+    }
+
+    /// Description scaled to intensity, so a borderline reading near the center
+    /// does not get the same extreme copy as a deep-corner one.
+    func description(intensity: Intensity) -> String {
+        switch (self, intensity) {
+        case (.fomo, .mild): return "Mildly greedy with moderate activity. Leaning toward FOMO, but not an extreme."
+        case (.fomo, .moderate): return "Greed with active participation. Buyers are in control and volume is elevated."
+        case (.fomo, .strong): return "High volume buying frenzy. Greedy, euphoric participation, historically near local tops."
+
+        case (.panic, .mild): return "Slightly fearful with activity picking up. Edging toward panic, but mild."
+        case (.panic, .moderate): return "Fear with heavy trading. Sellers are active and nerves are showing."
+        case (.panic, .strong): return "High volume selling pressure. Fearful markets with heavy activity, often near capitulation."
+
+        case (.apathy, .mild): return "Slightly fearful and quiet. Interest is fading, nothing extreme yet."
+        case (.apathy, .moderate): return "Fearful and quiet. Participation is thin and attention is low."
+        case (.apathy, .strong): return "Low volume and fearful. Disinterested markets with minimal participation, often a bottoming signal."
+
+        case (.complacency, .mild): return "Slightly greedy and quiet. Calm confidence with low activity."
+        case (.complacency, .moderate): return "Greedy but quiet. Confident yet thin markets."
+        case (.complacency, .strong): return "Low volume and greedy. Quiet confidence with thin markets, vulnerable to sudden moves."
+        }
+    }
+
     var icon: String {
         switch self {
         case .panic: return "exclamationmark.triangle.fill"

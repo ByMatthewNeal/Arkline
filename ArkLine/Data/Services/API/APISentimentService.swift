@@ -125,8 +125,14 @@ final class APISentimentService: SentimentServiceProtocol {
         let btcTicker = response.tickers?.first(where: { $0.base == "BTC" && $0.target == "USDT" && $0.contractType == "perpetual" })
         let ethTicker = response.tickers?.first(where: { $0.base == "ETH" && $0.target == "USDT" && $0.contractType == "perpetual" })
 
-        let btcRate = btcTicker?.fundingRate ?? 0
-        let ethRate = ethTicker?.fundingRate ?? 0
+        // CoinGecko's derivatives `funding_rate` is expressed as a PERCENT
+        // (e.g. 0.003 means 0.003%). Every consumer of FundingRate.averageRate —
+        // the "%.4f%%" display (× 100), the ±0.0005 sentiment thresholds, the
+        // annualization, and the multi-factor normalizer's ±0.001 band — expects
+        // a DECIMAL FRACTION (0.0001 = 0.01%). Convert here so all of them agree;
+        // without this the rate reads 100× too high and the risk factor pins at 100%.
+        let btcRate = (btcTicker?.fundingRate ?? 0) / 100.0
+        let ethRate = (ethTicker?.fundingRate ?? 0) / 100.0
 
         guard btcTicker != nil || ethTicker != nil else {
             throw AppError.dataNotFound

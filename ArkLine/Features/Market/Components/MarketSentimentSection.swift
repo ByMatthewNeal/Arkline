@@ -262,17 +262,11 @@ struct SentimentCategorySection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Category Header
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(iconColor)
-
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-            }
-            .padding(.horizontal, 20)
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .padding(.horizontal, 20)
 
             // Content
             content

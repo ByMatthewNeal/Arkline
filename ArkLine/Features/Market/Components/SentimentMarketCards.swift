@@ -14,10 +14,6 @@ struct ArkLineScoreCard: View {
                     .defineTerm("arkline-score", screen: "market_sentiment")
 
                 Spacer()
-
-                Image(systemName: "sparkles")
-                    .font(.system(size: 10))
-                    .foregroundColor(AppColors.accent)
             }
 
             Spacer()
@@ -392,12 +388,7 @@ struct SentimentRegimeCard: View {
                 Text("Sentiment Regime")
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
-
                 Spacer()
-
-                Image(systemName: regimeData.currentRegime.icon)
-                    .font(.system(size: 10))
-                    .foregroundColor(Color(hex: regimeData.currentRegime.colorHex))
             }
 
             Spacer()
