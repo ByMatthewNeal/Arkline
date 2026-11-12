@@ -7,6 +7,9 @@ struct PortfolioHeader: View {
     /// Same privacy toggle as the Home hero — hiding your balance in one place
     /// must hide it everywhere.
     @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    /// Presentation Mode: hide money, keep growth percentages — for showing others.
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let totalValue: Double
     let dayChange: Double
     let dayChangePercentage: Double
@@ -15,6 +18,10 @@ struct PortfolioHeader: View {
 
     private var currency: String {
         appState.preferredCurrency
+    }
+
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
     }
 
     var body: some View {
@@ -32,9 +39,20 @@ struct PortfolioHeader: View {
                         .foregroundColor(AppColors.textSecondary)
                 }
                 .accessibilityLabel(isHidden ? "Show balance" : "Hide balance")
+
+                // Presentation Mode: masks money, keeps growth percentages — for
+                // handing your phone to someone without revealing account size.
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) { presentationMode.toggle() }
+                }) {
+                    Image(systemName: "percent")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(presentationMode ? AppColors.accent : AppColors.textSecondary)
+                }
+                .accessibilityLabel(presentationMode ? "Turn off presentation mode" : "Presentation mode: show growth, hide amounts")
             }
 
-            Text(isHidden ? "••••••" : totalValue.asCurrency(code: currency))
+            Text(privacy.currency(totalValue, code: currency))
                 .font(AppFonts.number44)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
                 .contentTransition(.numericText())
@@ -49,10 +67,10 @@ struct PortfolioHeader: View {
                     HStack(spacing: 4) {
                         Image(systemName: dayChange >= 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10))
-                        Text(isHidden ? "••••" : "\(dayChange >= 0 ? "+" : "")\(dayChange.asCurrency(code: currency))")
+                        Text(privacy.signedCurrency(dayChange, code: currency))
                             .font(AppFonts.body14Medium)
                             .contentTransition(.numericText())
-                        if !isHidden {
+                        if !privacy.maskPercent {
                             Text("(\(dayChangePercentage >= 0 ? "+" : "")\(dayChangePercentage, specifier: "%.2f")%)")
                                 .font(AppFonts.caption12)
                                 .contentTransition(.numericText())
@@ -72,10 +90,10 @@ struct PortfolioHeader: View {
                     HStack(spacing: 4) {
                         Image(systemName: profitLoss >= 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10))
-                        Text(isHidden ? "••••" : "\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency(code: currency))")
+                        Text(privacy.signedCurrency(profitLoss, code: currency))
                             .font(AppFonts.body14Medium)
                             .contentTransition(.numericText())
-                        if !isHidden {
+                        if !privacy.maskPercent {
                             Text("(\(profitLossPercentage >= 0 ? "+" : "")\(profitLossPercentage, specifier: "%.2f")%)")
                                 .font(AppFonts.caption12)
                                 .contentTransition(.numericText())

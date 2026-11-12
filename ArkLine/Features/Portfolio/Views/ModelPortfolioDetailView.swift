@@ -75,8 +75,9 @@ struct ModelPortfolioDetailView: View {
 
     /// Adaptive price formatting so both $1,163 stocks and $0.37 alts read cleanly.
     private func formatEntryPrice(_ price: Double) -> String {
-        if price >= 1 { return String(format: "$%.2f", price) }
-        return String(format: "$%.4f", price)
+        // Grouped currency (with thousands separators): 2 decimals at $1+,
+        // more precision for sub-dollar alts.
+        price.asCryptoPrice(code: "USD")
     }
 
     var body: some View {
@@ -1482,18 +1483,34 @@ struct ModelPortfolioDetailView: View {
     }
 
     private func signalChangeSummary(from changes: [TradeChange]) -> String {
-        var parts: [String] = []
-        let added = changes.filter { $0.action == .bought }.map(\.asset)
-        let removed = changes.filter { $0.action == .sold }.map(\.asset)
-
-        for asset in added { parts.append("\(asset) added") }
-        for asset in removed { parts.append("\(asset) removed") }
-
-        if parts.isEmpty {
-            let scaled = changes.filter { $0.action == .scaledIn || $0.action == .scaledOut }
-            if scaled.isEmpty { return "No changes" }
-            return "Rebalanced allocations"
+        func assets(_ action: TradeChange.Action) -> [String] {
+            changes.filter { $0.action == action }.map(\.asset)
         }
+        // Join asset names readably: "BTC", "BTC & Gold", "BTC, ETH & Gold".
+        func joined(_ names: [String]) -> String {
+            switch names.count {
+            case 0: return ""
+            case 1: return names[0]
+            case 2: return "\(names[0]) & \(names[1])"
+            default: return names.dropLast().joined(separator: ", ") + " & " + (names.last ?? "")
+            }
+        }
+
+        // Describe EVERY kind of move, not just full buys/sells. Partial trims
+        // (scaled out) and adds (scaled in) were being dropped, so a rebalance
+        // that raised cash by reducing BTC and Gold only read as "USDC added".
+        var parts: [String] = []
+        let bought = assets(.bought)
+        let scaledIn = assets(.scaledIn)
+        let scaledOut = assets(.scaledOut)
+        let sold = assets(.sold)
+
+        if !bought.isEmpty   { parts.append("\(joined(bought)) added") }
+        if !scaledIn.isEmpty { parts.append("\(joined(scaledIn)) increased") }
+        if !scaledOut.isEmpty { parts.append("\(joined(scaledOut)) reduced") }
+        if !sold.isEmpty     { parts.append("\(joined(sold)) removed") }
+
+        if parts.isEmpty { return "No changes" }
         return parts.joined(separator: ", ")
     }
 

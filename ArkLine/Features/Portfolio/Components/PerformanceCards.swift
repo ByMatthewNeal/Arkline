@@ -4,9 +4,15 @@ import SwiftUI
 struct ReturnSummaryCard: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let metrics: PerformanceMetrics
 
     private var currency: String { appState.preferredCurrency }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -16,7 +22,7 @@ struct ReturnSummaryCard: View {
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
 
-                Text(metrics.totalReturn.asCurrency(code: currency))
+                Text(privacy.currency(metrics.totalReturn, code: currency))
                     .font(AppFonts.number36)
                     .foregroundColor(metrics.totalReturn >= 0 ? AppColors.success : AppColors.error)
 
@@ -33,9 +39,9 @@ struct ReturnSummaryCard: View {
 
             // Quick Stats Row
             HStack(spacing: 0) {
-                QuickMetricItem(title: "Invested", value: metrics.totalInvested.asCurrency(code: currency))
+                QuickMetricItem(title: "Invested", value: privacy.currency(metrics.totalInvested, code: currency))
                 Divider().frame(height: 40)
-                QuickMetricItem(title: "Current", value: metrics.currentValue.asCurrency(code: currency))
+                QuickMetricItem(title: "Current", value: privacy.currency(metrics.currentValue, code: currency))
                 Divider().frame(height: 40)
                 QuickMetricItem(title: "Assets", value: "\(metrics.numberOfAssets)")
             }
@@ -49,9 +55,15 @@ struct ReturnSummaryCard: View {
 struct RiskMetricsCard: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let metrics: PerformanceMetrics
 
     private var currency: String { appState.preferredCurrency }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -90,7 +102,7 @@ struct RiskMetricsCard: View {
                             .font(AppFonts.number20)
                             .foregroundColor(metrics.maxDrawdownColor)
 
-                        Text(metrics.maxDrawdownValue.asCurrency(code: currency))
+                        Text(privacy.currency(metrics.maxDrawdownValue, code: currency))
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
                     }
@@ -188,10 +200,16 @@ struct AssetPerformanceCard: View {
 private struct AssetPerformanceRow: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let holding: PortfolioHolding
     let totalValue: Double
 
     private var currency: String { appState.preferredCurrency }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     private var contribution: Double {
         guard totalValue > 0 else { return 0 }
@@ -229,7 +247,7 @@ private struct AssetPerformanceRow: View {
                     .font(AppFonts.body14Bold)
                     .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
 
-                Text(holding.profitLoss.asCurrency(code: currency))
+                Text(privacy.currency(holding.profitLoss, code: currency))
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -241,9 +259,15 @@ private struct AssetPerformanceRow: View {
 struct InvestmentActivityCard: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let monthlyInvestments: [MonthlyInvestment]
 
     private var currency: String { appState.preferredCurrency }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     private var maxAmount: Double {
         monthlyInvestments.map(\.amount).max() ?? 1
@@ -281,7 +305,7 @@ struct InvestmentActivityCard: View {
                             }
                             .frame(height: 20)
 
-                            Text(month.amount.asCurrency(code: currency))
+                            Text(privacy.currency(month.amount, code: currency))
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textPrimary(colorScheme))
                                 .frame(width: 80, alignment: .trailing)

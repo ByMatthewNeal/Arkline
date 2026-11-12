@@ -12,6 +12,12 @@ struct ResearchNoteView: View {
     /// Live price derived from the latest NAV snapshot (value/qty), if held.
     let currentPrice: Double?
 
+    /// Crypto keeps tiered decimals (small coins need precision); stocks and
+    /// metals always show cents with thousands separators.
+    private func formatPrice(_ price: Double) -> String {
+        note.assetClass == "crypto" ? price.asCryptoPrice(code: "USD") : price.asCurrency
+    }
+
     private var priceChangeSincePublish: Double? {
         guard let entry = note.valuationAtPublish?.price, entry > 0,
               let current = currentPrice else { return nil }
@@ -64,7 +70,7 @@ struct ResearchNoteView: View {
                         section("The Numbers When We Called It") {
                             VStack(spacing: ArkSpacing.xs) {
                                 if let price = val.price {
-                                    valuationRow("Price at publication", String(format: "$%.2f", price))
+                                    valuationRow("Price at publication", formatPrice(price))
                                 }
                                 if let current = currentPrice {
                                     HStack {
@@ -72,7 +78,7 @@ struct ResearchNoteView: View {
                                             .font(AppFonts.body14)
                                             .foregroundColor(AppColors.textSecondary)
                                         Spacer()
-                                        Text(String(format: "$%.2f", current))
+                                        Text(formatPrice(current))
                                             .font(AppFonts.body14Medium)
                                             .foregroundColor(AppColors.textPrimary(colorScheme))
                                         if let change = priceChangeSincePublish {
@@ -91,7 +97,7 @@ struct ResearchNoteView: View {
                                     valuationRow("Arkline Risk Level",
                                                  String(format: "%.2f%@", risk, val.riskCategory.map { " (\($0))" } ?? ""))
                                 }
-                                if let fair = val.fairValue { valuationRow("Model Fair Value", String(format: "$%.0f", fair)) }
+                                if let fair = val.fairValue { valuationRow("Model Fair Value", formatPrice(fair)) }
                                 if let asOf = val.asOf {
                                     Text("Snapshot as of \(asOf), frozen so you can judge the call, not a moving target.")
                                         .font(AppFonts.caption12)

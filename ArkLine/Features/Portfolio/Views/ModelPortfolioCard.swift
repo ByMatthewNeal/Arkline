@@ -20,9 +20,6 @@ struct ModelPortfolioCard: View {
                     withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
                 } label: {
                     HStack {
-                        Image(systemName: "briefcase.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(AppColors.accent)
                         Text("Model Portfolios")
                             .font(AppFonts.title18SemiBold)
                             .foregroundColor(AppColors.textPrimary(colorScheme))

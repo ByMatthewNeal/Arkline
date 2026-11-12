@@ -6,9 +6,15 @@ struct PortfolioOverviewContent: View {
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
     @Namespace private var zoomNamespace
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
 
     private var currency: String {
         appState.preferredCurrency
+    }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
     }
 
     var body: some View {
@@ -51,7 +57,7 @@ struct PortfolioOverviewContent: View {
 
                     QuickStatCard(
                         title: "Cost Basis",
-                        value: viewModel.totalCost.asCurrencyCompact(code: currency),
+                        value: privacy.maskCurrency ? PrivacyState.dotsShort : viewModel.totalCost.asCurrencyCompact(code: currency),
                         icon: "dollarsign.circle"
                     )
                 }
@@ -184,9 +190,15 @@ struct PortfolioAllocationContent: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
 
     private var currency: String {
         appState.preferredCurrency
+    }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
     }
 
     var body: some View {
@@ -278,7 +290,7 @@ struct PortfolioAllocationContent: View {
                 driftBadge(drift: allocation.drift)
             } else {
                 // No-target mode: show value and actual %
-                Text(allocation.value.asCurrency(code: currency))
+                Text(privacy.currency(allocation.value, code: currency))
                     .font(AppFonts.body14)
                     .foregroundColor(AppColors.textSecondary)
 

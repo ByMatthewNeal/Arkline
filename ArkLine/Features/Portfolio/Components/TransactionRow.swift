@@ -6,9 +6,14 @@ struct TransactionRow: View {
     // Same global privacy toggle as the portfolio/holding headers, so amounts
     // stay hidden here too when the user has hidden their balance.
     @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     let transaction: Transaction
 
     private var currency: String { appState.preferredCurrency }
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -36,11 +41,11 @@ struct TransactionRow: View {
 
             // Amount & Value
             VStack(alignment: .trailing, spacing: 4) {
-                Text(isHidden ? "••••" : "\(transaction.type.isIncoming ? "+" : "-")\(transaction.quantity, specifier: "%.4f")")
+                Text(privacy.quantity("\(transaction.type.isIncoming ? "+" : "-")\(String(format: "%.4f", transaction.quantity))"))
                     .font(AppFonts.body14Medium)
                     .foregroundColor(transaction.type.isIncoming ? AppColors.success : AppColors.error)
 
-                Text(isHidden ? "••••" : transaction.totalValue.asCurrency(code: currency))
+                Text(privacy.currency(transaction.totalValue, code: currency))
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
