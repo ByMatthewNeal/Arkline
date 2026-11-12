@@ -14,8 +14,12 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     case swingSetups = "swing_setups"
     case globalLiquidity = "global_liquidity"
     case liquidityCycle = "liquidity_cycle"
+    case cycleScorecard = "cycle_scorecard"
     case qpsGrid = "qps_grid"
     case marketBreadth = "market_breadth"
+    case mindset = "mindset"
+    case metalsSupportResistance = "metals_support_resistance"
+    case liquidationHeatmap = "liquidation_heatmap"
 
     var id: String { rawValue }
 
@@ -32,8 +36,12 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .swingSetups: return "Trade Signals"
         case .globalLiquidity: return "Global Liquidity"
         case .liquidityCycle: return "Liquidity Cycle"
+        case .cycleScorecard: return "Cycle Scorecard"
         case .qpsGrid: return "Daily Positioning"
         case .marketBreadth: return "Market Breadth"
+        case .mindset: return "Mindset"
+        case .metalsSupportResistance: return "Metals S/R"
+        case .liquidationHeatmap: return "Liquidation Heatmap"
         }
     }
 
@@ -50,8 +58,12 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .swingSetups: return "Multi-timeframe Fibonacci trade signals"
         case .globalLiquidity: return "Central bank liquidity across 10+ economies"
         case .liquidityCycle: return "65-month liquidity cycle with crypto positioning"
+        case .cycleScorecard: return "Top vs bottom confluence read for BTC, ETH and SOL"
         case .qpsGrid: return "Daily bullish/neutral/bearish signals for 8 assets"
         case .marketBreadth: return "% of tokens in uptrend with EMA trend analysis"
+        case .mindset: return "A calm daily psychology reminder and the mental-game trail"
+        case .metalsSupportResistance: return "Support and resistance levels for gold and silver"
+        case .liquidationHeatmap: return "Estimated liquidation clusters above and below price"
         }
     }
 
@@ -68,14 +80,18 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .swingSetups: return "scope"
         case .globalLiquidity: return "banknote"
         case .liquidityCycle: return "clock.arrow.2.circlepath"
+        case .cycleScorecard: return "checklist"
         case .qpsGrid: return "waveform.path.ecg"
         case .marketBreadth: return "chart.bar.xaxis"
+        case .mindset: return "book.closed"
+        case .metalsSupportResistance: return "ruler"
+        case .liquidationHeatmap: return "flame"
         }
     }
 
     /// Default order for Market widgets (matches original hardcoded layout)
     static var defaultOrder: [MarketWidgetType] {
-        [.usFutures, .qpsGrid, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .marketBreadth, .swingSetups, .altcoinScreener]
+        [.usFutures, .qpsGrid, .cycleScorecard, .mindset, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .metalsSupportResistance, .liquidationHeatmap, .topCoins, .sentiment, .marketBreadth, .swingSetups, .altcoinScreener]
     }
 
     /// Widgets enabled by default — a lean starter set covering futures, sentiment,
@@ -84,14 +100,15 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     /// Note: users who installed before Market customization shipped keep the
     /// all-widgets layout via a one-time migration in `AppState.loadState()`.
     static var defaultEnabled: Set<MarketWidgetType> {
-        [.usFutures, .sentiment, .liquidityCycle, .fedWatch, .topCoins, .dailyNews, .swingSetups]
+        [.usFutures, .sentiment, .cycleScorecard, .mindset, .fedWatch, .topCoins, .dailyNews, .swingSetups, .metalsSupportResistance, .liquidationHeatmap]
     }
 
     /// Sections hidden app-wide regardless of a user's saved config. The enum
     /// case, section view, and detail screen all stay intact — this just stops
-    /// them rendering, so reviving one is a one-line change. `.allocation` = the
-    /// retired "Crypto Positioning" screen.
-    static let hidden: Set<MarketWidgetType> = [.allocation]
+    /// them rendering, so reviving one is a one-line change (remove it here).
+    /// `.allocation` = the retired "Crypto Positioning" screen.
+    /// `.liquidityCycle` = parked; the data pipeline and views remain, just hidden.
+    static let hidden: Set<MarketWidgetType> = [.allocation, .liquidityCycle]
 }
 
 // MARK: - Market Zone
@@ -103,6 +120,7 @@ enum MarketZone: String, CaseIterable, Identifiable {
     case macro
     case assets
     case signals
+    case psychology
 
     var id: String { rawValue }
 
@@ -113,6 +131,7 @@ enum MarketZone: String, CaseIterable, Identifiable {
         case .macro: return "Macro"
         case .assets: return "Assets"
         case .signals: return "Signals"
+        case .psychology: return "Psychology"
         }
     }
 }
@@ -123,12 +142,14 @@ extension MarketWidgetType {
         switch self {
         case .usFutures, .sentiment, .fedWatch, .dailyNews:
             return .today
-        case .qpsGrid, .liquidityCycle, .globalLiquidity, .allocation:
+        case .qpsGrid, .cycleScorecard, .liquidityCycle, .globalLiquidity, .allocation:
             return .macro
-        case .topCoins, .traditionalMarkets, .marketBreadth, .altcoinScreener:
+        case .topCoins, .traditionalMarkets, .marketBreadth, .altcoinScreener, .metalsSupportResistance, .liquidationHeatmap:
             return .assets
         case .swingSetups:
             return .signals
+        case .mindset:
+            return .psychology
         }
     }
 }

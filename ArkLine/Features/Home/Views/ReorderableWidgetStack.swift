@@ -60,7 +60,7 @@ struct ReorderableWidgetStack: View {
                 ) {
                     widgetView(for: widgetType)
                 }
-                .cardAppearance(delay: index)
+                .cardAppearance(delay: isEditMode ? 0 : index)
                 .modifier(ConditionalDragModifier(
                     enabled: isEditMode,
                     widgetType: widgetType,
@@ -156,6 +156,12 @@ struct ReorderableWidgetStack: View {
             // Always-on when we have anything to say: a recent trade leads the
             // card, otherwise it shows the strategy's current positioning.
             return viewModel.followedPortfolioNav != nil || viewModel.latestPortfolioTrade != nil
+        case .supportResistance:
+            // Self-contained: fetches its own BTC levels and shows a loading state.
+            return true
+        case .liquidationHeatmap:
+            // Self-contained: fetches its own snapshot and shows a loading state.
+            return true
         }
     }
 
@@ -376,7 +382,113 @@ struct ReorderableWidgetStack: View {
             if let feature = viewModel.featuredLearn {
                 HomeLearnCard(feature: feature)
             }
+        case .supportResistance:
+            SupportResistanceHomeWidget()
+        case .liquidationHeatmap:
+            LiquidationHeatmapSection(embedded: true)
         }
+    }
+}
+
+// MARK: - Support & Resistance Home Widget
+//
+// Compact card under the daily briefing: fetches BTC's algorithmic levels and
+// shows the nearest resistance and nearest support with strength. Self-contained
+// (its own fetch + loading state), honest framing, no navigation for v1.
+struct SupportResistanceHomeWidget: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var levels: KeyLevels?
+    @State private var isLoading = true
+    @State private var showAll = false
+
+    private let service = ServiceContainer.shared.technicalAnalysisService
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text("Support & Resistance")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+                Text("BTC")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(AppColors.accent)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(AppColors.accent.opacity(0.12)))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppColors.textTertiary)
+            }
+
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+            } else if let levels, levels.hasLevels {
+                if let r = levels.resistances.first {
+                    levelRow(r, current: levels.currentPrice)
+                }
+                if levels.resistances.first != nil, levels.supports.first != nil {
+                    Rectangle().fill(AppColors.textTertiary.opacity(0.12)).frame(height: 0.5)
+                }
+                if let s = levels.supports.first {
+                    levelRow(s, current: levels.currentPrice)
+                }
+                Text("Nearest levels from price history and volume. Guides, not guarantees.")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            } else {
+                Text("Levels unavailable right now.")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.vertical, 6)
+            }
+        }
+        .padding(16)
+        .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+        .contentShape(Rectangle())
+        .onTapGesture { showAll = true }
+        .sheet(isPresented: $showAll) {
+            SupportResistanceAllView()
+        }
+        .task {
+            guard isLoading else { return }
+            do {
+                let ta = try await service.fetchTechnicalAnalysis(symbol: "BTC/USDT", exchange: "binance", interval: .daily)
+                await MainActor.run { levels = ta.keyLevels; isLoading = false }
+            } catch {
+                await MainActor.run { isLoading = false }
+            }
+        }
+    }
+
+    private func levelRow(_ lvl: KeyLevel, current: Double) -> some View {
+        let pct = current > 0 ? (lvl.price - current) / current * 100 : 0
+        let color = lvl.kind == .support ? AppColors.success : AppColors.error
+        return HStack(spacing: 10) {
+            Text(lvl.kind == .support ? "Support" : "Resistance")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(color)
+                .frame(width: 84, alignment: .leading)
+            Text(lvl.price.asCryptoPrice)
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .foregroundColor(textPrimary)
+            Text(String(format: "%@%.1f%%", pct >= 0 ? "+" : "", pct))
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textSecondary)
+            Spacer()
+            Text(lvl.strength.label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Capsule().fill(color.opacity(0.12)))
+        }
+        .padding(.vertical, 2)
     }
 }
 
@@ -553,9 +665,16 @@ struct WidgetRowContainer<Content: View>: View {
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
 
-            // Main content
-            content()
-                .frame(maxWidth: .infinity)
+            // Main content. In edit mode we render a lightweight placeholder
+            // (icon + name) instead of the live widget, so reordering moves small
+            // cards rather than relaying out charts and fetched content — the
+            // difference between laggy and buttery when the list is long.
+            if isEditMode {
+                WidgetEditPlaceholder(widgetType: widgetType)
+            } else {
+                content()
+                    .frame(maxWidth: .infinity)
+            }
         }
         .scaleEffect(isDragging ? 1.02 : 1.0)
         .opacity(isDragging ? 0.8 : 1.0)
@@ -573,6 +692,43 @@ struct WidgetRowContainer<Content: View>: View {
             y: isDragging ? 8 : 0
         )
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
+    }
+}
+
+// MARK: - Widget Edit Placeholder
+/// Lightweight stand-in shown in place of a live widget while editing the Home
+/// layout. Keeps reordering smooth by not rendering charts or fetched content.
+struct WidgetEditPlaceholder: View {
+    let widgetType: HomeWidgetType
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: widgetType.icon)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(AppColors.accent)
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(AppColors.accent.opacity(0.12)))
+            Text(widgetType.displayName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.textTertiary.opacity(0.5))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(AppColors.textTertiary.opacity(0.12), lineWidth: 0.5)
+        )
     }
 }
 
@@ -668,5 +824,157 @@ struct WidgetDropDelegate: DropDelegate {
         self.draggingItem = nil
         self.draggedOverItem = nil
         return true
+    }
+}
+
+// MARK: - Support & Resistance (All Assets)
+/// Tapping the Home widget opens this: full Support & Resistance for BTC, ETH
+/// and SOL, each with its own mini chart and level list. Fetches progressively.
+struct SupportResistanceAllView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var results: [AssetLevels] = []
+    @State private var isLoading = true
+
+    private let service = ServiceContainer.shared.technicalAnalysisService
+    private let assets: [(symbol: String, pair: String, name: String)] = [
+        ("BTC", "BTC/USDT", "Bitcoin"),
+        ("ETH", "ETH/USDT", "Ethereum"),
+        ("SOL", "SOL/USDT", "Solana"),
+    ]
+
+    private struct AssetLevels: Identifiable {
+        let id: String
+        let symbol: String
+        let name: String
+        let levels: KeyLevels?
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 18) {
+                    if isLoading && results.isEmpty {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Loading levels…")
+                                .font(.system(size: 13))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                    } else {
+                        ForEach(results) { r in
+                            if let levels = r.levels, levels.hasLevels {
+                                SupportResistanceCard(
+                                    levels: levels,
+                                    colorScheme: colorScheme,
+                                    title: r.name,
+                                    subtitle: "\(r.symbol) · where price has reacted before"
+                                )
+                            } else {
+                                HStack {
+                                    Text(r.name)
+                                        .font(.headline)
+                                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                                    Spacer()
+                                    Text("Levels unavailable")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                                .padding()
+                                .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            .background(AppColors.background(colorScheme).ignoresSafeArea())
+            .navigationTitle("Support & Resistance")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .task { await load() }
+        }
+    }
+
+    private func load() async {
+        guard results.isEmpty else { return }
+        var out: [AssetLevels] = []
+        for a in assets {
+            let lv = try? await service.fetchTechnicalAnalysis(symbol: a.pair, exchange: "binance", interval: .daily).keyLevels
+            out.append(AssetLevels(id: a.symbol, symbol: a.symbol, name: a.name, levels: lv ?? nil))
+            let snapshot = out
+            await MainActor.run { results = snapshot }
+        }
+        // Metals (gold, silver) have no Coinbase pair, so their levels come from
+        // Yahoo daily OHLC through the shared S/R calculator.
+        for metal in MetalsKeyLevelsService.Metal.allCases {
+            let lv = await MetalsKeyLevelsService.fetch(metal)
+            out.append(AssetLevels(id: metal.symbol, symbol: metal.symbol, name: metal.name, levels: lv))
+            let snapshot = out
+            await MainActor.run { results = snapshot }
+        }
+        await MainActor.run { isLoading = false }
+    }
+}
+
+// MARK: - Metals Support & Resistance Engine
+//
+// The crypto S/R path reads Coinbase candles. Gold and silver have no Coinbase
+// pair, so we reuse the SAME SupportResistance calculator on Yahoo daily futures
+// bars (GC=F gold, SI=F silver). Yahoo's chart endpoint doesn't return volume, so
+// the volume-profile component is skipped; swing pivots, range extremes and the
+// 200-day SMA still drive the levels.
+enum MetalsKeyLevelsService {
+    enum Metal: String, CaseIterable {
+        case gold
+        case silver
+
+        /// Yahoo Finance chart symbol (continuous futures).
+        var yahooSymbol: String { self == .gold ? "GC=F" : "SI=F" }
+        /// Short display ticker.
+        var symbol: String { self == .gold ? "XAU" : "XAG" }
+        var name: String { self == .gold ? "Gold" : "Silver" }
+    }
+
+    static func fetch(_ metal: Metal) async -> KeyLevels? {
+        do {
+            let result = try await YahooFinanceService.shared.fetchChartBars(
+                symbol: metal.yahooSymbol, interval: "1d", range: "2y"
+            )
+            let bars = result.bars
+            guard bars.count >= 60 else { return nil }
+
+            let currentPrice = result.currentPrice > 0 ? result.currentPrice : (bars.last?.close ?? 0)
+            guard currentPrice > 0 else { return nil }
+
+            // Yahoo chart bars carry no volume; 0 disables only the volume-profile
+            // component of the calculator.
+            let srBars = bars.map { SRBar(high: $0.high, low: $0.low, close: $0.close, volume: 0) }
+
+            let closes = bars.map(\.close)
+            let sma200: Double? = closes.count >= 200
+                ? closes.suffix(200).reduce(0, +) / 200.0
+                : nil
+
+            guard let pair = SupportResistance.compute(
+                bars: srBars, currentPrice: currentPrice, sma200: sma200
+            ) else { return nil }
+
+            let series = bars.suffix(120).map { SRPricePoint(date: $0.date, close: $0.close) }
+            return KeyLevels(
+                currentPrice: currentPrice,
+                supports: pair.supports,
+                resistances: pair.resistances,
+                series: Array(series)
+            )
+        } catch {
+            return nil
+        }
     }
 }

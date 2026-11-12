@@ -506,6 +506,21 @@ class AppState: ObservableObject {
                 UserDefaults.standard.set(true, forKey: learnIntroFlag)
             }
 
+            // One-time introduction of the Support & Resistance widget, placed
+            // directly under the Daily Briefing rather than mid-list where the
+            // generic migration drops new widgets.
+            let srIntroFlag = "arkline_did_introduce_support_resistance_widget"
+            if !UserDefaults.standard.bool(forKey: srIntroFlag) {
+                config.setWidgetEnabled(.supportResistance, enabled: true)
+                config.widgetOrder.removeAll { $0 == .supportResistance }
+                if let briefingIdx = config.widgetOrder.firstIndex(of: .aiMarketSummary) {
+                    config.widgetOrder.insert(.supportResistance, at: briefingIdx + 1)
+                } else {
+                    config.widgetOrder.append(.supportResistance)
+                }
+                UserDefaults.standard.set(true, forKey: srIntroFlag)
+            }
+
             widgetConfiguration = config
             // Save migrated config
             setWidgetConfiguration(config)
@@ -644,6 +659,12 @@ class AppState: ObservableObject {
     }
 
     func setWidgetConfiguration(_ config: WidgetConfiguration) {
+        // Always run forward-compat migration so new widget types (added in an app
+        // update) get slotted into the saved order. This matters most for configs
+        // arriving from synced Supabase preferences, which would otherwise override
+        // local defaults and permanently hide any widget type they predate.
+        var config = config
+        migrateWidgetConfiguration(&config)
         widgetConfiguration = config
         let key = Constants.UserDefaults.widgetConfiguration
         DispatchQueue.global(qos: .utility).async {
@@ -664,7 +685,11 @@ class AppState: ObservableObject {
     }
 
     func widgetSize(_ widget: HomeWidgetType) -> WidgetSize {
-        widgetConfiguration.sizeFor(widget)
+        // "Expanded" was retired — it rendered identically to Standard in almost
+        // every widget. Normalize any legacy saved value so widgets and the size
+        // picker only ever see Compact or Standard.
+        let size = widgetConfiguration.sizeFor(widget)
+        return size == .expanded ? .standard : size
     }
 
     func setWidgetSize(_ size: WidgetSize, for widget: HomeWidgetType) {
@@ -680,6 +705,18 @@ class AppState: ObservableObject {
     // MARK: - Market Widget Configuration
 
     func setMarketWidgetConfiguration(_ config: MarketWidgetConfiguration) {
+        // Forward-compat migration (mirrors the home-widget path above): add any new
+        // market widget types to the saved order so synced preferences can't hide them.
+        var config = config
+        let savedWidgetSet = Set(config.widgetOrder)
+        for widgetType in MarketWidgetType.allCases {
+            if !savedWidgetSet.contains(widgetType) {
+                config.widgetOrder.append(widgetType)
+                if MarketWidgetType.defaultEnabled.contains(widgetType) {
+                    config.enabledWidgets.insert(widgetType)
+                }
+            }
+        }
         marketWidgetConfiguration = config
         let key = Constants.UserDefaults.marketWidgetConfiguration
         DispatchQueue.global(qos: .utility).async {

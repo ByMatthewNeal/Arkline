@@ -368,3 +368,23 @@ export interface AltcoinScannerEntry {
   vs_btc_90d: number;
   image?: string;
 }
+
+export interface LiquidationCluster {
+  price: number;
+  side: 'below' | 'above';
+  intensity: number;
+}
+
+export interface LiquidationHeatmap {
+  asset: string;
+  current_price: number;
+  price_min: number;
+  price_max: number;
+  bins: number;
+  days: number[];      // unix seconds (x axis)
+  closes: number[];    // daily close price, length = days
+  prices: number[];    // bin center prices (y axis), length = bins
+  grid: number[][];    // bins x days, normalized intensity 0..1000
+  clusters: LiquidationCluster[];
+  as_of: string;
+}

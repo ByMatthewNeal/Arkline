@@ -14,6 +14,7 @@ import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip, ReferenceLine } f
 import { Play, Square } from 'lucide-react';
 import { Badge, Skeleton, GlassCard } from '@/components/ui';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
+import { LiquidationHeatmapTile } from '../market/liquidation-heatmap';
 import {
   useRiskHistory, useArkLineScore, useCryptoAssets,
   useMarketBriefing, useCryptoPositioning, useMacroIndicators,
@@ -50,7 +51,7 @@ type WidgetKey =
   | 'portfolio' | 'briefing' | 'fearGreed' | 'arklineScore'
   | 'riskChart' | 'marketMovers' | 'macro' | 'supply'
   | 'assetRisk' | 'events' | 'favorites' | 'dca' | 'news'
-  | 'vix' | 'dxy' | 'm2' | 'marketBreadth' | 'signalChanges' | 'stockRisk'
+  | 'vix' | 'dxy' | 'm2' | 'marketBreadth' | 'liquidationHeatmap' | 'signalChanges' | 'stockRisk'
   | 'tradeSignals' | 'rotation' | 'modelPortfolio' | 'weeklyUpdate'
   | 'usFutures' | 'perpPremium' | 'fedWatch' | 'learn';
 
@@ -72,6 +73,7 @@ const drawerTitles: Record<WidgetKey, string> = {
   dxy: 'DXY — US Dollar Index',
   m2: 'Global M2 — Money Supply',
   marketBreadth: 'Market Breadth',
+  liquidationHeatmap: 'Liquidation Heatmap',
   signalChanges: 'Signal Changes',
   stockRisk: 'Stock Risk Levels',
   tradeSignals: 'Trade Signals',
@@ -108,6 +110,7 @@ function LazyDrawerWidget({ widgetKey, param }: { widgetKey: WidgetKey; param?: 
       dxy: () => import('./macro-detail').then(m => ({ default: m.DxyDetail })),
       m2: () => import('./macro-detail').then(m => ({ default: m.M2Detail })),
       marketBreadth: () => import('./market-detail').then(m => ({ default: m.MarketBreadthDetail })),
+      liquidationHeatmap: () => import('../market/liquidation-heatmap').then(m => ({ default: m.LiquidationHeatmapDetail })),
       signalChanges: () => import('./market-detail').then(m => ({ default: m.SignalChangesDetail })),
       stockRisk: () => import('./risk-levels-detail').then(m => ({ default: m.StockRiskLevelsDetail })),
       tradeSignals: () => import('./trade-signal-detail').then(m => ({ default: m.TradeSignalsDetail })),
@@ -1065,6 +1068,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'perpPremium',   x: 3, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'fedWatch',      x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'learn',         x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'liquidationHeatmap', x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'events',        x: 0, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
@@ -1091,6 +1095,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'perpPremium',   x: 2, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'fedWatch',      x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'learn',         x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'liquidationHeatmap', x: 0, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'events',        x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1117,6 +1122,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'perpPremium',   x: 0, y: 66, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'fedWatch',      x: 0, y: 69, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'learn',         x: 0, y: 72, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'liquidationHeatmap', x: 0, y: 75, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
@@ -1887,7 +1893,7 @@ function LearnTile() {
 const widgetKeys: WidgetKey[] = [
   // App default order (after the Daily Briefing hero)
   'events', 'weeklyUpdate', 'usFutures', 'signalChanges',
-  'arklineScore', 'fearGreed', 'marketMovers', 'marketBreadth',
+  'arklineScore', 'fearGreed', 'marketMovers', 'marketBreadth', 'liquidationHeatmap',
   'rotation', 'macro', 'assetRisk',
   // Remaining widgets
   'supply', 'favorites', 'dca', 'news',
@@ -1913,6 +1919,7 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
   dxy: DxyTile,
   m2: M2Tile,
   marketBreadth: MarketBreadthTile,
+  liquidationHeatmap: LiquidationHeatmapTile,
   signalChanges: SignalChangesTile,
   stockRisk: StockRiskTile,
   tradeSignals: TradeSignalsTile,

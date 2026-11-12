@@ -31,6 +31,7 @@ import {
   fetchFedWatchData,
   fetchAssetSnapshots,
   fetchSupportResistanceLevels,
+  fetchLiquidationHeatmap,
 } from '@/lib/api/market';
 import {
   fetchMacroIndicators,
@@ -218,6 +219,14 @@ export function useSupportResistanceLevels() {
   return useQuery({
     queryKey: ['support-resistance-levels'],
     queryFn: () => fetchSupportResistanceLevels(),
+    staleTime: 900_000,
+  });
+}
+
+export function useLiquidationHeatmap() {
+  return useQuery({
+    queryKey: ['liquidation-heatmap'],
+    queryFn: fetchLiquidationHeatmap,
     staleTime: 900_000,
   });
 }

@@ -1,6 +1,49 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Mindset Beats
+/// A curated catalog of calm psychology reminders, rotated one per day. Shared by
+/// the Home mindset widget and the Learn hub's "Mindset today" card so both show
+/// the same beat. The live, state-matched versions live on the Cycle Scorecard
+/// and Sentiment Regime screens.
+enum MindsetBeats {
+    static let all: [(line: String, tag: String)] = [
+        ("Bottoms come wrapped in bad news. That's exactly what makes them bottoms.", "On buying fear"),
+        ("Tops feel like the start of something huge, right when the smart money is quietly heading for the door.", "On selling greed"),
+        ("A red day is a paper loss. It only becomes real when you sell it, or when the thing you own is actually broken.", "On loss aversion"),
+        ("The loudest fear and the deepest value usually show up together. You don't have to be brave, just calm.", "On capitulation"),
+        ("Comfort and opportunity rarely sit in the same seat. If a buy feels safe, the easy money is usually gone.", "On conviction"),
+        ("The market doesn't know or care what you paid. Waiting to get back to even has trapped more people than any crash.", "On anchoring"),
+        ("Nothing goes up forever and nothing goes down forever. The pain is loud, but it's not accurate.", "On recency bias"),
+        ("The market moves money from people in a hurry to people who can wait. Most days the strongest move is to do nothing.", "On patience"),
+        ("You can't dig your way out of a hole. Protect first, profit second.", "On revenge trades"),
+        ("Make the plan while your head is clear. In the moment, the crowd's fear or greed will decide for you.", "On preparation"),
+        ("A feed full of people who agree with you is a warning, not a green light.", "On confirmation bias"),
+        ("You can't out-willpower your own brain in the moment. Decide when you're calm, then automate it so emotion gets no vote.", "On rules over willpower"),
+        ("You don't need to do more. Most days you need to do less.", "On focus"),
+        ("Before you ask how to win, ask how you'd blow it, then don't do that.", "On discipline"),
+        ("If you can't explain why you own it, you don't.", "On conviction"),
+        ("Survive first. You can't compound if you're out of the game.", "On risk"),
+        ("The quiet you protect is where the real thinking happens.", "On focus"),
+        ("The goal is to make money, not to be right.", "On ego"),
+        ("Nobody knows the next move. Anybody who says they do is talking their own book.", "On humility"),
+        ("Practice makes permanent, so repeat the right habit, not the comfortable one.", "On discipline"),
+        ("Smart people lose by thinking like everybody else.", "On independence"),
+        ("A loss hurts about twice as much as the same win feels good. Plan for it.", "On loss aversion"),
+        ("You remember your wins bigger than they really were.", "On honesty"),
+        ("Your mood is not market information.", "On awareness"),
+        ("Check less. Daily noise isn't a signal.", "On focus"),
+        ("Zoom out before you decide: the full cost, the long game, the other side of it.", "On clarity"),
+        ("Fear and hope usually point the wrong way. You fear losing a win, and hope keeps you in a bad position.", "On awareness"),
+        ("\"The chart made me do it\" is usually the ego dodging the pain of being wrong.", "On ego"),
+    ]
+
+    static var today: (line: String, tag: String) {
+        let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
+        return all[day % all.count]
+    }
+}
+
 // MARK: - Widget Size
 /// Represents the display size for a widget
 enum WidgetSize: String, CaseIterable, Codable, Identifiable {
@@ -57,6 +100,8 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case rotationGauge = "rotation_gauge"
     case marketBreadth = "market_breadth"
     case learnCard = "learn_card"
+    case supportResistance = "support_resistance"
+    case liquidationHeatmap = "liquidation_heatmap"
 
     var id: String { rawValue }
 
@@ -88,6 +133,8 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .rotationGauge: return "Crypto/Equities Rotation"
         case .marketBreadth: return "Market Breadth"
         case .learnCard: return "Learn"
+        case .supportResistance: return "Support & Resistance"
+        case .liquidationHeatmap: return "Liquidation Heatmap"
         }
     }
 
@@ -119,6 +166,8 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .rotationGauge: return "Daily signal showing when to favor crypto vs equities, with sector rankings"
         case .marketBreadth: return "% of tokens in uptrend with EMA crossover signals"
         case .learnCard: return "A daily lesson or 'did you know' definition to learn from"
+        case .supportResistance: return "Nearest algorithmic support and resistance levels for BTC"
+        case .liquidationHeatmap: return "Estimated liquidation clusters above and below price"
         }
     }
 
@@ -150,6 +199,8 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .rotationGauge: return "arrow.left.arrow.right.circle"
         case .marketBreadth: return "chart.bar.xaxis"
         case .learnCard: return "books.vertical"
+        case .supportResistance: return "arrow.up.arrow.down"
+        case .liquidationHeatmap: return "flame"
         }
     }
 
@@ -164,11 +215,11 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .fedWatch, .dailyNews, .vixIndicator, .dxyIndicator, .globalLiquidity,
              .macroDashboard, .supplyInProfit, .flashIntel, .usFutures, .qpsSignals,
-             .rotationGauge, .marketBreadth, .riskScore, .fearGreedIndex:
+             .rotationGauge, .marketBreadth, .riskScore, .fearGreedIndex, .liquidationHeatmap:
             return true
         case .marketTicker, .upcomingEvents, .marketMovers, .dcaReminders, .assetRiskLevel,
              .favorites, .aiMarketSummary, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate,
-             .perpPremium, .learnCard:
+             .perpPremium, .learnCard, .supportResistance:
             return false
         }
     }
@@ -176,7 +227,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .marketTicker, .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth, .learnCard:
+        case .marketTicker, .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth, .learnCard, .supportResistance, .liquidationHeatmap:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals, .perpPremium, .rotationGauge:
             return true
@@ -186,7 +237,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Default order for widgets. Model Portfolio sits right under Upcoming
     /// Events — "what the strategy is doing" is front-page content.
     static var defaultOrder: [HomeWidgetType] {
-        [.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .marketDeck, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .learnCard, .dcaReminders, .aiMarketSummary]
+        [.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .marketDeck, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .learnCard, .dcaReminders, .aiMarketSummary, .supportResistance, .liquidationHeatmap]
     }
 
     /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize).
@@ -194,7 +245,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Market Ticker as the always-on bridge. Fear & Greed and Macro Dashboard remain one
     /// toggle away (their headline values scroll in the ticker).
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary, .marketMovers, .marketDeck, .qpsSignals, .assetRiskLevel, .stockRiskLevel, .dailyNews, .learnCard])
+        Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary, .supportResistance, .marketMovers, .marketDeck, .qpsSignals, .assetRiskLevel, .stockRiskLevel, .dailyNews, .learnCard, .liquidationHeatmap])
     }
 
     /// Default widget sizes (compact where appropriate to keep the home screen tight)

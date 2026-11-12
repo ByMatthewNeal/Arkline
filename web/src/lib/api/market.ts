@@ -11,6 +11,7 @@ import {
   demoAltcoinScanner,
 } from '@/lib/demo-data';
 import type {
+  LiquidationHeatmap,
   CryptoAsset,
   FearGreedIndex,
   GlobalMarketData,
@@ -1060,4 +1061,16 @@ export async function fetchSupportResistanceLevels(): Promise<SupportResistanceA
   return (data as SupportResistanceAsset[])
     .slice()
     .sort((a, b) => order.indexOf(a.asset) - order.indexOf(b.asset));
+}
+
+/* ── Liquidation Heatmap ── (liquidation_heatmap: projected standing clusters) */
+export async function fetchLiquidationHeatmap(): Promise<LiquidationHeatmap | null> {
+  if (!isSupabaseConfigured()) return null;
+  const { data, error } = await getSupabase()
+    .from('liquidation_heatmap')
+    .select('asset, current_price, price_min, price_max, bins, days, closes, prices, grid, clusters, as_of')
+    .eq('asset', 'BTC')
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as LiquidationHeatmap;
 }
