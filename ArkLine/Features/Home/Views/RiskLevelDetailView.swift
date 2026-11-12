@@ -618,10 +618,6 @@ struct RiskLevelChartView: View {
             // Toggle header
             Button(action: { withAnimation { showFactorBreakdown.toggle() } }) {
                 HStack {
-                    Image(systemName: "chart.bar.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(AppColors.accent)
-
                     Text("Multi-Factor Analysis")
                         .font(.headline)
                         .foregroundColor(textPrimary)

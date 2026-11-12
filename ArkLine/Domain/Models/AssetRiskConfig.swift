@@ -728,6 +728,16 @@ struct AssetRiskConfig {
     /// Constellation Energy — regular-way trading began 2 Feb 2022 after the Exelon spin-off.
     static let ceg = AssetRiskConfig(stock: "CEG", originDate: safeDate(year: 2022, month: 2, day: 2), deviationBounds: (low: -0.65, high: 0.65), confidenceLevel: 4, displayName: "Constellation Energy")
 
+    // Materials / Thematic ETFs
+    /// Global X Lithium & Battery Tech ETF — inception ~22 Jul 2010. Diversified basket, so moderate bounds + decent confidence.
+    static let lit = AssetRiskConfig(stock: "LIT", originDate: safeDate(year: 2010, month: 7, day: 22), deviationBounds: (low: -0.5, high: 0.5), confidenceLevel: 6, displayName: "Global X Lithium ETF")
+
+    // Biotech
+    /// ImmunityBio — began trading as IBRX ~9 Mar 2021 after the NantKwest merger. Volatile single-name biotech.
+    static let ibrx = AssetRiskConfig(stock: "IBRX", originDate: safeDate(year: 2021, month: 3, day: 9), deviationBounds: (low: -0.75, high: 0.75), confidenceLevel: 3, displayName: "ImmunityBio")
+    /// Nautilus Biotechnology — SPAC debut ~9 Jun 2021. Early-stage, very volatile, limited history → low confidence.
+    static let naut = AssetRiskConfig(stock: "NAUT", originDate: safeDate(year: 2021, month: 6, day: 9), deviationBounds: (low: -0.8, high: 0.8), confidenceLevel: 2, displayName: "Nautilus Biotechnology")
+
     // MARK: - All Configs
 
     /// All supported crypto assets
@@ -764,10 +774,12 @@ struct AssetRiskConfig {
         .qbts, .nbis, .nuai, .sidu, .wyfi,
         // Real Estate / Fintech / Other
         .open, .onds, .dgxx,
-        // Healthcare / Pharma
-        .lly,
+        // Healthcare / Pharma / Biotech
+        .lly, .ibrx, .naut,
         // Power / Utilities
-        .vst, .ceg, .etn, .oklo
+        .vst, .ceg, .etn, .oklo,
+        // Materials / Thematic ETFs
+        .lit
     ]
 
     /// All supported assets (crypto + stocks)

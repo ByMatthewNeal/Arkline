@@ -326,6 +326,34 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
             currentRiskCache[coinKey] = (risk: riskPoint, calculatedAt: Date())
         }
 
+        // Persist majors so the server-side Cycle Scorecard reads the exact
+        // regression number shown here on the home Risk Levels card. Fire-and-
+        // forget; a failure never affects the UI.
+        if ["BTC", "ETH", "SOL"].contains(coinKey) {
+            let point = riskPoint
+            let asset = coinKey
+            Task.detached {
+                let df = DateFormatter()
+                df.calendar = Calendar(identifier: .gregorian)
+                df.locale = Locale(identifier: "en_US_POSIX")
+                df.dateFormat = "yyyy-MM-dd"
+                let dto = CryptoRiskDailyDTO(
+                    asset: asset,
+                    risk_date: df.string(from: Date()),
+                    risk_level: point.riskLevel,
+                    price: point.price,
+                    fair_value: point.fairValue,
+                    deviation: point.deviation,
+                    source: "client"
+                )
+                do {
+                    try await SupabaseDatabase.shared.saveCryptoRisk([dto])
+                } catch {
+                    logDebug("crypto_risk_daily upsert failed for \(asset): \(error.localizedDescription)", category: .network)
+                }
+            }
+        }
+
         return riskPoint
     }
 

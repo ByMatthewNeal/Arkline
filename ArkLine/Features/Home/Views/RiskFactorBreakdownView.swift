@@ -126,11 +126,11 @@ struct RiskFactorRow: View {
     var body: some View {
         VStack(spacing: 6) {
             HStack {
-                // Icon and name
+                // Status dot and name
                 HStack(spacing: 8) {
-                    Image(systemName: factor.type.icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(factor.isAvailable ? factorColor : textSecondary.opacity(0.3))
+                    Circle()
+                        .fill(factor.isAvailable ? factorColor : textSecondary.opacity(0.25))
+                        .frame(width: 7, height: 7)
                         .frame(width: 20)
 
                     Text(factor.type.rawValue)
@@ -217,25 +217,14 @@ struct RiskFactorSummaryRow: View {
     var body: some View {
         HStack(spacing: 12) {
             ForEach(multiFactorRisk.factors, id: \.type) { factor in
-                VStack(spacing: 4) {
-                    Image(systemName: factor.type.icon)
-                        .font(.system(size: 12))
-                        .foregroundColor(
-                            factor.isAvailable
-                                ? RiskColors.color(for: factor.normalizedValue ?? 0.5)
-                                : AppColors.textSecondary.opacity(0.3)
-                        )
-
-                    if factor.isAvailable, let normalized = factor.normalizedValue {
-                        // Tiny indicator dot
-                        Circle()
-                            .fill(RiskColors.color(for: normalized))
-                            .frame(width: 4, height: 4)
-                    } else {
-                        Circle()
-                            .stroke(AppColors.textSecondary.opacity(0.3), lineWidth: 1)
-                            .frame(width: 4, height: 4)
-                    }
+                if factor.isAvailable, let normalized = factor.normalizedValue {
+                    Circle()
+                        .fill(RiskColors.color(for: normalized))
+                        .frame(width: 8, height: 8)
+                } else {
+                    Circle()
+                        .stroke(AppColors.textSecondary.opacity(0.3), lineWidth: 1)
+                        .frame(width: 8, height: 8)
                 }
             }
         }

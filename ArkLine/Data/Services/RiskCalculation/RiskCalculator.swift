@@ -518,7 +518,7 @@ final class RiskCalculator {
             factors.append(.unavailable(.macroRisk, weight: weights.macroRisk))
         }
 
-        // Factor 8: Oil Risk (WTI Crude Oil)
+        // Factor 8: Oil Risk (Brent Crude Oil)
         if let oil = factorData.oilValue {
             factors.append(RiskFactor(
                 type: .oilRisk,

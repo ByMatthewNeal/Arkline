@@ -461,12 +461,23 @@ actor RiskFactorFetcher {
     }
 
     private func fetchCrudeOil() async -> Double? {
+        // Use Brent (BZUSD) sourced directly from FMP — the app's oil benchmark
+        // everywhere else (macro card, share cards) and the one that matches
+        // TradingView. FMP has no reliable WTI quote (CLUSD silently falls back
+        // to Yahoo), so Brent is both the consistent and the more reliable feed.
+        // Yahoo WTI remains only as a last-resort fallback if FMP is unavailable.
+        if let brent = try? await FMPService.shared.fetchCommodityQuotes(symbols: ["BZUSD"]).first,
+           brent.price > 0 {
+            logDebug("Brent Crude (FMP): $\(brent.price)", category: .network)
+            return brent.price
+        }
+
         do {
             guard let oilData = try await crudeOilService.fetchLatestCrudeOil() else {
                 logWarning("Crude oil data unavailable (nil response)", category: .network)
                 return nil
             }
-            logDebug("WTI Crude Oil: $\(oilData.value)", category: .network)
+            logDebug("Crude Oil (Yahoo WTI fallback): $\(oilData.value)", category: .network)
             return oilData.value
         } catch {
             logWarning("Crude oil fetch failed: \(error.localizedDescription)", category: .network)

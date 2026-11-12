@@ -44,7 +44,7 @@ enum RiskFactorType: String, CaseIterable, Codable {
         case .macroRisk:
             return "Macro indicators (VIX + DXY average)"
         case .oilRisk:
-            return "WTI Crude Oil inflation pressure"
+            return "Brent Crude Oil inflation pressure"
         }
     }
 

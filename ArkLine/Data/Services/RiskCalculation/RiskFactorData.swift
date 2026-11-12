@@ -27,7 +27,7 @@ struct RiskFactorData {
     /// DXY value
     let dxyValue: Double?
 
-    /// WTI Crude Oil price (USD)
+    /// Brent Crude Oil price (USD)
     let oilValue: Double?
 
     /// Timestamp when data was fetched
@@ -226,29 +226,31 @@ enum RiskFactorNormalizer {
         }
     }
 
-    // MARK: - WTI Crude Oil Normalization
+    // MARK: - Brent Crude Oil Normalization
 
-    /// Normalize WTI Crude Oil price to risk (0-1)
-    /// - Parameter oil: WTI price in USD
+    /// Normalize Brent Crude Oil price to risk (0-1)
+    /// - Parameter oil: Brent price in USD
     /// - Returns: Normalized risk where high oil = inflationary pressure = bearish crypto
     ///
-    /// Calibration:
-    /// - < $60: Disinflationary, bullish for crypto (0.15)
-    /// - $60-70: Low inflation pressure (0.25)
-    /// - $70-80: Moderate (0.40)
-    /// - $80-90: Mild headwind (0.55)
-    /// - $90-100: Inflationary pressure (0.75)
-    /// - > $100: High inflation risk (0.90)
+    /// Calibration is set for Brent, which structurally trades a few dollars above
+    /// WTI — thresholds are shifted ~$5 up from the old WTI buckets so the same
+    /// inflationary pressure maps to the same risk level:
+    /// - < $65: Disinflationary, bullish for crypto (0.15)
+    /// - $65-75: Low inflation pressure (0.25)
+    /// - $75-85: Moderate (0.40)
+    /// - $85-95: Mild headwind (0.55)
+    /// - $95-105: Inflationary pressure (0.75)
+    /// - > $105: High inflation risk (0.90)
     static func normalizeOilRisk(_ oil: Double) -> Double {
-        if oil < 60 {
+        if oil < 65 {
             return 0.15
-        } else if oil < 70 {
+        } else if oil < 75 {
             return 0.25
-        } else if oil < 80 {
+        } else if oil < 85 {
             return 0.40
-        } else if oil < 90 {
+        } else if oil < 95 {
             return 0.55
-        } else if oil < 100 {
+        } else if oil < 105 {
             return 0.75
         } else {
             return 0.90
