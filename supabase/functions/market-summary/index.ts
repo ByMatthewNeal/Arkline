@@ -710,6 +710,9 @@ ${slotInstructions}
 
 Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
 
+## Notification
+One plain-English sentence under 100 characters that a non-expert grasps at a glance — the single biggest takeaway written as a readable sentence, never a bare number or jargon. This is the phone push preview. Example: "Crypto's leading again as Bitcoin pushes higher and risk appetite returns."
+
 ## TLDR
 2-4 sentences max. Quick snapshot: BTC state + price, market sentiment, portfolio positioning, and what to watch this weekend. No fluff.
 
@@ -745,6 +748,9 @@ ${sessionContext}
 MARKET EMPHASIS: If MARKET ROTATION data is present, weight your coverage toward the favored market — it leads the TLDR and gets the deeper treatment in What's Happening, while the other market still gets covered. Include one short clause explaining WHY the emphasis leans that way, drawn from the rotation factors (e.g. "with equities outpacing BTC over 30 days and breadth supportive"). If the verdict is BALANCED, cover both markets evenly. Never present the rotation as advice — it describes where conditions and momentum are; the reader decides what to do.
 
 Write a structured briefing using EXACTLY these section headers on their own line, prefixed with "##". Do NOT add any other sections.
+
+## Notification
+One plain-English sentence under 100 characters that a non-expert grasps at a glance — the single biggest takeaway written as a readable sentence, never a bare number or jargon. This is the phone push preview. Example: "Risk-on tone as stocks and crypto both climb ahead of tonight's inflation print."
 
 ## TLDR
 2-3 sentences. MUST start with the macro regime label (e.g. "Risk-Off:" or "Risk-On:"), then cover both markets with the rotation-favored market first — BTC state + price, S&P/equity state, sentiment, portfolio stance, one thing to watch.
@@ -797,6 +803,12 @@ ${feedbackBlock}`,
       return ok({ error: "Empty summary generated" })
     }
 
+    // Pull the dedicated push-notification one-liner, then strip that section
+    // so it never renders inside the in-app briefing (it exists only for the push).
+    const notifMatch = summary.match(/##\s*Notification\s*\n+([^\n#]+)/)
+    const notifLine = (notifMatch?.[1] ?? "").trim()
+    summary = summary.replace(/##\s*Notification\s*\n+[^\n#]+\n*/i, "").trim()
+
     console.log(`Generated ${slot} summary (${summary.length} chars)`)
 
     // Cache in DB with full context for historical analysis
@@ -818,27 +830,50 @@ ${feedbackBlock}`,
 
     // --- Push notification + TTS pre-generation (fire-and-forget) ---
     const briefingKey = `${todayUTC}_${slot}`
-    const postureMatch = summary.match(/##\s*Posture\s*\n+([^\n#]+)/)
-    let posture = (postureMatch?.[1]?.trim() ?? "").replace(/^#+\s*/, "")
 
-    // Validate posture against actual regime data to prevent contradictions
+    // Build the push body as a readable sentence. Prefer the dedicated one-line
+    // Notification the model wrote; if it's missing, fall back to the first
+    // sentence of the TLDR (always present); finally a generic line. This avoids
+    // the old bug where a fragile "## Posture" scrape could surface a bare number.
+    let pushBody = notifLine
+    if (!pushBody) {
+      const tldrMatch = summary.match(/##\s*TLDR\s*\n+([^#]+)/)
+      const tldr = (tldrMatch?.[1] ?? "").trim().replace(/\s+/g, " ")
+      // First sentence of the TLDR.
+      pushBody = (tldr.split(/(?<=[.!?])\s+/)[0] ?? "").trim()
+    }
+    if (!pushBody) pushBody = `Your ${slot} market briefing is ready.`
+
+    // Validate against actual regime data to prevent contradictions
     // Claude sometimes writes the wrong regime — override with ground truth
     const actualRegime = payload.macroRegime ?? ""
-    if (actualRegime && posture) {
+    if (actualRegime && pushBody) {
       const isRiskOn = actualRegime.toLowerCase().includes("risk-on")
       const isRiskOff = actualRegime.toLowerCase().includes("risk-off")
-      const postureHasRiskOn = posture.toLowerCase().includes("risk-on")
-      const postureHasRiskOff = posture.toLowerCase().includes("risk-off")
+      const bodyHasRiskOn = pushBody.toLowerCase().includes("risk-on")
+      const bodyHasRiskOff = pushBody.toLowerCase().includes("risk-off")
 
-      if (isRiskOn && postureHasRiskOff) {
-        // Claude wrote Risk-Off but data says Risk-On — fix it
-        posture = posture.replace(/risk-off/gi, "Risk-On")
-        console.log(`Posture correction: forced Risk-Off → Risk-On (actual regime: ${actualRegime})`)
-      } else if (isRiskOff && postureHasRiskOn) {
-        // Claude wrote Risk-On but data says Risk-Off — fix it
-        posture = posture.replace(/risk-on/gi, "Risk-Off")
-        console.log(`Posture correction: forced Risk-On → Risk-Off (actual regime: ${actualRegime})`)
+      if (isRiskOn && bodyHasRiskOff) {
+        pushBody = pushBody.replace(/risk-off/gi, "Risk-On")
+        console.log(`Notification correction: forced Risk-Off → Risk-On (actual regime: ${actualRegime})`)
+      } else if (isRiskOff && bodyHasRiskOn) {
+        pushBody = pushBody.replace(/risk-on/gi, "Risk-Off")
+        console.log(`Notification correction: forced Risk-On → Risk-Off (actual regime: ${actualRegime})`)
       }
+    }
+
+    // Strip AI-style em/en dashes the model sometimes emits (e.g. "peaks—crypto").
+    // Em/en dashes read as machine-written; replace them with a comma so the push
+    // stays clean punctuation.
+    pushBody = pushBody
+      .replace(/\s*[–—]\s*/g, ", ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/,\s*,/g, ",")
+      .trim()
+
+    // Trim to a clean length for the lock screen, breaking on a word boundary.
+    if (pushBody.length > 140) {
+      pushBody = pushBody.slice(0, 137).replace(/\s+\S*$/, "").trim() + "..."
     }
 
     const slotLabel = slot === "weekend" ? "Weekend Pulse" : slot === "morning" ? "Morning Intel" : "Close & Context"
@@ -854,7 +889,7 @@ ${feedbackBlock}`,
       body: JSON.stringify({
         broadcast_id: `briefing_${briefingKey}`,
         title: `${slotLabel} Ready`,
-        body: posture.length > 80 ? posture.substring(0, 77) + "..." : (posture || `Your ${slot} market briefing is ready.`),
+        body: pushBody,
         event_type: "briefings",
         target_audience: { type: "all" },
         custom_data: { type: "briefing", slot },

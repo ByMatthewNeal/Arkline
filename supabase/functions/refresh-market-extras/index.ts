@@ -72,9 +72,12 @@ async function fetchPerpPremium() {
   try {
     const key = Deno.env.get("COINGECKO_API_KEY");
     const headers: Record<string, string> = { "User-Agent": "Mozilla/5.0" };
-    if (key) headers["x-cg-demo-api-key"] = key;
+    // Paid (Pro) plan: pro-api host + x-cg-pro-api-key. Falls back to the free
+    // host with no key if the secret isn't set.
+    if (key) headers["x-cg-pro-api-key"] = key;
+    const base = key ? "https://pro-api.coingecko.com/api/v3" : "https://api.coingecko.com/api/v3";
     const res = await fetch(
-      "https://api.coingecko.com/api/v3/derivatives/exchanges/binance_futures?include_tickers=unexpired",
+      `${base}/derivatives/exchanges/binance_futures?include_tickers=unexpired`,
       { headers },
     );
     if (!res.ok) return;

@@ -479,6 +479,10 @@ verify_jwt = false
 [functions.compute-market-rotation]
 verify_jwt = false
 
+# Cron-invoked with x-cron-secret and no JWT, so verify_jwt must stay false.
+[functions.compute-support-resistance]
+verify_jwt = false
+
 [functions.compute-stock-portfolios]
 verify_jwt = false
 

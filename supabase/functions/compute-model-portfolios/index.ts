@@ -822,9 +822,15 @@ Deno.serve(async (req) => {
     // 1. Get portfolio metadata
     const { data: portfolios } = await supabase
       .from("model_portfolios")
-      .select("id, strategy")
+      .select("id, strategy, is_active")
     const portfolioMap: Record<string, string> = {}
-    for (const p of portfolios ?? []) portfolioMap[p.strategy] = p.id
+    const activeStrategies = new Set<string>()
+    for (const p of portfolios ?? []) {
+      portfolioMap[p.strategy] = p.id
+      // Retired books (is_active=false, e.g. Alpha) are skipped entirely:
+      // not recomputed and no rebalance push sent.
+      if (p.is_active !== false) activeStrategies.add(p.strategy)
+    }
 
     // 2. Get today's QPS signals
     const { data: signals } = await supabase
@@ -895,6 +901,10 @@ Deno.serve(async (req) => {
     for (const strategy of ["core", "edge", "alpha"]) {
       const portfolioId = portfolioMap[strategy]
       if (!portfolioId) continue
+      if (!activeStrategies.has(strategy)) {
+        console.log(`  ${strategy}: skipped (retired / is_active=false)`)
+        continue
+      }
 
       const { data: prevNavRows } = await supabase
         .from("model_portfolio_nav")
@@ -983,20 +993,32 @@ Deno.serve(async (req) => {
         const pos = positions[asset]
         const currentPrice = prices[asset] ?? 0
 
-        // Carry forward entry price from previous allocation, or set to current price for new positions
-        const prevDetail = prevAllocations[asset]
+        // Weighted-average (blended) cost basis, matching the Metals book:
+        // blend the added lot in on buys, hold the per-unit average on trims,
+        // and reset to today's price on a fresh entry. Stablecoins and gold are
+        // defensive positions and carry no entry price.
+        const prevDetail = prevAllocations[asset] as any
+        const prevQty = prevDetail && typeof prevDetail === "object" && typeof prevDetail.qty === "number" ? prevDetail.qty : 0
+        const prevAvg = prevDetail && typeof prevDetail === "object" && typeof prevDetail.entry_price === "number" ? prevDetail.entry_price : 0
+        const newQty = pos ? pos.qty : 0
         let entryPrice: number | undefined
-        if (asset === "USDC" || asset === "PAXG") {
-          // Skip entry price for stablecoins and gold (defensive assets)
+        if (asset === "USDC") {
+          // Only true cash is skipped. Gold (PAXG) is a real, appreciating
+          // hedge, so it gets a blended cost basis like the crypto positions.
           entryPrice = undefined
-        } else if (prevDetail && typeof prevDetail === "object" && "entry_price" in prevDetail && (prevDetail as any).entry_price > 0) {
-          entryPrice = (prevDetail as any).entry_price
-        } else if (prevDetail && typeof prevDetail === "object" && "qty" in prevDetail && (prevDetail as any).qty > 0) {
-          // Existing position without entry_price — use current price as baseline
-          entryPrice = currentPrice
+        } else if (newQty <= 0) {
+          entryPrice = undefined
+        } else if (prevQty > 0 && prevAvg > 0) {
+          if (newQty > prevQty && currentPrice > 0) {
+            // Bought more today: blend the new lot in at today's price.
+            entryPrice = (prevQty * prevAvg + (newQty - prevQty) * currentPrice) / newQty
+          } else {
+            // Trimmed or unchanged: average cost per unit is unchanged.
+            entryPrice = prevAvg
+          }
         } else {
-          // New position — entry at today's price
-          entryPrice = currentPrice
+          // Fresh position (or no prior basis): entry at today's price.
+          entryPrice = currentPrice > 0 ? currentPrice : undefined
         }
 
         allocJson[asset] = {

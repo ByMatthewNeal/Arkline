@@ -235,7 +235,11 @@ Deno.serve(async (req) => {
   let btcDominance = 0
   let btcDomTrend = "flat"
   try {
-    const globalResp = await fetch("https://api.coingecko.com/api/v3/global")
+    const cgKey = Deno.env.get("COINGECKO_API_KEY") ?? ""
+    const cgBase = cgKey ? "https://pro-api.coingecko.com/api/v3" : "https://api.coingecko.com/api/v3"
+    const globalResp = await fetch(`${cgBase}/global`, {
+      headers: cgKey ? { "x-cg-pro-api-key": cgKey } : {},
+    })
     const globalData = await globalResp.json()
     btcDominance = globalData.data?.market_cap_percentage?.btc ?? 0
   } catch (e) {

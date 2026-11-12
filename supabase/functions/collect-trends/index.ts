@@ -81,8 +81,11 @@ Deno.serve(async (req) => {
     // Fetch current BTC price from CoinGecko
     let btcPrice: number | null = null
     try {
+      const cgKey = Deno.env.get("COINGECKO_API_KEY") ?? ""
+      const cgBase = cgKey ? "https://pro-api.coingecko.com/api/v3" : "https://api.coingecko.com/api/v3"
       const cgRes = await fetch(
-        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+        `${cgBase}/simple/price?ids=bitcoin&vs_currencies=usd`,
+        { headers: cgKey ? { "x-cg-pro-api-key": cgKey } : {} },
       )
       if (cgRes.ok) {
         const cgData = await cgRes.json()
