@@ -18,6 +18,9 @@ class MemberManagementViewModel {
     // MARK: - Filters
     var searchText = ""
     var statusFilter: MemberStatusFilter = .all
+    /// Internal/test accounts (founder logins, mneal.jw+ aliases, @arkline.io
+    /// reviewers) are hidden by default; this brings them back into the list.
+    var showInternal = false
 
     // MARK: - Confirmation Alerts
     var showCancelAlert = false
@@ -77,7 +80,8 @@ class MemberManagementViewModel {
             let response = try await service.fetchMembers(
                 search: nil,
                 status: nil,
-                page: 1
+                page: 1,
+                includeInternal: showInternal
             )
             members = response.members
         } catch {

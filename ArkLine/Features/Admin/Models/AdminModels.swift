@@ -10,6 +10,9 @@ struct AdminMember: Codable, Identifiable, Equatable {
     let role: String
     let subscriptionStatus: String
     let isActive: Bool
+    /// True for founder logins, mneal.jw+ aliases and @arkline.io reviewer accounts.
+    /// Excluded from metrics; only present in the list when "Show internal" is on.
+    let isInternal: Bool?
     let createdAt: Date
     /// Most recent session activity (admin-members / admin_last_active). Nil = no
     /// recorded activity (signed up but never returned, or signed out).
@@ -112,6 +115,7 @@ struct AdminMember: Codable, Identifiable, Equatable {
         case fullName = "full_name"
         case subscriptionStatus = "subscription_status"
         case isActive = "is_active"
+        case isInternal = "is_internal"
         case createdAt = "created_at"
         case lastActiveAt = "last_active_at"
     }
@@ -309,6 +313,9 @@ struct AdminMembersRequest: Encodable {
     let status: String?
     let page: Int
     let per_page: Int
+    /// When false (default), the server omits internal/test accounts
+    /// (founder logins, mneal.jw+ aliases, @arkline.io reviewers) from the list.
+    let include_internal: Bool
 }
 
 struct AdminMembersResponse: Decodable {

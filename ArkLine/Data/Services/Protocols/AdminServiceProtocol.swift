@@ -1,7 +1,7 @@
 import Foundation
 
 protocol AdminServiceProtocol {
-    func fetchMembers(search: String?, status: String?, page: Int) async throws -> AdminMembersResponse
+    func fetchMembers(search: String?, status: String?, page: Int, includeInternal: Bool) async throws -> AdminMembersResponse
     func fetchMetrics() async throws -> AdminMetrics
     func fetchPaymentHistory(customerId: String) async throws -> [PaymentRecord]
     func cancelSubscription(stripeSubscriptionId: String, atPeriodEnd: Bool) async throws

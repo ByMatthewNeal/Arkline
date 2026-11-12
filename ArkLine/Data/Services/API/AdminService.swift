@@ -3,12 +3,13 @@ import Foundation
 final class AdminService: AdminServiceProtocol {
     private let supabase = SupabaseManager.shared
 
-    func fetchMembers(search: String?, status: String?, page: Int) async throws -> AdminMembersResponse {
+    func fetchMembers(search: String?, status: String?, page: Int, includeInternal: Bool) async throws -> AdminMembersResponse {
         let request = AdminMembersRequest(
             search: search,
             status: status,
             page: page,
-            per_page: 50
+            per_page: 50,
+            include_internal: includeInternal
         )
         // functions.invoke defaults to a plain JSONDecoder, whose date strategy
         // cannot parse ISO-8601 strings at all — so decoding AdminMember's Date

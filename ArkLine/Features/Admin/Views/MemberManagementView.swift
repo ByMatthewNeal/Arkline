@@ -28,6 +28,18 @@ struct MemberManagementView: View {
                     // Filter pills
                     filterPills
 
+                    // Internal/test accounts are hidden by default; toggle to show them.
+                    Toggle(isOn: $viewModel.showInternal) {
+                        Text("Show internal / test accounts")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .tint(AppColors.accent)
+                    .padding(.horizontal, ArkSpacing.lg)
+                    .onChange(of: viewModel.showInternal) { _, _ in
+                        Task { await viewModel.loadMembers() }
+                    }
+
                     // Member list
                     memberList
                 }
