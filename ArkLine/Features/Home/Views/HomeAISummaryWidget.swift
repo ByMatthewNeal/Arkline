@@ -207,10 +207,6 @@ struct HomeAISummaryWidget: View {
                 withAnimation(.arkSpring) { isExpanded.toggle() }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(AppColors.accent)
-
                     Text("Daily Briefing")
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)

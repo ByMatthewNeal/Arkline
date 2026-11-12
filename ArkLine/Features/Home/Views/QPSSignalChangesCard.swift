@@ -42,8 +42,6 @@ struct QPSSignalChangesCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: "waveform.path.ecg")
-                    .foregroundColor(AppColors.accent)
                 HStack(spacing: 5) {
                     Text("Signal Changes")
                         .font(size == .compact ? .subheadline : .title3)

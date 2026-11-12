@@ -16,10 +16,6 @@ struct FavoritesSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
             HStack {
-                Image(systemName: "star.fill")
-                    .font(.system(size: size == .compact ? 12 : 14))
-                    .foregroundColor(AppColors.accent)
-
                 Text("Favorites")
                     .font(size == .compact ? .subheadline : .title3)
                     .foregroundColor(textPrimary)

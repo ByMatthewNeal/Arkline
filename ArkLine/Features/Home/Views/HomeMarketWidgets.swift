@@ -25,10 +25,6 @@ struct HomeFedWatchWidget: View {
             // Header
             HStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "building.columns")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(Color(hex: "2E7D32"))
-
                     Text("Fed Watch")
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)
@@ -195,10 +191,6 @@ struct HomeDailyNewsWidget: View {
             // Header
             HStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "newspaper")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(Color(hex: "1976D2"))
-
                     Text("Daily News")
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)
@@ -486,10 +478,6 @@ struct HomeMarketSentimentWidget: View {
             // Header
             HStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "waveform.path.ecg")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(Color(hex: "9C27B0"))
-
                     Text("Market Sentiment")
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)
@@ -645,10 +633,6 @@ struct HomeDerivativesWidget: View {
             // Header
             HStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "chart.bar.doc.horizontal")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(AppColors.accent)
-
                     Text("Derivatives")
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)

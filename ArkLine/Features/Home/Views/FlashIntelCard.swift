@@ -173,8 +173,6 @@ struct FlashIntelSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: "scope")
-                    .foregroundColor(AppColors.accent)
                 Text("Trade Signals")
                     .font(size == .compact ? .subheadline : .title3)
                     .foregroundColor(AppColors.textPrimary(colorScheme))

@@ -13,7 +13,6 @@ struct SignalChangeHistoryView: View {
     @State private var lookupChanges: [DailyPositioningSignal]?
     @State private var isLoadingLookup = false
     @State private var showDatePicker = false
-    @State private var expandedSignalId: UUID?
     @State private var searchText = ""
 
     private let service = PositioningSignalService()
@@ -119,24 +118,32 @@ struct SignalChangeHistoryView: View {
                             .tracking(1.0)
 
                         ForEach(filteredCurrentSignals) { signal in
-                            HStack {
-                                Text(signal.asset)
-                                    .font(AppFonts.body14Medium)
-                                    .foregroundColor(AppColors.textPrimary(colorScheme))
-                                Spacer()
-                                signalBadge(signal.positioningSignal)
-                                Text(signal.category ?? "")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(AppColors.textTertiary)
-                                    .lineLimit(1)
-                                    .fixedSize()
+                            NavigationLink {
+                                QPSDetailView(asset: signal.asset)
+                            } label: {
+                                HStack {
+                                    Text(signal.asset)
+                                        .font(AppFonts.body14Medium)
+                                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                                    Spacer()
+                                    signalBadge(signal.positioningSignal)
+                                    Text(signal.category ?? "")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(AppColors.textTertiary)
+                                        .lineLimit(1)
+                                        .fixedSize()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 9, weight: .semibold))
+                                        .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                                }
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                                )
                             }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
-                            )
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal)
@@ -225,9 +232,9 @@ struct SignalChangeHistoryView: View {
 
     private var momentumMapBanner: some View {
         HStack(spacing: 12) {
-            Image(systemName: "waveform.path.ecg")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(AppColors.success)
+            Circle()
+                .fill(AppColors.success)
+                .frame(width: 8, height: 8)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Momentum Map")
                     .font(.system(size: 14, weight: .semibold))
@@ -374,12 +381,10 @@ struct SignalChangeHistoryView: View {
     // MARK: - Change Row
 
     private func changeRow(_ signal: DailyPositioningSignal) -> some View {
-        let isExpanded = expandedSignalId == signal.id
-
-        return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                expandedSignalId = isExpanded ? nil : signal.id
-            }
+        // Tapping a row opens the asset's positioning detail — same destination
+        // as the Overview → Daily Positioning → "View All Assets" list.
+        NavigationLink {
+            QPSDetailView(asset: signal.asset)
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 12) {
@@ -436,24 +441,9 @@ struct SignalChangeHistoryView: View {
                             )
                     }
 
-                    Image(systemName: "chevron.down")
+                    Image(systemName: "chevron.right")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundColor(AppColors.textSecondary.opacity(0.4))
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                }
-
-                // Expandable hint
-                if isExpanded, let prev = signal.prevPositioningSignal {
-                    HStack(spacing: 6) {
-                        Image(systemName: "lightbulb.fill")
-                            .font(.system(size: 9))
-                            .foregroundColor(signal.positioningSignal.color.opacity(0.6))
-                        Text(signal.positioningSignal.changeHint(from: prev))
-                            .font(.system(size: 11))
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-                    .padding(.top, 8)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
             .padding(12)

@@ -146,8 +146,6 @@ struct ModelPortfolioUpdateCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with strategy picker
             HStack {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .foregroundColor(AppColors.accent)
                 Text("Model Portfolio")
                     .font(.headline)
                     .foregroundColor(textPrimary)

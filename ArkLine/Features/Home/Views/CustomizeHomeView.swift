@@ -424,9 +424,10 @@ struct WidgetConfigRow: View {
                         .background(AppColors.divider(colorScheme))
                         .padding(.horizontal, 14)
 
-                    // Size options
+                    // Size options — Expanded retired (rendered like Standard),
+                    // so only Compact and Standard are offered.
                     HStack(spacing: 10) {
-                        ForEach(WidgetSize.allCases) { size in
+                        ForEach([WidgetSize.compact, .standard]) { size in
                             SizeOptionButton(
                                 size: size,
                                 isSelected: currentSize == size,

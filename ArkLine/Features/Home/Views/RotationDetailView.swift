@@ -203,10 +203,6 @@ struct RotationDetailView: View {
     private var actionGuidanceSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
             HStack(spacing: 8) {
-                Image(systemName: "arrow.right.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(regimeColor)
-
                 Text("What to Do")
                     .font(.headline)
                     .foregroundColor(textPrimary)
@@ -241,10 +237,10 @@ struct RotationDetailView: View {
             if signal.regime == .equityFavored, !sectors.isEmpty {
                 let topNames = sectors.prefix(3).map(\.sectorName).joined(separator: ", ")
                 HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(AppColors.accent)
-                        .padding(.top, 4)
+                    Circle()
+                        .fill(AppColors.accent)
+                        .frame(width: 6, height: 6)
+                        .padding(.top, 5)
 
                     Text("Leading sectors: \(topNames)")
                         .font(.system(size: 13, weight: .medium))
@@ -314,9 +310,9 @@ struct RotationDetailView: View {
 
     private func inputRow(icon: String, label: String, detail: String, weight: String, term: String? = nil) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(AppColors.accent)
+            Circle()
+                .fill(AppColors.accent.opacity(0.7))
+                .frame(width: 6, height: 6)
                 .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 1) {
@@ -341,9 +337,10 @@ struct RotationDetailView: View {
 
     private func riskOffBanner(rank: Int) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.shield.fill")
-                .font(.system(size: 16))
-                .foregroundColor(AppColors.warning)
+            Circle()
+                .fill(AppColors.warning)
+                .frame(width: 8, height: 8)
+                .padding(.top, 5)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Defensive Sectors Leading")
@@ -429,12 +426,6 @@ struct RotationDetailView: View {
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundColor(rank <= 3 ? AppColors.accent : AppColors.textSecondary)
                     .frame(width: 20)
-
-                // Icon
-                Image(systemName: sector.icon)
-                    .font(.system(size: 12))
-                    .foregroundColor(AppColors.accent)
-                    .frame(width: 16)
 
                 // Name
                 VStack(alignment: .leading, spacing: 2) {
@@ -755,10 +746,6 @@ struct RotationDetailView: View {
     private var allocationTargetsSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
             HStack(spacing: 8) {
-                Image(systemName: "chart.pie.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(regimeColor)
-
                 Text("Suggested Allocation")
                     .font(.headline)
                     .foregroundColor(textPrimary)
@@ -790,9 +777,9 @@ struct RotationDetailView: View {
 
     private func allocationTargetRow(_ target: AllocationTarget) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: target.icon)
-                .font(.system(size: 12))
-                .foregroundColor(target.color)
+            Circle()
+                .fill(target.color)
+                .frame(width: 8, height: 8)
                 .frame(width: 20)
 
             Text(target.assetClass)

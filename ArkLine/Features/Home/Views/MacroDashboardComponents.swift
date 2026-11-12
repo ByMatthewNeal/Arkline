@@ -536,10 +536,10 @@ struct SimpleIndicatorRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon
-            Image(systemName: icon)
-                .font(.system(size: 18))
-                .foregroundColor(AppColors.accent)
+            // Status dot (color mirrors the signal)
+            Circle()
+                .fill(statusColor)
+                .frame(width: 8, height: 8)
                 .frame(width: 32)
 
             // Title & value subtitle

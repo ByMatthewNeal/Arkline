@@ -25,10 +25,6 @@ struct RotationGaugeWidget: View {
     private var loadingContent: some View {
         VStack(spacing: 12) {
             HStack(spacing: 8) {
-                Image(systemName: "arrow.left.arrow.right.circle.fill")
-                    .font(.system(size: size == .compact ? 14 : 16))
-                    .foregroundColor(AppColors.accent)
-
                 Text("Rotation Signal")
                     .font(size == .compact ? .subheadline : .headline)
                     .foregroundColor(textPrimary)
@@ -64,10 +60,6 @@ struct RotationGaugeWidget: View {
                 // Header
                 HStack {
                     HStack(spacing: 8) {
-                        Image(systemName: "arrow.left.arrow.right.circle.fill")
-                            .font(.system(size: size == .compact ? 14 : 16))
-                            .foregroundColor(regimeColor(signal))
-
                         Text("Rotation Signal")
                             .font(size == .compact ? .subheadline : .headline)
                             .foregroundColor(textPrimary)

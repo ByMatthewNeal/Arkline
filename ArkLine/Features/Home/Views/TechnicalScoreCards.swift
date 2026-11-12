@@ -370,16 +370,11 @@ struct OutlookIndicator: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(sentiment.color.opacity(0.12))
-                    .frame(width: 44, height: 44)
-
-                Image(systemName: sentiment.icon)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(sentiment.color)
-            }
+            // Status dot (color carries the sentiment)
+            Circle()
+                .fill(sentiment.color)
+                .frame(width: 12, height: 12)
+                .frame(width: 44, height: 44)
 
             // Labels
             VStack(spacing: 2) {

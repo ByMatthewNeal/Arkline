@@ -33,9 +33,15 @@ struct PortfolioHeroCard: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
     @State private var showShareSheet = false
 
     private var currency: String { appState.preferredCurrency }
+
+    private var privacy: PrivacyState {
+        PrivacyState(fullyHidden: isHidden, presentation: presentationMode, hideQuantities: presentationHideQuantities)
+    }
 
     // Track time period changes to re-trigger animation
     @State private var chartAnimationId = UUID()
@@ -200,6 +206,23 @@ struct PortfolioHeroCard: View {
                         )
                 }
                 .buttonStyle(.plain)
+
+                // Presentation Mode: hides the money but keeps growth percentages
+                // visible — for showing someone your performance without the number.
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { presentationMode.toggle() }
+                } label: {
+                    Image(systemName: "percent")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(presentationMode ? AppColors.accent : textPrimary.opacity(0.4))
+                        .frame(width: 36, height: 36)
+                        .background(
+                            Circle()
+                                .fill(presentationMode ? AppColors.accent.opacity(colorScheme == .dark ? 0.15 : 0.1) : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(presentationMode ? "Turn off presentation mode" : "Presentation mode: show growth, hide amounts")
             }
 
             TimePeriodSelector(selectedPeriod: $selectedTimePeriod)
@@ -210,7 +233,7 @@ struct PortfolioHeroCard: View {
                     .foregroundColor(textPrimary.opacity(0.5))
                     .tracking(1)
 
-                Text(isHidden ? "••••••" : totalValue.asCurrency(code: currency))
+                Text(privacy.currency(totalValue, code: currency))
                     .font(.system(size: 42, weight: .bold))
                     .foregroundColor(textPrimary)
                     .contentTransition(.numericText())
@@ -219,11 +242,11 @@ struct PortfolioHeroCard: View {
                     Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 14, weight: .semibold))
 
-                    Text(isHidden ? "••••" : "\(isPositive ? "+" : "")\(change.asCurrency(code: currency))")
+                    Text(privacy.signedCurrency(change, code: currency))
                         .font(.system(size: 16, weight: .semibold))
                         .contentTransition(.numericText())
 
-                    Text(isHidden ? "" : "(\(isPositive ? "+" : "")\(changePercent, specifier: "%.2f")%)")
+                    Text(privacy.maskPercent ? "" : "(\(isPositive ? "+" : "")\(changePercent, specifier: "%.2f")%)")
                         .font(.system(size: 14))
                         .opacity(0.8)
                         .contentTransition(.numericText())
@@ -237,7 +260,7 @@ struct PortfolioHeroCard: View {
                 )
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(isHidden ? "Portfolio hidden" : "\(portfolioName) portfolio, \(totalValue.asCurrency(code: currency)), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent")
+            .accessibilityLabel(privacy.maskCurrency ? "\(portfolioName) portfolio, amount hidden, \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent" : "\(portfolioName) portfolio, \(totalValue.asCurrency(code: currency)), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent")
 
             PortfolioSparkline(
                 dataPoints: chartData,
@@ -657,10 +680,6 @@ struct CompactRiskCard: View {
                         .foregroundColor(textPrimary)
 
                     Spacer()
-
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 10))
-                        .foregroundColor(AppColors.accent)
                 }
 
                 if let risk = riskLevel {
@@ -886,10 +905,6 @@ private struct StockCompactRiskCard: View {
                     .foregroundColor(textPrimary)
 
                 Spacer()
-
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 10))
-                    .foregroundColor(AppColors.accent)
             }
 
             if let risk = riskLevel {
@@ -1212,7 +1227,7 @@ struct StockRiskDetailSheet: View {
                             icon: "arrow.up.and.down",
                             weight: "20%",
                             risk: factors.yearRangePosition,
-                            detail: "$\(String(format: "%.0f", factors.yearLow))–$\(String(format: "%.0f", factors.yearHigh))"
+                            detail: "\(factors.yearLow.asCurrencyWhole) to \(factors.yearHigh.asCurrencyWhole)"
                         )
                         stockFactorRow(
                             name: "50-SMA Trend",
@@ -1789,8 +1804,6 @@ struct ExplainNudge: View {
                 showSheet = true
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 11))
                     Text("New here? Here's what \(explainer.title.lowercased()) mean.")
                         .font(.system(size: 12))
                     Spacer(minLength: 0)
