@@ -1,6 +1,19 @@
 import Foundation
 import Supabase
 
+// MARK: - Crypto Risk DTO
+/// One asset's client-computed regression risk for a day, written to
+/// `crypto_risk_daily` so the Cycle Scorecard matches the home Risk Levels card.
+struct CryptoRiskDailyDTO: Encodable {
+    let asset: String
+    let risk_date: String   // "yyyy-MM-dd"
+    let risk_level: Double
+    let price: Double?
+    let fair_value: Double?
+    let deviation: Double?
+    let source: String
+}
+
 // MARK: - Supabase Database Helper
 /// Database helper for Supabase operations.
 /// Note: This is a stub implementation. Full implementation requires matching
@@ -275,6 +288,24 @@ extension SupabaseDatabase {
             .execute()
 
         logInfo("Upserted \(dataPoints.count) Supply in Profit data points", category: .network)
+    }
+
+    // MARK: - Crypto Regression Risk (client-computed, shared)
+
+    /// Persist the client-computed regression risk so the server-side Cycle
+    /// Scorecard reads the exact number shown on the home Risk Levels card.
+    /// Upserts on (asset, risk_date); safe to call repeatedly (2x/day refresh).
+    func saveCryptoRisk(_ points: [CryptoRiskDailyDTO]) async throws {
+        guard SupabaseManager.shared.isConfigured else { return }
+        guard !points.isEmpty else { return }
+
+        let client = SupabaseManager.shared.client
+        try await client
+            .from(SupabaseTable.cryptoRiskDaily.rawValue)
+            .upsert(points, onConflict: "asset,risk_date")
+            .execute()
+
+        logInfo("Upserted \(points.count) crypto risk points", category: .network)
     }
 
     /// Get supply in profit data from Supabase (sorted by date descending)

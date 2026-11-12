@@ -375,6 +375,13 @@ struct NotificationsDetailView: View {
             let prefs: [String: Bool] = [
                 "signal_new": swingSignals,
                 "signal_proximity": swingSignals,
+                // These two trade-signal alerts have no dedicated sub-toggle, so
+                // they follow the master Trade Signals switch (like signal_new /
+                // signal_proximity). The server also falls back to signal_new for
+                // any unset signal_* key, but writing them explicitly keeps the
+                // stored prefs complete and honest.
+                "signal_consider_profit": swingSignals,
+                "signal_t2_hit": swingSignals,
                 "signal_t1_hit": swingSignals && signalT1Hit,
                 "signal_stop_loss": swingSignals && signalStopLoss,
                 "signal_runner_close": swingSignals && signalRunnerClose,

@@ -24,11 +24,31 @@ struct ResourcesView: View {
     @State private var showDictionary = false
     @State private var showReferral = false
     @State private var showAdmin = false
+    @State private var search = ""
 
     private var isAdmin: Bool { appState.currentUser?.isAdmin == true }
 
+    private var isSearching: Bool {
+        !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Articles matching the current search across title, summary, and body.
+    private var filteredArticles: [ResourceArticle] {
+        let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return articles }
+        // Match on any whitespace-separated term so "market cap" and "cap market"
+        // both find the right lesson.
+        let terms = q.split(whereSeparator: { $0 == " " }).map(String.init)
+        return articles.filter { article in
+            let haystack = [article.title, article.summary ?? "", article.body ?? ""]
+                .joined(separator: " ")
+                .lowercased()
+            return terms.allSatisfy { haystack.contains($0) }
+        }
+    }
+
     private var sections: [(section: ResourceSection, items: [ResourceArticle])] {
-        let grouped = Dictionary(grouping: articles) { $0.section }
+        let grouped = Dictionary(grouping: filteredArticles) { $0.section }
         return ResourceSection.allCases
             .sorted { $0.order < $1.order }
             .compactMap { sec in
@@ -48,27 +68,56 @@ struct ResourcesView: View {
             } else {
                 List {
                     // Start Here, the guided foundations trail, front and center.
-                    Section {
-                        NavigationLink { StartHereTrailView() } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: "signpost.right.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(AppColors.accent)
-                                    .frame(width: 28)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Start Here")
-                                        .font(AppFonts.body14Medium)
-                                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                                    Text("New to investing? A calm, self-paced path through the basics.")
-                                        .font(AppFonts.caption12)
-                                        .foregroundColor(AppColors.textSecondary)
-                                        .lineLimit(2)
+                    // Hidden while searching so results lead.
+                    if !isSearching {
+                        Section {
+                            NavigationLink { StartHereTrailView() } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "signpost.right.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(AppColors.accent)
+                                        .frame(width: 28)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Start Here")
+                                            .font(AppFonts.body14Medium)
+                                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                                        Text("New to investing? A calm, self-paced path through the basics.")
+                                            .font(AppFonts.caption12)
+                                            .foregroundColor(AppColors.textSecondary)
+                                            .lineLimit(2)
+                                    }
                                 }
+                                .padding(.vertical, 2)
                             }
-                            .padding(.vertical, 2)
                         }
+                        .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                        Section {
+                            MindsetMomentCard()
+                        }
+                        .listRowBackground(AppColors.cardBackground(colorScheme))
                     }
-                    .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                    if isSearching && sections.isEmpty {
+                        Section {
+                            VStack(spacing: 6) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 26))
+                                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                                Text("No lessons matching \"\(search)\"")
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                Text("Try a different keyword, like \"market cap\" or \"wallet\".")
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.textTertiary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 24)
+                        }
+                        .listRowBackground(Color.clear)
+                    }
 
                     ForEach(sections, id: \.section) { group in
                         Section {
@@ -88,6 +137,12 @@ struct ResourcesView: View {
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
+                #if os(iOS)
+                .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search lessons")
+                #else
+                .searchable(text: $search, prompt: "Search lessons")
+                #endif
+                .autocorrectionDisabled()
             }
         }
         .navigationTitle("Resources")
@@ -296,6 +351,56 @@ extension AppState {
             selectedTab = .market
             pendingMarketAssetDetail = "OIL"
         }
+    }
+}
+
+// MARK: - Mindset Moment (daily rotating psychology beat)
+/// A calm, once-a-day psychology reminder on the Learn hub. Rotates through a
+/// curated catalog by day, so members meet a fresh mental-game idea each morning.
+/// The live, state-matched versions live on the Cycle Scorecard and Sentiment
+/// Regime screens.
+private struct MindsetMomentCard: View {
+    @Environment(\.colorScheme) var colorScheme
+
+    private var todays: (line: String, tag: String) { MindsetBeats.today }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("MINDSET TODAY")
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(AppColors.accent)
+                Spacer()
+                Text(todays.tag.uppercased())
+                    .font(.system(size: 9, weight: .medium))
+                    .tracking(0.8)
+                    .foregroundColor(AppColors.textTertiary)
+            }
+            Text(todays.line)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            ZStack(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 12).fill(AppColors.accent.opacity(0.055))
+                Image(systemName: "quote.closing")
+                    .font(.system(size: 46, weight: .semibold))
+                    .foregroundColor(AppColors.accent.opacity(0.07))
+                    .padding(.trailing, 10)
+                    .padding(.top, 6)
+            }
+        )
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(AppColors.accent.opacity(0.55))
+                .frame(width: 3)
+                .padding(.vertical, 6)
+        }
+        .padding(.vertical, 2)
     }
 }
 
@@ -1495,18 +1600,18 @@ enum TrailSeed {
             trailKey: "behavioral", position: 2,
             title: "Loss aversion: why losing hurts more",
             idea: "Studies find that losing money hurts about twice as much as making the same amount feels good. That imbalance quietly drives some of the worst investing behavior. It's why people sell their winners too early, to lock in a good feeling, and cling to their losers too long, to avoid the pain of admitting a loss. It's why a red day can feel like an emergency when it's really just noise. Knowing that your brain over-weights losses helps you take its panic signals with a grain of salt.",
-            seeInApp: nil,
-            mindsetCheck: nil,
+            seeInApp: "Where you're red matters more than that you're red. Arkline's risk bands and Bitcoin's supply in profit show whether price sits above or below the crowd's cost basis. Red near the highs, shoulder to shoulder with the herd, is a different animal from red beneath fair value, where patient buyers have historically found the best prices.",
+            mindsetCheck: "Before a red day rattles you, ask where the red is coming from. Stretched and falling is not the same as cheap and hated.",
             takeaway: "Losses hurt about twice as much as gains feel good. That imbalance makes us sell winners early and hold losers too long.",
             oneMoreThing: nil,
             preview: "Losing hurts twice as much",
-            deepLinkRaw: nil
+            deepLinkRaw: "cryptoRisk"
         ),
         TrailLesson(
             trailKey: "behavioral", position: 3,
             title: "FOMO and the herd",
             idea: "We're wired to follow the crowd, because for most of human history, going against the group could get you killed. In markets, that same instinct shows up as FOMO: the fear of missing out. When everyone's talking about an asset that's soaring, the pull to jump in feels almost physical, and that's usually exactly when prices are highest and riskiest. The herd feels safe, but in investing, the crowd is often most confident right before it's wrong. Noticing the pull is the first step to not being dragged by it.",
-            seeInApp: "The Fear & Greed reading is a mirror for exactly this herd emotion. When it's screaming greed, the herd is at its loudest.",
+            seeInApp: "Fear & Greed and the Sentiment Regime quadrant are both mirrors for this herd emotion. When greed is loud and the regime tips into FOMO, the crowd is at its most confident, which history says is often the riskiest moment to be chasing.",
             mindsetCheck: "This ties straight to Foundations: the crowd's mood is the emotion you least want making your decisions.",
             takeaway: "FOMO is the herd instinct in disguise. The crowd is often loudest and most confident right before it's wrong.",
             oneMoreThing: nil,
@@ -1517,12 +1622,12 @@ enum TrailSeed {
             trailKey: "behavioral", position: 4,
             title: "Recency bias and overconfidence",
             idea: "Your brain assumes whatever just happened will keep happening. After a long rally, it feels like prices only go up; after a crash, it feels like they'll fall forever. That's recency bias, and it gets people buying high and selling low with total conviction. Its partner in crime is overconfidence: surveys consistently show most people believe they're above-average investors, which is statistically impossible. A few lucky wins can convince you that you've cracked the code, right before the market humbles you. Staying a little humble is a genuine edge.",
-            seeInApp: nil,
-            mindsetCheck: nil,
+            seeInApp: "This is exactly what the risk bands and the Cycle Scorecard are for. They anchor today's price to its long-run trend and to where past tops and bottoms formed, so a frightening recent move is seen against every reset that came before it, not as the start of forever.",
+            mindsetCheck: "The question is never how much this hurts. It is how this move compares to the resets that came before.",
             takeaway: "Your brain assumes the recent past will continue, and thinks you're above average. Both lead to buying high and selling low.",
             oneMoreThing: nil,
             preview: "The recent past isn't the future",
-            deepLinkRaw: nil
+            deepLinkRaw: "cryptoRisk"
         ),
         TrailLesson(
             trailKey: "behavioral", position: 5,
@@ -1561,15 +1666,26 @@ enum TrailSeed {
             trailKey: "behavioral", position: 8,
             title: "A paper loss isn't a real loss",
             idea: "When an investment drops, it's tempting to feel the money is already gone. But a fall on the screen is a paper loss, unrealized, and it isn't real until you act on it. Prices routinely swing below an asset's true worth, especially when everyone's fearful, and they often recover. A loss only becomes permanent when you sell at the bottom, or when the thing you own is genuinely broken, a single company going under, or borrowed money wiping you out. So the drops in a diversified, unborrowed portfolio are usually the temporary kind, the kind patient investors ride through. The danger isn't the dip; it's letting the dip panic you into making it permanent.",
-            seeInApp: nil,
+            seeInApp: "When Bitcoin's supply in profit falls hard and the Cycle Scorecard leans toward a bottom, it means the pain is widespread and most holders are underwater on paper. Historically those have been moments of deepest value, not deepest danger.",
             mindsetCheck: "The market can't take your money on a red day, only your own sell order can. That's how a paper loss becomes a permanent one.",
             takeaway: "A drop on screen is a paper loss, not a real one. It turns permanent only if you sell at the bottom or the asset is truly broken.",
             oneMoreThing: nil,
             preview: "It's not a loss until you sell",
-            deepLinkRaw: nil
+            deepLinkRaw: "market"
         ),
         TrailLesson(
             trailKey: "behavioral", position: 9,
+            title: "Only play games you can win",
+            idea: "Some of the worst losses don't come from being wrong. They come from playing a game you had no business being in. If you can't explain why you own something, or say roughly what it's worth, that's not investing, that's hoping. The people who do this well are strict about it: they stay inside what they actually understand and let everything else go by, no matter how good the story sounds or how much money somebody else looks like they're making. Your lane doesn't have to be wide. It just has to be honest. Knowing where it ends, and refusing to step past it, is a quiet kind of power.",
+            seeInApp: "When something is blowing up and you feel the pull to buy, hit the \"?\" explainers and the dictionary first. If you still can't say what it is or why you'd own it, that's your answer.",
+            mindsetCheck: "FOMO tells you you're missing out. But sitting out a game you don't understand isn't missing out. It's staying in the one game you can actually win: your own.",
+            takeaway: "Stay in your lane. If you can't explain it or roughly value it, it's not your game, no matter how good it looks.",
+            oneMoreThing: nil,
+            preview: "Stay in your lane",
+            deepLinkRaw: nil
+        ),
+        TrailLesson(
+            trailKey: "behavioral", position: 10,
             title: "Master yourself",
             idea: "This whole trail is Foundations lesson 2 in full: master yourself, not the market. You can't delete loss aversion, FOMO, or any of these instincts, they're part of being human. But you can see them clearly, expect them, and build simple systems that keep them from driving. The calmest, most successful investors aren't the ones with no emotions. They're the ones who noticed their emotions and quietly chose not to obey them. That awareness, more than any chart or signal, is the real edge.",
             seeInApp: nil,
@@ -2939,7 +3055,7 @@ struct StartHereHomeCard: View {
         switch kind {
         case .beforeInvesting: return "checklist"
         case .foundations: return "signpost.right.fill"
-        case .behavioral: return "brain.head.profile"
+        case .behavioral: return "book.closed"
         case .scams: return "exclamationmark.shield.fill"
         case .crypto: return "bitcoinsign.circle.fill"
         case .markets: return "chart.line.uptrend.xyaxis"

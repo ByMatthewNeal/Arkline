@@ -48,7 +48,7 @@
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>NSCameraUsageDescription</key>
-    <string>ArkLine uses your camera to scan invite code QR codes.</string>
+    <string>ArkLine uses the camera to scan QR codes.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>ArkLine uses Face ID to securely authenticate you.</string>
 <key>NSPhotoLibraryUsageDescription</key>

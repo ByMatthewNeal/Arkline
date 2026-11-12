@@ -139,6 +139,25 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
         // Extract asset info from symbol
         let assetSymbol = symbol.split(separator: "/").first.map(String.init) ?? symbol
 
+        // Support & resistance levels from the same candle set (no extra fetch).
+        let srBars = candles.map { SRBar(high: $0.high, low: $0.low, close: $0.close, volume: $0.volume) }
+        let srPair = SupportResistance.compute(
+            bars: srBars,
+            currentPrice: currentPrice,
+            sma200: sma200Value > 0 ? sma200Value : nil
+        )
+        let keyLevels: KeyLevels? = srPair.map { pair in
+            let series = candles.suffix(120).map {
+                SRPricePoint(date: Date(timeIntervalSince1970: Double($0.start)), close: $0.close)
+            }
+            return KeyLevels(
+                currentPrice: currentPrice,
+                supports: pair.supports,
+                resistances: pair.resistances,
+                series: Array(series)
+            )
+        }
+
         let result = TechnicalAnalysis(
             assetId: assetSymbol.lowercased(),
             assetSymbol: assetSymbol,
@@ -149,7 +168,8 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             sentiment: sentiment,
             rsi: rsi,
             bullMarketBands: bullMarketBands,
-            timestamp: Date()
+            timestamp: Date(),
+            keyLevels: keyLevels
         )
 
         // Cache for 5 minutes

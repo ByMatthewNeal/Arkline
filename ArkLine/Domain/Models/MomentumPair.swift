@@ -138,7 +138,15 @@ struct MomentumPair: Identifiable, Hashable {
             if $0.quadrant.sortOrder != $1.quadrant.sortOrder {
                 return $0.quadrant.sortOrder < $1.quadrant.sortOrder
             }
-            return $0.combinedScore > $1.combinedScore
+            // Rank by the finer combined sum (reduces ties vs the /2 score), then
+            // fall back to the ticker so the order is DETERMINISTIC. Without this
+            // tiebreak, assets sharing a score (common on strong days when many
+            // read ~94) shuffle on every open because dictionary order + an
+            // unstable sort are non-deterministic.
+            let s0 = $0.usdScore + $0.btcScore
+            let s1 = $1.usdScore + $1.btcScore
+            if s0 != s1 { return s0 > s1 }
+            return $0.asset < $1.asset
         }
     }
 
@@ -148,5 +156,63 @@ struct MomentumPair: Identifiable, Hashable {
         return grouped
             .sorted { $0.key.sortOrder < $1.key.sortOrder }
             .map { ($0.key, $0.value) }
+    }
+}
+
+// MARK: - Momentum Leaderboard (historical)
+
+/// One asset's momentum record over a lookback window, from the
+/// `momentum_leaderboard` RPC. "True momentum" days = USD pair and /BTC pair
+/// both bullish that day.
+struct MomentumLeaderboardEntry: Decodable, Identifiable, Hashable {
+    let asset: String
+    let displayName: String
+    let daysTracked: Int
+    let daysTrueMomentum: Int
+    let momentumPct: Int          // % of tracked days in true momentum
+    let avgStrength: Double       // average combined strength over the window
+    let latestStrength: Double    // most recent day's combined strength
+    let latestTrue: Bool          // still in true momentum on the latest day
+    let latestDate: String
+    let currentStreak: Int        // consecutive most-recent days in true momentum
+    let spark: [Double]           // last ~30 days of combined strength, oldest first
+
+    var id: String { asset }
+
+    enum CodingKeys: String, CodingKey {
+        case asset
+        case displayName = "display_name"
+        case daysTracked = "days_tracked"
+        case daysTrueMomentum = "days_true_momentum"
+        case momentumPct = "momentum_pct"
+        case avgStrength = "avg_strength"
+        case latestStrength = "latest_strength"
+        case latestTrue = "latest_true"
+        case latestDate = "latest_date"
+        case currentStreak = "current_streak"
+        case spark
+    }
+}
+
+/// One day of an asset's momentum, from the `asset_momentum_history` RPC.
+struct AssetMomentumDay: Decodable, Identifiable, Hashable {
+    let signalDate: String
+    let usdSignal: String
+    let usdScore: Int
+    let btcSignal: String
+    let btcScore: Int
+    let strength: Double
+    let bothBull: Bool
+
+    var id: String { signalDate }
+
+    enum CodingKeys: String, CodingKey {
+        case signalDate = "signal_date"
+        case usdSignal = "usd_signal"
+        case usdScore = "usd_score"
+        case btcSignal = "btc_signal"
+        case btcScore = "btc_score"
+        case strength
+        case bothBull = "both_bull"
     }
 }

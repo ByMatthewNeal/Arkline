@@ -58,6 +58,30 @@ final class PositioningSignalService {
         return result
     }
 
+    // MARK: - Momentum history (RPC-backed)
+
+    private struct LeaderboardParams: Encodable, Sendable { let p_days: Int }
+    private struct HistoryParams: Encodable, Sendable { let p_asset: String; let p_days: Int }
+
+    /// Leaderboard of crypto assets ranked by momentum over the last `days`.
+    /// Ranked by days spent in "true momentum" (USD + /BTC both bullish), then
+    /// average strength. Backed by the `momentum_leaderboard` RPC.
+    func fetchMomentumLeaderboard(days: Int) async throws -> [MomentumLeaderboardEntry] {
+        try await supabase.database
+            .rpc("momentum_leaderboard", params: LeaderboardParams(p_days: days))
+            .execute()
+            .value
+    }
+
+    /// Per-asset daily momentum history: USD + /BTC signals and combined strength.
+    /// Backed by the `asset_momentum_history` RPC.
+    func fetchAssetMomentumHistory(asset: String, days: Int) async throws -> [AssetMomentumDay] {
+        try await supabase.database
+            .rpc("asset_momentum_history", params: HistoryParams(p_asset: asset, p_days: days))
+            .execute()
+            .value
+    }
+
     /// Fetch signal history for a specific asset
     func fetchSignalHistory(asset: String, days: Int = 30) async throws -> [DailyPositioningSignal] {
         let signals: [DailyPositioningSignal] = try await supabase.database

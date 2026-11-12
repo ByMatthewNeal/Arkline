@@ -14,6 +14,8 @@ struct TechnicalAnalysis: Equatable {
     let rsi: RSIData
     let bullMarketBands: BullMarketSupportBands
     let timestamp: Date
+    /// Algorithmic support/resistance levels (crypto only; nil when unavailable).
+    var keyLevels: KeyLevels? = nil
 
     /// Trend Score (0-100) - measures price direction and momentum
     /// Higher = more bullish trend, Lower = more bearish trend
@@ -604,5 +606,160 @@ enum TechnicalAnalysisGenerator {
             bandwidth: (upperBand - lowerBand) / middleBand,
             position: position
         )
+    }
+}
+
+// MARK: - Support & Resistance (Key Levels)
+
+/// Whether a level sits below (support) or above (resistance) the current price.
+enum LevelKind: Equatable { case support, resistance }
+
+/// How much weight a level carries, from how often price reacted there and how
+/// many methods flagged it. Presented as a plain word, never false precision.
+enum LevelStrength: Int, Equatable, Comparable {
+    case weak = 1, moderate = 2, strong = 3
+    static func < (lhs: LevelStrength, rhs: LevelStrength) -> Bool { lhs.rawValue < rhs.rawValue }
+    var label: String {
+        switch self {
+        case .weak: return "Weak"
+        case .moderate: return "Moderate"
+        case .strong: return "Strong"
+        }
+    }
+}
+
+/// A single algorithmic support or resistance level.
+struct KeyLevel: Identifiable, Equatable {
+    var id: Double { price }
+    let price: Double
+    let kind: LevelKind
+    let strength: LevelStrength
+    let touches: Int
+}
+
+/// A price point for the Key Levels mini chart.
+struct SRPricePoint: Identifiable, Equatable {
+    var id: TimeInterval { date.timeIntervalSince1970 }
+    let date: Date
+    let close: Double
+}
+
+/// The computed levels for an asset, nearest first, plus a recent price series
+/// so the card can draw the levels on a small chart.
+struct KeyLevels: Equatable {
+    let currentPrice: Double
+    let supports: [KeyLevel]     // closest below price first
+    let resistances: [KeyLevel]  // closest above price first
+    let series: [SRPricePoint]
+    var hasLevels: Bool { !supports.isEmpty || !resistances.isEmpty }
+}
+
+/// Lightweight candle input for the calculator (keeps it free of any networking).
+struct SRBar: Equatable {
+    let high: Double
+    let low: Double
+    let close: Double
+    let volume: Double
+}
+
+/// Pure support/resistance calculator. Gathers candidate levels from swing
+/// pivots, volume-profile nodes, range extremes and the 200-SMA, merges nearby
+/// candidates into zones, scores each by touches + confluence, then returns the
+/// nearest few supports and resistances relative to the current price.
+enum SupportResistance {
+    static func compute(
+        bars: [SRBar],
+        currentPrice: Double,
+        sma200: Double?,
+        maxPerSide: Int = 3
+    ) -> (supports: [KeyLevel], resistances: [KeyLevel])? {
+        guard bars.count >= 30, currentPrice > 0 else { return nil }
+        let tol = currentPrice * 0.01        // 1% cluster / touch tolerance
+        let atPrice = currentPrice * 0.003   // ignore anything basically at price
+
+        var candidates: [Double] = []
+
+        // 1. Swing pivots (a high with `w` lower highs on each side, and vice versa).
+        let w = 4
+        if bars.count > 2 * w {
+            for i in w..<(bars.count - w) {
+                let hi = bars[i].high
+                let lo = bars[i].low
+                var isPivotHigh = true
+                var isPivotLow = true
+                for j in (i - w)...(i + w) where j != i {
+                    if bars[j].high > hi { isPivotHigh = false }
+                    if bars[j].low < lo { isPivotLow = false }
+                }
+                if isPivotHigh { candidates.append(hi) }
+                if isPivotLow { candidates.append(lo) }
+            }
+        }
+
+        // Range extremes over the window.
+        if let maxH = bars.map(\.high).max() { candidates.append(maxH) }
+        if let minL = bars.map(\.low).min() { candidates.append(minL) }
+
+        // 2. Volume-profile nodes: bucket closes, weight by volume, take the top shelves.
+        let closes = bars.map(\.close)
+        if let lo = closes.min(), let hi = closes.max(), hi > lo {
+            let binCount = 40
+            let binSize = (hi - lo) / Double(binCount)
+            var bins = [Double](repeating: 0, count: binCount)
+            for b in bars {
+                let idx = min(binCount - 1, max(0, Int((b.close - lo) / binSize)))
+                bins[idx] += b.volume
+            }
+            let topIdx = bins.enumerated().sorted { $0.element > $1.element }.prefix(3).map(\.offset)
+            for idx in topIdx { candidates.append(lo + (Double(idx) + 0.5) * binSize) }
+        }
+
+        // 3. 200-SMA as a dynamic level.
+        if let s = sma200, s > 0 { candidates.append(s) }
+
+        guard !candidates.isEmpty else { return nil }
+
+        // 4. Merge candidates within tolerance into zones.
+        let sorted = candidates.sorted()
+        var zones: [[Double]] = []
+        for price in sorted {
+            if let anchor = zones.last?.first, price - anchor <= tol {
+                zones[zones.count - 1].append(price)
+            } else {
+                zones.append([price])
+            }
+        }
+
+        // 5. Score each zone: touches (candles that reacted near it) + confluence.
+        func touchCount(_ level: Double) -> Int {
+            bars.reduce(0) { acc, b in
+                acc + ((abs(b.high - level) <= tol || abs(b.low - level) <= tol) ? 1 : 0)
+            }
+        }
+        func strength(touches: Int, members: Int) -> LevelStrength {
+            let score = Double(touches) + Double(max(0, members - 1)) * 1.5
+            if score >= 8 { return .strong }
+            if score >= 4 { return .moderate }
+            return .weak
+        }
+
+        var supports: [KeyLevel] = []
+        var resistances: [KeyLevel] = []
+        for grp in zones {
+            let price = grp.reduce(0, +) / Double(grp.count)
+            if abs(price - currentPrice) <= atPrice { continue }
+            let level = KeyLevel(
+                price: price,
+                kind: price < currentPrice ? .support : .resistance,
+                strength: strength(touches: touchCount(price), members: grp.count),
+                touches: touchCount(price)
+            )
+            if level.kind == .support { supports.append(level) } else { resistances.append(level) }
+        }
+
+        supports.sort { $0.price > $1.price }      // closest below price first
+        resistances.sort { $0.price < $1.price }   // closest above price first
+        guard !supports.isEmpty || !resistances.isEmpty else { return nil }
+        return (Array(supports.prefix(maxPerSide)), Array(resistances.prefix(maxPerSide)))
     }
 }

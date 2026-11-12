@@ -8,6 +8,9 @@ struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var viewModel = SettingsViewModel()
     @State private var analyticsEnabled = AnalyticsService.currentConsent
+    // Presentation Mode: hide money, keep growth percentages — for showing others.
+    @AppStorage(PresentationDefaults.enabled) private var presentationMode = false
+    @AppStorage(PresentationDefaults.hideQuantities) private var presentationHideQuantities = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -145,6 +148,26 @@ struct SettingsView: View {
 
                 // Privacy Section
                 Section {
+                    Toggle(isOn: $presentationMode) {
+                        SettingsRow(
+                            icon: "percent",
+                            iconColor: AppColors.accent,
+                            title: "Presentation Mode"
+                        )
+                    }
+                    .onChange(of: presentationMode) { _, _ in Haptics.selection() }
+
+                    if presentationMode {
+                        Toggle(isOn: $presentationHideQuantities) {
+                            SettingsRow(
+                                icon: "number",
+                                iconColor: AppColors.info,
+                                title: "Also hide quantities"
+                            )
+                        }
+                        .onChange(of: presentationHideQuantities) { _, _ in Haptics.selection() }
+                    }
+
                     Toggle(isOn: $analyticsEnabled) {
                         SettingsRow(
                             icon: "chart.bar.fill",
@@ -159,7 +182,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Privacy")
                 } footer: {
-                    Text("Help improve Arkline by sharing anonymous usage data. No personal or financial data is collected.")
+                    Text("Presentation Mode hides your money — account value, gains, and holdings — while keeping growth percentages visible, so you can show someone your performance without revealing your net worth. Turn on \"Also hide quantities\" to mask how much of each asset you hold too.\n\nUsage Analytics shares anonymous usage data to help improve Arkline. No personal or financial data is collected.")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 

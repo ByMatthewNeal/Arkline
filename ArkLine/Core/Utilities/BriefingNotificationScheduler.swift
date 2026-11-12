@@ -307,14 +307,23 @@ enum DailyDigestScheduler {
 
     /// First sentence (or a clean truncation) up to `maxLength` characters.
     private static func snippet(from text: String, maxLength: Int) -> String {
-        if let end = text.firstIndex(where: { $0 == "." }) {
-            let sentence = String(text[..<end]).trimmingCharacters(in: .whitespaces)
-            if sentence.count <= maxLength, sentence.count > 20 {
-                return sentence + "."
+        // Find the first real sentence end: a . ! or ? that is followed by
+        // whitespace or the end of the text. Requiring that boundary avoids
+        // cutting inside a decimal like "$81,707 (+1.26%)" — the period in
+        // "1.26" is followed by a digit, so it is not treated as a sentence end.
+        if let r = text.range(of: "[.!?]([ \\t\\n]|$)", options: .regularExpression) {
+            let sentence = String(text[...r.lowerBound]).trimmingCharacters(in: .whitespaces)
+            if sentence.count > 20, sentence.count <= maxLength {
+                return sentence
             }
         }
         if text.count <= maxLength { return text }
+        // Truncate on a word boundary so we never cut mid-word or mid-number.
         let idx = text.index(text.startIndex, offsetBy: maxLength)
-        return String(text[..<idx]).trimmingCharacters(in: .whitespaces) + "…"
+        let cut = String(text[..<idx])
+        if let lastSpace = cut.lastIndex(of: " ") {
+            return String(cut[..<lastSpace]).trimmingCharacters(in: .whitespaces) + "…"
+        }
+        return cut.trimmingCharacters(in: .whitespaces) + "…"
     }
 }

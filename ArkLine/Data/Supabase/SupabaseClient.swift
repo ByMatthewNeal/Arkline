@@ -104,6 +104,7 @@ enum SupabaseTable: String {
     case riskDcaInvestments = "risk_dca_investments"
     case portfolioHistory = "portfolio_history"
     case supplyInProfit = "supply_in_profit"
+    case cryptoRiskDaily = "crypto_risk_daily"
     case googleTrendsHistory = "google_trends_history"
     case marketDataCache = "market_data_cache"
     case marketSnapshots = "market_snapshots"
