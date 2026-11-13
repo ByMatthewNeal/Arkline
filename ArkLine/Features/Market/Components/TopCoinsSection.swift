@@ -9,16 +9,33 @@ struct TopCoinsSection: View {
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
-    /// When searching, show all results; otherwise respect visibleCount
+    /// Dollar-pegged stablecoins are hidden from the default list — they just sit
+    /// at $1 and waste slots. They're still findable via search.
+    private static let stablecoinSymbols: Set<String> = [
+        "USDT", "USDC", "DAI", "BUSD", "TUSD", "USDE", "FDUSD", "PYUSD", "USDD",
+        "USDP", "GUSD", "FRAX", "LUSD", "USDS", "SUSD", "USDL", "USD0", "EURT", "EURC"
+    ]
+
+    private func isStablecoin(_ asset: CryptoAsset) -> Bool {
+        Self.stablecoinSymbols.contains(asset.symbol.uppercased())
+    }
+
+    /// Top coins with stablecoins removed — the base list for the default view.
+    private var filteredCoins: [CryptoAsset] {
+        viewModel.topCoins.filter { !isStablecoin($0) }
+    }
+
+    /// When searching, show all results (stablecoins included so they're still
+    /// findable); otherwise show the stablecoin-free list up to visibleCount.
     private var displayedCoins: [CryptoAsset] {
         if !viewModel.topCoinsSearchQuery.isEmpty {
             return viewModel.topCoins
         }
-        return Array(viewModel.topCoins.prefix(visibleCount))
+        return Array(filteredCoins.prefix(visibleCount))
     }
 
     private var canShowMore: Bool {
-        viewModel.topCoinsSearchQuery.isEmpty && visibleCount < viewModel.topCoins.count
+        viewModel.topCoinsSearchQuery.isEmpty && visibleCount < filteredCoins.count
     }
 
     private var canShowLess: Bool {
@@ -35,8 +52,8 @@ struct TopCoinsSection: View {
 
                 Spacer()
 
-                if !viewModel.topCoins.isEmpty && viewModel.topCoinsSearchQuery.isEmpty {
-                    Text("\(min(visibleCount, viewModel.topCoins.count)) of \(viewModel.topCoins.count)")
+                if !filteredCoins.isEmpty && viewModel.topCoinsSearchQuery.isEmpty {
+                    Text("\(min(visibleCount, filteredCoins.count)) of \(filteredCoins.count)")
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -142,7 +159,7 @@ struct TopCoinsSection: View {
                             if canShowMore {
                                 Button {
                                     withAnimation(.easeInOut(duration: 0.3)) {
-                                        visibleCount = min(visibleCount + 10, viewModel.topCoins.count)
+                                        visibleCount = min(visibleCount + 10, filteredCoins.count)
                                     }
                                 } label: {
                                     HStack(spacing: 4) {
