@@ -404,6 +404,49 @@ Deno.serve(async (req) => {
     console.error("Failed to fetch key levels:", err instanceof Error ? err.message : String(err))
   }
 
+  // --- Derivatives & Flows (spot CVD vs open interest/funding, + liquidation clusters) ---
+  try {
+    const derivLines: string[] = []
+
+    const { data: flowRows } = await supabase
+      .from("spot_derivatives_flows")
+      .select("regime, regime_note, cvd_7d, oi_7d_pct, funding_now")
+      .eq("asset", "BTC")
+      .limit(1)
+    const flow = flowRows?.[0]
+    if (flow) {
+      const cvd = Number(flow.cvd_7d)
+      const cvdAbs = Math.abs(cvd)
+      const cvdStr = `${cvd >= 0 ? "+" : "-"}${cvdAbs >= 1000 ? "$" + (cvdAbs / 1000).toFixed(1) + "B" : "$" + cvdAbs.toFixed(0) + "M"}`
+      if (flow.regime) derivLines.push(`Regime: ${flow.regime}${flow.regime_note ? " — " + flow.regime_note : ""}`)
+      derivLines.push(
+        `Spot CVD 7d: ${cvdStr} | Open interest 7d: ${Number(flow.oi_7d_pct) >= 0 ? "+" : ""}${Number(flow.oi_7d_pct).toFixed(1)}% | Funding: ${Number(flow.funding_now).toFixed(3)}%`
+      )
+    }
+
+    const { data: heatRows } = await supabase
+      .from("liquidation_heatmap")
+      .select("current_price, clusters")
+      .eq("asset", "BTC")
+      .limit(1)
+    const heat = heatRows?.[0]
+    if (heat && Array.isArray(heat.clusters) && heat.clusters.length) {
+      const cur = Number(heat.current_price)
+      const below = heat.clusters.filter((c: any) => c.side === "below").slice(0, 2).map((c: any) => `$${Number(c.price).toLocaleString()}`)
+      const above = heat.clusters.filter((c: any) => c.side === "above").slice(0, 2).map((c: any) => `$${Number(c.price).toLocaleString()}`)
+      const parts: string[] = []
+      if (below.length) parts.push(`below: ${below.join(", ")}`)
+      if (above.length) parts.push(`above: ${above.join(", ")}`)
+      if (parts.length) derivLines.push(`Liquidation magnets (BTC ~$${cur.toLocaleString()}) — ${parts.join(" | ")}`)
+    }
+
+    if (derivLines.length) {
+      sections.push(`DERIVATIVES & FLOWS (BTC):\n${derivLines.join("\n")}`)
+    }
+  } catch (err) {
+    console.error("Failed to fetch derivatives & flows:", err instanceof Error ? err.message : String(err))
+  }
+
   // --- Cross-Market Rotation (which market conditions favor, and why) ---
   try {
     const { data: rotRows } = await supabase
@@ -723,7 +766,7 @@ One sentence. Weekend crypto stance aligned with Macro Regime / Crypto Positioni
 2-3 sentences on today's crypto action — BTC, ETH, SOL movement, any notable funding rate shifts or liquidation events. Mention Fear & Greed if available. Traditional markets are closed — skip equities. Say "today" not "over the weekend."
 
 ## Technical
-1-2 sentences on BTC technicals if data is available — trend, key levels, derivatives. Mention nearest Fib support/resistance naturally (no strength scores). Skip entirely if no TA data.
+1-2 sentences on BTC technicals if data is available — trend, key levels, derivatives. Mention nearest Fib support/resistance naturally (no strength scores). If DERIVATIVES & FLOWS is present, you can note the spot-vs-derivatives regime or the nearest liquidation magnet when it matters. Skip entirely if no TA data.
 
 ## Week Ahead
 1 sentence previewing Monday — upcoming events or levels to watch.
@@ -762,7 +805,7 @@ One plain-English sentence under 100 characters that a non-expert grasps at a gl
 2-3 sentences. If RECENTLY RELEASED DATA is present, LEAD with it — name the specific release (e.g. Core PPI, CPI, jobless claims), whether it beat or missed forecast, and how markets reacted. Include prints that landed in the pre-market hours before this briefing, not just at the open. Then, if UPCOMING DATA is present, flag the most important release(s) still ahead today or tomorrow and why they matter. Add liquidity trend, VIX/DXY only if notable. Do not claim "no data" when releases are listed above.
 
 ## Technical
-2-3 sentences. BTC trend, nearest Fib support/resistance, derivatives if notable.
+2-3 sentences. BTC trend, nearest Fib support/resistance, derivatives if notable. If DERIVATIVES & FLOWS is present, work in what it signals — the spot-vs-derivatives regime (is the move spot led or leverage led), notable funding or open-interest shifts, and the nearest liquidation magnets above/below price — but only when it adds something.
 
 ## Bottom Line
 1-2 sentences. The "so what" — what to watch next. No recap.
