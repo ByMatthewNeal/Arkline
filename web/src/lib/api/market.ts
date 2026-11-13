@@ -12,6 +12,7 @@ import {
 } from '@/lib/demo-data';
 import type {
   LiquidationHeatmap,
+  SpotDerivativesFlows,
   CryptoAsset,
   FearGreedIndex,
   GlobalMarketData,
@@ -1073,4 +1074,16 @@ export async function fetchLiquidationHeatmap(): Promise<LiquidationHeatmap | nu
     .maybeSingle();
   if (error || !data) return null;
   return data as LiquidationHeatmap;
+}
+
+/* ── Spot vs Derivatives Flows ── (spot_derivatives_flows: spot CVD vs OI and funding) */
+export async function fetchSpotDerivativesFlows(): Promise<SpotDerivativesFlows | null> {
+  if (!isSupabaseConfigured()) return null;
+  const { data, error } = await getSupabase()
+    .from('spot_derivatives_flows')
+    .select('asset, current_price, days, closes, spot_cvd, oi_usd, funding_pct, cvd_7d, oi_7d_pct, funding_now, regime, regime_note, as_of')
+    .eq('asset', 'BTC')
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as SpotDerivativesFlows;
 }

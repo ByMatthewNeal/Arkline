@@ -162,6 +162,9 @@ struct ReorderableWidgetStack: View {
         case .liquidationHeatmap:
             // Self-contained: fetches its own snapshot and shows a loading state.
             return true
+        case .spotDerivativesFlows:
+            // Self-contained: fetches its own snapshot and shows a loading state.
+            return true
         }
     }
 
@@ -386,6 +389,8 @@ struct ReorderableWidgetStack: View {
             SupportResistanceHomeWidget()
         case .liquidationHeatmap:
             LiquidationHeatmapSection(embedded: true)
+        case .spotDerivativesFlows:
+            SpotDerivativesFlowsSection(embedded: true)
         }
     }
 }

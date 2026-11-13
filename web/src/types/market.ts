@@ -388,3 +388,19 @@ export interface LiquidationHeatmap {
   clusters: LiquidationCluster[];
   as_of: string;
 }
+
+export interface SpotDerivativesFlows {
+  asset: string;
+  current_price: number;
+  days: number[];          // unix seconds (x axis)
+  closes: number[];        // daily BTC close, length = days
+  spot_cvd: number[];      // cumulative spot taker delta, $M
+  oi_usd: number[];        // perp open interest, $B
+  funding_pct: number[];   // daily funding rate, percent
+  cvd_7d: number | null;
+  oi_7d_pct: number | null;
+  funding_now: number | null;
+  regime: string | null;
+  regime_note: string | null;
+  as_of: string;
+}

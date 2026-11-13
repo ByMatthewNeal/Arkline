@@ -195,6 +195,9 @@ struct ReorderableMarketWidgetStack: View {
 
         case .liquidationHeatmap:
             LiquidationHeatmapSection(refreshId: widgetRefreshId)
+
+        case .spotDerivativesFlows:
+            SpotDerivativesFlowsSection(refreshId: widgetRefreshId)
         }
     }
 }

@@ -82,6 +82,7 @@ final class ServiceContainer {
     // MARK: - Lazy Services - Market Breadth
     private lazy var _marketBreadthService = MarketBreadthService()
     private lazy var _liquidationHeatmapService = LiquidationHeatmapService()
+    private lazy var _spotDerivativesFlowsService = SpotDerivativesFlowsService()
 
     // MARK: - Lazy Services - Dictionary
     private lazy var _dictionaryService = DictionaryService()
@@ -209,6 +210,10 @@ final class ServiceContainer {
         _liquidationHeatmapService
     }
 
+    var spotDerivativesFlowsService: SpotDerivativesFlowsService {
+        _spotDerivativesFlowsService
+    }
+
     /// Dictionary service - glossary of investing and market terms
     var dictionaryService: DictionaryService {
         _dictionaryService
@@ -257,5 +262,6 @@ final class ServiceContainer {
         _dictionaryService = DictionaryService()
         _marketBreadthService = MarketBreadthService()
         _liquidationHeatmapService = LiquidationHeatmapService()
+        _spotDerivativesFlowsService = SpotDerivativesFlowsService()
     }
 }

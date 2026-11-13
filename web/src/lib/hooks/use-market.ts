@@ -32,6 +32,7 @@ import {
   fetchAssetSnapshots,
   fetchSupportResistanceLevels,
   fetchLiquidationHeatmap,
+  fetchSpotDerivativesFlows,
 } from '@/lib/api/market';
 import {
   fetchMacroIndicators,
@@ -227,6 +228,14 @@ export function useLiquidationHeatmap() {
   return useQuery({
     queryKey: ['liquidation-heatmap'],
     queryFn: fetchLiquidationHeatmap,
+    staleTime: 900_000,
+  });
+}
+
+export function useSpotDerivativesFlows() {
+  return useQuery({
+    queryKey: ['spot-derivatives-flows'],
+    queryFn: fetchSpotDerivativesFlows,
     staleTime: 900_000,
   });
 }

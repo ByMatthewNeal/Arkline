@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Badge, Skeleton } from '@/components/ui';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
 import { LiquidationHeatmapTile } from './liquidation-heatmap';
+import { SpotDerivativesFlowsTile } from './spot-derivatives-flows';
 import {
   Tile, Spark, MiniGauge, AccentLine, AmbientGlow, ShineSweep,
   useCountUp,
@@ -41,7 +42,8 @@ type MarketWidgetKey =
   | 'futures' | 'dailyPositioning' | 'tradeSignals'
   | 'fedWatch' | 'liquidityCycle' | 'cbLiquidity' | 'marketBreadth'
   | 'supportResistance'
-  | 'liquidationHeatmap';
+  | 'liquidationHeatmap'
+  | 'spotDerivativesFlows';
 
 /* ── Zone chips (iOS MarketZone: All / Today / Macro / Assets / Signals) ──
  * Mapping mirrors MarketWidget.swift `zone`: usFutures/sentiment/dailyNews →
@@ -75,6 +77,7 @@ const WIDGET_ZONE: Record<MarketWidgetKey, Exclude<MarketZone, 'all'>> = {
   funding: 'assets',
   supportResistance: 'assets',
   liquidationHeatmap: 'assets',
+  spotDerivativesFlows: 'assets',
   tradeSignals: 'signals',
 };
 
@@ -101,6 +104,7 @@ const drawerTitles: Record<MarketWidgetKey, string> = {
   funding: 'Funding Rates',
   supportResistance: 'Support & Resistance',
   liquidationHeatmap: 'Liquidation Heatmap',
+  spotDerivativesFlows: 'Spot vs Derivatives',
 };
 
 /* ── Lazy drawer loader ── */
@@ -133,6 +137,7 @@ function LazyMarketWidget({ widgetKey }: { widgetKey: MarketWidgetKey }) {
       funding: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
       supportResistance: () => import('./support-resistance-detail').then(m => ({ default: m.SupportResistanceDetail })),
       liquidationHeatmap: () => import('./liquidation-heatmap').then(m => ({ default: m.LiquidationHeatmapDetail })),
+      spotDerivativesFlows: () => import('./spot-derivatives-flows').then(m => ({ default: m.SpotDerivativesFlowsDetail })),
     };
     loaders[widgetKey]().then(mod => {
       if (!cancelled) setWidget(() => (mod.default ?? null) as React.ComponentType | null);
@@ -1332,7 +1337,7 @@ const widgetKeys: MarketWidgetKey[] = [
   'liquidityCycle', 'cbLiquidity', 'news', 'fedWatch',
   'sentiment', 'macro',
   // 'positioning' (Crypto Positioning) retired from view — component + data kept.
-  'tradMarkets', 'topCoins', 'marketBreadth', 'supportResistance', 'liquidationHeatmap', 'altcoinScanner',
+  'tradMarkets', 'topCoins', 'marketBreadth', 'supportResistance', 'liquidationHeatmap', 'spotDerivativesFlows', 'altcoinScanner',
   'retailSentiment', 'funding', 'momentumMap', 'tradeSignals',
 ];
 
@@ -1359,6 +1364,7 @@ const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () =
   funding: FundingTile,
   supportResistance: SupportResistanceTile,
   liquidationHeatmap: LiquidationHeatmapTile,
+  spotDerivativesFlows: SpotDerivativesFlowsTile,
 };
 
 export function MarketBentoGrid() {

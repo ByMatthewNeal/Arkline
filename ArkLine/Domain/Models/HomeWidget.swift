@@ -102,6 +102,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case learnCard = "learn_card"
     case supportResistance = "support_resistance"
     case liquidationHeatmap = "liquidation_heatmap"
+    case spotDerivativesFlows = "spot_derivatives_flows"
 
     var id: String { rawValue }
 
@@ -135,6 +136,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .learnCard: return "Learn"
         case .supportResistance: return "Support & Resistance"
         case .liquidationHeatmap: return "Liquidation Heatmap"
+        case .spotDerivativesFlows: return "Spot vs Derivatives"
         }
     }
 
@@ -168,6 +170,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .learnCard: return "A daily lesson or 'did you know' definition to learn from"
         case .supportResistance: return "Nearest algorithmic support and resistance levels for BTC"
         case .liquidationHeatmap: return "Estimated liquidation clusters above and below price"
+        case .spotDerivativesFlows: return "Spot CVD vs open interest and funding, spot or leverage led"
         }
     }
 
@@ -201,6 +204,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .learnCard: return "books.vertical"
         case .supportResistance: return "arrow.up.arrow.down"
         case .liquidationHeatmap: return "flame"
+        case .spotDerivativesFlows: return "arrow.left.arrow.right"
         }
     }
 
@@ -215,7 +219,8 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .fedWatch, .dailyNews, .vixIndicator, .dxyIndicator, .globalLiquidity,
              .macroDashboard, .supplyInProfit, .flashIntel, .usFutures, .qpsSignals,
-             .rotationGauge, .marketBreadth, .riskScore, .fearGreedIndex, .liquidationHeatmap:
+             .rotationGauge, .marketBreadth, .riskScore, .fearGreedIndex, .liquidationHeatmap,
+             .spotDerivativesFlows:
             return true
         case .marketTicker, .upcomingEvents, .marketMovers, .dcaReminders, .assetRiskLevel,
              .favorites, .aiMarketSummary, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate,
@@ -227,7 +232,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .marketTicker, .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth, .learnCard, .supportResistance, .liquidationHeatmap:
+        case .marketTicker, .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth, .learnCard, .supportResistance, .liquidationHeatmap, .spotDerivativesFlows:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals, .perpPremium, .rotationGauge:
             return true
@@ -237,7 +242,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Default order for widgets. Model Portfolio sits right under Upcoming
     /// Events — "what the strategy is doing" is front-page content.
     static var defaultOrder: [HomeWidgetType] {
-        [.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .marketDeck, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .learnCard, .dcaReminders, .aiMarketSummary, .supportResistance, .liquidationHeatmap]
+        [.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .marketDeck, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .learnCard, .dcaReminders, .aiMarketSummary, .supportResistance, .liquidationHeatmap, .spotDerivativesFlows]
     }
 
     /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize).
@@ -245,7 +250,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Market Ticker as the always-on bridge. Fear & Greed and Macro Dashboard remain one
     /// toggle away (their headline values scroll in the ticker).
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary, .supportResistance, .marketMovers, .marketDeck, .qpsSignals, .assetRiskLevel, .stockRiskLevel, .dailyNews, .learnCard, .liquidationHeatmap])
+        Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary, .supportResistance, .marketMovers, .marketDeck, .qpsSignals, .assetRiskLevel, .stockRiskLevel, .dailyNews, .learnCard, .liquidationHeatmap, .spotDerivativesFlows])
     }
 
     /// Default widget sizes (compact where appropriate to keep the home screen tight)
