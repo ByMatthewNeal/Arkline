@@ -911,6 +911,7 @@ struct MetalsSupportResistanceSection: View {
                 }
             }
         }
+        .padding(.horizontal, 16)
         .task(id: refreshId) { await load() }
     }
 
