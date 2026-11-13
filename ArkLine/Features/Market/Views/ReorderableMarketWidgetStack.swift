@@ -198,6 +198,9 @@ struct ReorderableMarketWidgetStack: View {
 
         case .spotDerivativesFlows:
             SpotDerivativesFlowsSection(refreshId: widgetRefreshId)
+
+        case .derivativesPositioning:
+            DerivativesPositioningSection(viewModel: sentimentViewModel)
         }
     }
 }

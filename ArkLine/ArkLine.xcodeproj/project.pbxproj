@@ -244,6 +244,7 @@
 		68BAB3922B4CA2A5475173CE /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3955BF6DF07E7F6439EDEE56 /* QRScannerView.swift */; };
 		690BC8C087FC477F1E63CE84 /* AddRealEstateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 319895490145710C89575633 /* AddRealEstateView.swift */; };
 		694A69E8517A3F475FE4E35E /* ProfileComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB70B3E3AB6E352467E0922B /* ProfileComponents.swift */; };
+		6ABD2E25DBEBA03E1D5F0818 /* DerivativesPositioningSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A0648B14B19D6D19052B08 /* DerivativesPositioningSection.swift */; };
 		6B20A8EE655D638591CEC9C0 /* FeatureRequestDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE44F50B40919BC87C8A1783 /* FeatureRequestDetailView.swift */; };
 		6B573B8A06D1D58E5B6E430C /* MockITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B4B1375E8CFAC9F01975F3 /* MockITCRiskService.swift */; };
 		6B70C675446FC8A3CE96D8EC /* SnapshotSlideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A03DDD0303F70D306FDA3A6 /* SnapshotSlideView.swift */; };
@@ -1083,6 +1084,7 @@
 		E8DBD00F42D571DB036123D3 /* CuratedNewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuratedNewsService.swift; sourceTree = "<group>"; };
 		E8EA65CDF83C3D1BA4B5E6E4 /* MacroStatisticsServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroStatisticsServiceProtocol.swift; sourceTree = "<group>"; };
 		E9133EF6B8E0D08AB2024163 /* SwingSetupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwingSetupService.swift; sourceTree = "<group>"; };
+		E9A0648B14B19D6D19052B08 /* DerivativesPositioningSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DerivativesPositioningSection.swift; sourceTree = "<group>"; };
 		EA25ABAB56439A4FB4FCF93A /* Double+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Double+Extensions.swift"; sourceTree = "<group>"; };
 		EAA68879AD9FF8A6B4981B97 /* PortfolioPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioPickerSheet.swift; sourceTree = "<group>"; };
 		EADBD97EDC79FDB6AC556DA1 /* EntryStrategySectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryStrategySectionView.swift; sourceTree = "<group>"; };
@@ -2108,6 +2110,7 @@
 				2DCE2B792063DB236055D077 /* DailyNewsComponents.swift */,
 				2AD0C37E21E4AD24118B5820 /* DailyNewsSection.swift */,
 				9F0DADEBAA9FA8124260B057 /* DerivativesDataSection.swift */,
+				E9A0648B14B19D6D19052B08 /* DerivativesPositioningSection.swift */,
 				EADBD97EDC79FDB6AC556DA1 /* EntryStrategySectionView.swift */,
 				C0AB0674B85B19C1FF6B6F05 /* FedWatchSection.swift */,
 				F7399DCDBE3BF01E412AE2C5 /* GlobalLiquiditySection.swift */,
@@ -2719,6 +2722,7 @@
 				5A71BFC0E9F269572944081C /* DeckSlideView.swift in Sources */,
 				4DD3DD97CF8D74F90ECEA7B7 /* DefineTerm.swift in Sources */,
 				DC56B48E4346BD6D97E4913C /* DerivativesDataSection.swift in Sources */,
+				6ABD2E25DBEBA03E1D5F0818 /* DerivativesPositioningSection.swift in Sources */,
 				82E65F765FF45E0F3B18202C /* DictionaryService.swift in Sources */,
 				01CDC522762AA7824AD8C4A3 /* DictionaryStore.swift in Sources */,
 				F6AF2CE608321F27B8A538AB /* DictionaryTerm.swift in Sources */,

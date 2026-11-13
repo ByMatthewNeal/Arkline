@@ -167,29 +167,9 @@ struct MarketSentimentSection: View {
                 }
             }
 
-            // SECTION 3: Institutional Sentiment
-            SentimentCategorySection(
-                title: "Institutional",
-                icon: "building.columns.fill",
-                iconColor: AppColors.accent
-            ) {
-                // Perpetual Premium
-                if viewModel.btcPerpPremium != nil || viewModel.ethPerpPremium != nil {
-                    PerpPremiumSentimentCard(
-                        btcPremium: viewModel.btcPerpPremium,
-                        ethPremium: viewModel.ethPerpPremium
-                    )
-                }
-
-                // Funding Rate
-                if let funding = viewModel.fundingRate {
-                    FundingRateCard(fundingRate: funding)
-                } else {
-                    ShimmerPlaceholderCard(title: "Funding Rate", icon: "percent", isLoading: viewModel.isLoading) {
-                        await viewModel.retryFundingRate()
-                    }
-                }
-            }
+            // Perp Premium and Funding Rate moved to the standalone "Derivatives"
+            // widget in the Assets zone, next to the heatmap and Spot vs Derivatives,
+            // so all positioning signals sit together. See DerivativesPositioningSection.
         }
     }
 

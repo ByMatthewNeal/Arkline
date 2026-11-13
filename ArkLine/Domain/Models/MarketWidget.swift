@@ -21,6 +21,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     case metalsSupportResistance = "metals_support_resistance"
     case liquidationHeatmap = "liquidation_heatmap"
     case spotDerivativesFlows = "spot_derivatives_flows"
+    case derivativesPositioning = "derivatives_positioning"
 
     var id: String { rawValue }
 
@@ -44,6 +45,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .metalsSupportResistance: return "Metals S/R"
         case .liquidationHeatmap: return "Liquidation Heatmap"
         case .spotDerivativesFlows: return "Spot vs Derivatives"
+        case .derivativesPositioning: return "Derivatives"
         }
     }
 
@@ -67,6 +69,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .metalsSupportResistance: return "Support and resistance levels for gold and silver"
         case .liquidationHeatmap: return "Estimated liquidation clusters above and below price"
         case .spotDerivativesFlows: return "Spot CVD vs open interest and funding, so you can see if moves are spot or leverage led"
+        case .derivativesPositioning: return "Perpetual premium and funding rate positioning"
         }
     }
 
@@ -90,12 +93,13 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .metalsSupportResistance: return "ruler"
         case .liquidationHeatmap: return "flame"
         case .spotDerivativesFlows: return "arrow.left.arrow.right"
+        case .derivativesPositioning: return "building.columns"
         }
     }
 
     /// Default order for Market widgets (matches original hardcoded layout)
     static var defaultOrder: [MarketWidgetType] {
-        [.usFutures, .qpsGrid, .cycleScorecard, .mindset, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .metalsSupportResistance, .liquidationHeatmap, .spotDerivativesFlows, .topCoins, .sentiment, .marketBreadth, .swingSetups, .altcoinScreener]
+        [.usFutures, .qpsGrid, .cycleScorecard, .mindset, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .metalsSupportResistance, .liquidationHeatmap, .spotDerivativesFlows, .derivativesPositioning, .topCoins, .sentiment, .marketBreadth, .swingSetups, .altcoinScreener]
     }
 
     /// Widgets enabled by default — a lean starter set covering futures, sentiment,
@@ -104,7 +108,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     /// Note: users who installed before Market customization shipped keep the
     /// all-widgets layout via a one-time migration in `AppState.loadState()`.
     static var defaultEnabled: Set<MarketWidgetType> {
-        [.usFutures, .sentiment, .cycleScorecard, .mindset, .fedWatch, .topCoins, .dailyNews, .swingSetups, .metalsSupportResistance, .liquidationHeatmap, .spotDerivativesFlows]
+        [.usFutures, .sentiment, .cycleScorecard, .mindset, .fedWatch, .topCoins, .dailyNews, .swingSetups, .metalsSupportResistance, .liquidationHeatmap, .spotDerivativesFlows, .derivativesPositioning]
     }
 
     /// Sections hidden app-wide regardless of a user's saved config. The enum
@@ -148,7 +152,7 @@ extension MarketWidgetType {
             return .today
         case .qpsGrid, .cycleScorecard, .liquidityCycle, .globalLiquidity, .allocation:
             return .macro
-        case .topCoins, .traditionalMarkets, .marketBreadth, .altcoinScreener, .metalsSupportResistance, .liquidationHeatmap, .spotDerivativesFlows:
+        case .topCoins, .traditionalMarkets, .marketBreadth, .altcoinScreener, .metalsSupportResistance, .liquidationHeatmap, .spotDerivativesFlows, .derivativesPositioning:
             return .assets
         case .swingSetups:
             return .signals
