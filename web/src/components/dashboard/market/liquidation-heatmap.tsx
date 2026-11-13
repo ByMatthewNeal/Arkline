@@ -68,15 +68,24 @@ function HeatmapCanvas({ data, height, axes }: { data: LiquidationHeatmap; heigh
 
       const cellW = plotW / D;
       const cellH = plotH / B;
+      // Snap every cell edge to a whole device pixel so neighbouring bands don't
+      // bleed into each other through sub-pixel anti-aliasing. Cells share exact
+      // integer edges, so they tile with no gaps and no overlap.
+      const snap = (v: number) => Math.round(v * dpr) / dpr;
+      const xEdges: number[] = [];
+      for (let t = 0; t <= D; t++) xEdges[t] = snap(padL + t * cellW);
+      const yEdges: number[] = [];
+      for (let b = 0; b <= B; b++) yEdges[b] = snap(plotH - b * cellH);
       for (let b = 0; b < B; b++) {
         const below = prices[b] < cur;
-        const y = plotH - (b + 1) * cellH;
+        const yTop = yEdges[b + 1];
+        const h = yEdges[b] - yTop;
         for (let t = 0; t < D; t++) {
           const v = grid[b][t];
           if (v <= 0) continue;
           const tt = Math.min(1, Math.pow(v / 1000, 0.6) / vmax);
           ctx.fillStyle = ramp(below ? BELOW : ABOVE, tt);
-          ctx.fillRect(padL + t * cellW, y, cellW + 0.6, cellH + 0.6);
+          ctx.fillRect(xEdges[t], yTop, xEdges[t + 1] - xEdges[t], h);
         }
       }
 

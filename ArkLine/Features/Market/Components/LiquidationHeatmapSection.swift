@@ -24,6 +24,7 @@ private func fmtK(_ v: Double) -> String {
 struct LiquidationHeatmapCanvas: View {
     let data: LiquidationHeatmapData
     var showAxes: Bool = true
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         Canvas { ctx, size in
@@ -45,20 +46,34 @@ struct LiquidationHeatmapCanvas: View {
             let vmax = vals.isEmpty ? 1 : vals[min(vals.count - 1, Int(Double(vals.count) * 0.96))]
             let safeVmax = vmax > 0 ? vmax : 1
 
-            let cellW = plotW / CGFloat(D)
-            let cellH = plotH / CGFloat(B)
+            // Snap every cell edge to a whole device pixel so neighbouring bands
+            // don't bleed into each other through sub-pixel anti-aliasing. Cells
+            // share exact integer edges, so they tile with no gaps and no overlap.
+            let scale = max(1, displayScale)
+            func snap(_ v: CGFloat) -> CGFloat { (v * scale).rounded() / scale }
+            let cellWf = plotW / CGFloat(D)
+            let cellHf = plotH / CGFloat(B)
+            var xEdges = [CGFloat](repeating: 0, count: D + 1)
+            for t in 0...D { xEdges[t] = snap(padL + CGFloat(t) * cellWf) }
+            var yEdges = [CGFloat](repeating: 0, count: B + 1)
+            for b in 0...B { yEdges[b] = snap(plotH - CGFloat(b) * cellHf) }
+
             for b in 0..<B {
                 let below = data.prices[b] < cur
-                let y = plotH - CGFloat(b + 1) * cellH
                 let stops = below ? heatBelow : heatAbove
+                let yTop = yEdges[b + 1]
+                let cellH = yEdges[b] - yTop
                 for t in 0..<D {
                     let v = grid[b][t]
                     if v <= 0 { continue }
                     let tt = min(1, pow(Double(v) / 1000, 0.6) / safeVmax)
-                    let rect = CGRect(x: padL + CGFloat(t) * cellW, y: y, width: cellW + 0.6, height: cellH + 0.6)
+                    let x0 = xEdges[t]
+                    let rect = CGRect(x: x0, y: yTop, width: xEdges[t + 1] - x0, height: cellH)
                     ctx.fill(Path(rect), with: .color(rampColor(stops, tt)))
                 }
             }
+
+            let cellW = cellWf
 
             func yOf(_ p: Double) -> CGFloat { plotH - CGFloat((p - pmin) / (pmax - pmin)) * plotH }
 
@@ -175,6 +190,7 @@ struct LiquidationHeatmapDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var data: LiquidationHeatmapData?
     @State private var isLoading = true
+    @State private var showExpanded = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBackground: Color { colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white }
@@ -185,9 +201,22 @@ struct LiquidationHeatmapDetailView: View {
                 if isLoading && data == nil {
                     HStack { Spacer(); ProgressView().padding(.vertical, 60); Spacer() }
                 } else if let d = data {
-                    LiquidationHeatmapCanvas(data: d, showAxes: true)
-                        .frame(height: 300)
-                        .padding(.horizontal)
+                    ZStack(alignment: .topTrailing) {
+                        LiquidationHeatmapCanvas(data: d, showAxes: true)
+                            .frame(height: 300)
+                        Button {
+                            showExpanded = true
+                        } label: {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Circle().fill(Color.black.opacity(0.45)))
+                        }
+                        .padding(10)
+                        .accessibilityLabel("Expand heatmap")
+                    }
+                    .padding(.horizontal)
 
                     legend
 
@@ -211,6 +240,11 @@ struct LiquidationHeatmapDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .background(AppColors.background(colorScheme))
         .task { await load() }
+        .fullScreenCover(isPresented: $showExpanded) {
+            if let d = data {
+                LiquidationHeatmapFullscreen(data: d)
+            }
+        }
     }
 
     private var legend: some View {
@@ -282,5 +316,48 @@ struct LiquidationHeatmapDetailView: View {
         let d = try? await ServiceContainer.shared.liquidationHeatmapService.fetch()
         data = d
         isLoading = false
+    }
+}
+
+// MARK: - Fullscreen (landscape) View
+/// Presents the heatmap rotated 90° so the user can turn the phone sideways and
+/// read it as a wide landscape chart, without the app needing landscape support.
+struct LiquidationHeatmapFullscreen: View {
+    let data: LiquidationHeatmapData
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                // Rotate a landscape-shaped canvas (swap width/height) 90° and
+                // center it so it fills the portrait screen sideways.
+                LiquidationHeatmapCanvas(data: data, showAxes: true)
+                    .frame(width: geo.size.height, height: geo.size.width)
+                    .rotationEffect(.degrees(90))
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
+
+                // Close button + hint.
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(10)
+                                .background(Circle().fill(Color.white.opacity(0.18)))
+                        }
+                    }
+                    Spacer()
+                    Text("Turn your phone sideways")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+                .padding(16)
+            }
+        }
+        .statusBarHidden(true)
     }
 }
