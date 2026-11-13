@@ -239,11 +239,23 @@ struct SpotDerivativesFlowsDetailView: View {
                     AxisValueLabel().foregroundStyle(AppColors.textTertiary)
                 }
             }
+            .chartYScale(domain: yDomain(series, includeZero: baseline))
             .frame(height: 140)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 12).fill(cardBackground))
         .padding(.horizontal)
+    }
+
+    /// Fit the y-axis to the data's own range (with padding) so near-flat series
+    /// like funding still show their shape, instead of being dwarfed by a 0-based axis.
+    private func yDomain(_ s: [Double], includeZero: Bool) -> ClosedRange<Double> {
+        guard let mn = s.min(), let mx = s.max() else { return 0...1 }
+        var lo = mn, hi = mx
+        if includeZero { lo = Swift.min(lo, 0); hi = Swift.max(hi, 0) }
+        let span = hi - lo
+        let pad = span > 0 ? span * 0.12 : Swift.max(abs(hi), 1) * 0.1
+        return (lo - pad)...(hi + pad)
     }
 
     private var howItWorks: some View {

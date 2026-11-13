@@ -37,6 +37,16 @@ function toSeries(days: number[], values: number[]) {
   return values.map((v, i) => ({ t: days[i] * 1000, v }));
 }
 
+function yDomain(data: { t: number; v: number }[], includeZero: boolean): [number, number] {
+  if (!data.length) return [0, 1];
+  let lo = Math.min(...data.map(d => d.v));
+  let hi = Math.max(...data.map(d => d.v));
+  if (includeZero) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+  const span = hi - lo;
+  const pad = span > 0 ? span * 0.12 : Math.max(Math.abs(hi), 1) * 0.1;
+  return [lo - pad, hi + pad];
+}
+
 function MiniChart({ data, color, baseline }: { data: { t: number; v: number }[]; color: string; baseline: boolean }) {
   return (
     <ResponsiveContainer width="100%" height={140}>
@@ -49,7 +59,8 @@ function MiniChart({ data, color, baseline }: { data: { t: number; v: number }[]
           tick={{ fontSize: 10, fill: 'var(--ark-text-tertiary, #9ca3af)' }} minTickGap={40} axisLine={false} tickLine={false}
         />
         <YAxis
-          orientation="right" width={44}
+          orientation="right" width={44} domain={yDomain(data, baseline)}
+          tickFormatter={(v: number) => (Math.abs(v) < 1 && v !== 0 ? v.toFixed(3) : Math.round(v).toString())}
           tick={{ fontSize: 10, fill: 'var(--ark-text-tertiary, #9ca3af)' }} axisLine={false} tickLine={false}
         />
         <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.8} dot={false} />
