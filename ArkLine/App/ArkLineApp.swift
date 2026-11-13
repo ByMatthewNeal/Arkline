@@ -717,6 +717,28 @@ class AppState: ObservableObject {
                 }
             }
         }
+
+        // One-time reposition: group the derivatives widgets (liquidation heatmap,
+        // spot vs derivatives, derivatives positioning) right after Market Breadth,
+        // instead of tacked onto the tail where the generic migration drops newly
+        // added widgets. Done here (the single choke point for every config apply,
+        // including synced preferences) and flag-guarded so it runs exactly once and
+        // never fights a later manual reorder.
+        let derivGroupFlag = "arkline_did_group_derivatives_widgets"
+        if !UserDefaults.standard.bool(forKey: derivGroupFlag) {
+            let group: [MarketWidgetType] = [.liquidationHeatmap, .spotDerivativesFlows, .derivativesPositioning]
+            config.widgetOrder.removeAll { group.contains($0) }
+            if let breadthIdx = config.widgetOrder.firstIndex(of: .marketBreadth) {
+                config.widgetOrder.insert(contentsOf: group, at: breadthIdx + 1)
+            } else {
+                config.widgetOrder.append(contentsOf: group)
+            }
+            for w in group where MarketWidgetType.defaultEnabled.contains(w) {
+                config.enabledWidgets.insert(w)
+            }
+            UserDefaults.standard.set(true, forKey: derivGroupFlag)
+        }
+
         marketWidgetConfiguration = config
         let key = Constants.UserDefaults.marketWidgetConfiguration
         DispatchQueue.global(qos: .utility).async {

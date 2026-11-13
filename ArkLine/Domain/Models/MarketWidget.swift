@@ -99,7 +99,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
 
     /// Default order for Market widgets (matches original hardcoded layout)
     static var defaultOrder: [MarketWidgetType] {
-        [.usFutures, .qpsGrid, .cycleScorecard, .mindset, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .metalsSupportResistance, .liquidationHeatmap, .spotDerivativesFlows, .derivativesPositioning, .topCoins, .sentiment, .marketBreadth, .swingSetups, .altcoinScreener]
+        [.usFutures, .qpsGrid, .cycleScorecard, .mindset, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .metalsSupportResistance, .topCoins, .sentiment, .marketBreadth, .liquidationHeatmap, .spotDerivativesFlows, .derivativesPositioning, .swingSetups, .altcoinScreener]
     }
 
     /// Widgets enabled by default — a lean starter set covering futures, sentiment,
