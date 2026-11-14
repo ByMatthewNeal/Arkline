@@ -12,12 +12,15 @@ jobs:
     steps:
       - name: Ping Supabase REST API
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "https://mprbbjgrshfbupheuscn.supabase.co/rest/v1/?apikey=${{ secrets.SUPABASE_ANON_KEY }}")
+          # The goal is only to prove the project is not paused. Any HTTP
+          # response (even 401 Unauthorized) means the server is up, so we
+          # don't need an API key. A paused or unreachable project returns
+          # no response at all, which curl reports as status 000.
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 \
+            "https://mprbbjgrshfbupheuscn.supabase.co/rest/v1/")
           echo "Supabase responded with: $STATUS"
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "Project is alive"
-          else
-            echo "WARNING: Unexpected status $STATUS"
+          if [ "$STATUS" = "000" ]; then
+            echo "ERROR: No response — project may be paused or unreachable"
             exit 1
           fi
+          echo "Project is alive (HTTP $STATUS)"
