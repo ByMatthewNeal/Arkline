@@ -41,6 +41,8 @@ struct LiquidationHeatmapData: Codable {
         case asOf = "as_of"
     }
 
-    var clustersBelow: [LiquidationCluster] { clusters.filter { $0.isBelow } }
-    var clustersAbove: [LiquidationCluster] { clusters.filter { !$0.isBelow } }
+    // Sorted by price so the lists read in order, nearest to the current price first:
+    // below descends from just under price, above ascends from just over it.
+    var clustersBelow: [LiquidationCluster] { clusters.filter { $0.isBelow }.sorted { $0.price > $1.price } }
+    var clustersAbove: [LiquidationCluster] { clusters.filter { !$0.isBelow }.sorted { $0.price < $1.price } }
 }

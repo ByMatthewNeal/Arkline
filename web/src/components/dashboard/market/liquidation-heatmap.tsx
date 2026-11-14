@@ -139,8 +139,9 @@ export function LiquidationHeatmapDetail() {
   if (isLoading) return <Skeleton className="h-72 w-full" />;
   if (!data) return <p className="py-8 text-center text-sm text-ark-text-tertiary">Heatmap unavailable right now.</p>;
 
-  const below = data.clusters.filter((c) => c.side === 'below');
-  const above = data.clusters.filter((c) => c.side === 'above');
+  // Sorted by price, nearest to current price first: below descends, above ascends.
+  const below = data.clusters.filter((c) => c.side === 'below').sort((a, b) => b.price - a.price);
+  const above = data.clusters.filter((c) => c.side === 'above').sort((a, b) => a.price - b.price);
 
   return (
     <div className="space-y-4 pb-2">
