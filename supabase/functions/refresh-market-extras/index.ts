@@ -122,11 +122,10 @@ async function fetchPerpPremium() {
 //
 //   3. A meeting's expected move implies its 25bp step probability:
 //        p_step = (r_after − r_before) / 0.25
-//
-//   4. Cumulative probabilities (what CME's table shows) come from convolving
-//      those per-meeting steps into a binomial tree over net 25bp moves.
-//
-// Verified against CME FedWatch: reproduces their published figures to ~0.2pp.
+//      and we report that per-meeting (cut/hold/hike for the move AT that
+//      meeting), marching r_before along the expected path. We deliberately do
+//      NOT report cumulative-vs-today odds: those pin every meeting to ~100%
+//      hike once the first hike is priced, which reads as "7 certain hikes."
 
 const FOMC_DATES = [
   "2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17",
@@ -190,9 +189,12 @@ async function fetchFedWatch() {
   const today = new Date().toISOString().split("T")[0];
   const upcoming = FOMC_DATES.filter((d) => d >= today).slice(0, 8);
 
+  // We march along the expected (mean) rate path: each meeting's odds are the
+  // move AT that meeting, measured against the rate expected going into it. This
+  // is what people read FedWatch for ("what will they do at this meeting") and
+  // avoids the old cumulative-vs-today bucketing, which pinned every meeting to
+  // ~100% hike once the first hike was priced in.
   let rBefore = effr;
-  // Probability distribution over net 25bp moves from today's rate.
-  let dist = new Map<number, number>([[0, 1]]);
   const meetings: unknown[] = [];
 
   for (const d of upcoming) {
@@ -226,28 +228,11 @@ async function fetchFedWatch() {
     const pCut = delta < 0 ? Math.min(1, -delta / 0.25) : 0;
     const pHold = Math.max(0, 1 - pHike - pCut);
 
-    // Convolve this meeting's step into the running distribution.
-    const next = new Map<number, number>();
-    const bump = (k: number, p: number) => next.set(k, (next.get(k) ?? 0) + p);
-    for (const [k, p] of dist) {
-      if (pHold > 0) bump(k, p * pHold);
-      if (pHike > 0) bump(k + 1, p * pHike);
-      if (pCut > 0) bump(k - 1, p * pCut);
-    }
-    dist = next;
-
-    let cut = 0, hold = 0, hike = 0;
-    for (const [k, p] of dist) {
-      if (k < 0) cut += p;
-      else if (k === 0) hold += p;
-      else hike += p;
-    }
-
     meetings.push({
       meeting_date: d,
-      cut_probability: Math.round(cut * 1000) / 10,
-      hold_probability: Math.round(hold * 1000) / 10,
-      hike_probability: Math.round(hike * 1000) / 10,
+      cut_probability: Math.round(pCut * 1000) / 10,
+      hold_probability: Math.round(pHold * 1000) / 10,
+      hike_probability: Math.round(pHike * 1000) / 10,
     });
 
     rBefore = rAfter;
