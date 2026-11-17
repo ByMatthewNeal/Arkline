@@ -194,13 +194,19 @@ struct ReorderableMarketWidgetStack: View {
             MetalsSupportResistanceSection(refreshId: widgetRefreshId)
 
         case .liquidationHeatmap:
-            LiquidationHeatmapSection(refreshId: widgetRefreshId)
+            ProLocked(title: "Liquidation Heatmap") {
+                LiquidationHeatmapSection(refreshId: widgetRefreshId)
+            }
 
         case .spotDerivativesFlows:
-            SpotDerivativesFlowsSection(refreshId: widgetRefreshId)
+            ProLocked(title: "Spot vs Derivatives") {
+                SpotDerivativesFlowsSection(refreshId: widgetRefreshId)
+            }
 
         case .derivativesPositioning:
-            DerivativesPositioningSection(viewModel: sentimentViewModel)
+            ProLocked(title: "Derivatives") {
+                DerivativesPositioningSection(viewModel: sentimentViewModel)
+            }
         }
     }
 }
