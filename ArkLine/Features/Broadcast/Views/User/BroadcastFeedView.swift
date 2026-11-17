@@ -62,6 +62,9 @@ struct BroadcastFeedView: View {
     @State private var learnTab: LearnTab = .fromTheDesk
     /// Bumped when a lesson is completed so the curriculum progress UI refreshes.
     @State private var progressVersion = 0
+    /// Presented when a free user tries to open a full insight or Member Q&A.
+    /// The feed list itself stays visible as the teaser.
+    @State private var showPaywall = false
 
     // MARK: - Filtered Broadcasts
 
@@ -180,6 +183,10 @@ struct BroadcastFeedView: View {
     /// Open an insight in the detail sheet and mark it read — used by both
     /// card taps and prev/next navigation so the two paths never diverge.
     private func openBroadcast(_ broadcast: Broadcast) {
+        // Insights are Pro. Free users can browse the feed (titles and previews)
+        // as a teaser, but opening the full post opens the paywall. Admins always
+        // get through so they can read and manage their own posts.
+        guard appState.isPro || effectiveIsAdmin else { showPaywall = true; return }
         selectedBroadcast = broadcast
         if let userId = appState.currentUser?.id {
             viewModel.readBroadcastIds.insert(broadcast.id)
@@ -196,6 +203,7 @@ struct BroadcastFeedView: View {
         // re-identifying the stack is the reliable reset. View model is
         // @StateObject on this struct (outside the stack), so no reload.
         .id(appState.insightsNavigationReset)
+        .paywallSheet(isPresented: $showPaywall)
     }
 
     // Structured-learning launcher at the top of the Learn tab: the guided
@@ -1006,7 +1014,9 @@ struct BroadcastFeedView: View {
             icon: "bubble.left.and.bubble.right.fill",
             color: .teal,
             title: "Member Q&A"
-        ) { showMemberQA = true }
+        ) {
+            if appState.isPro || effectiveIsAdmin { showMemberQA = true } else { showPaywall = true }
+        }
         .sheet(isPresented: $showMemberQA) {
             MemberQAView().environmentObject(appState)
         }
