@@ -361,9 +361,21 @@ class AppState: ObservableObject {
     // warm even while paidModeEnabled is false so the launch flip is instant.
     @Published private(set) var subscriptionActive = false
 
+    #if DEBUG
+    /// Debug-only preview switch. Flip to true in a debug build to see the free
+    /// (locked) experience regardless of real subscription or paidModeEnabled, so
+    /// the locked teasers can be eyeballed on the simulator. Never affects release.
+    var debugForceFree = false
+    #endif
+
     /// The app-wide access gate. Reflects the real subscription once paid mode is
     /// on; until then everyone with an account has full access.
-    var isPro: Bool { paidModeEnabled ? subscriptionActive : true }
+    var isPro: Bool {
+        #if DEBUG
+        if debugForceFree { return false }
+        #endif
+        return paidModeEnabled ? subscriptionActive : true
+    }
 
     /// Refresh the authoritative subscription state. Safe to call on launch,
     /// after sign-in, and on RevenueCat subscription-change events. On a transient

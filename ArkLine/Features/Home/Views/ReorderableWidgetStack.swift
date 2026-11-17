@@ -379,18 +379,26 @@ struct ReorderableWidgetStack: View {
             )
 
         case .marketBreadth:
-            MarketBreadthSection(embedded: true)
+            ProLocked(title: "Market Breadth") {
+                MarketBreadthSection(embedded: true)
+            }
 
         case .learnCard:
             if let feature = viewModel.featuredLearn {
                 HomeLearnCard(feature: feature)
             }
         case .supportResistance:
-            SupportResistanceHomeWidget()
+            ProLocked(title: "Support & Resistance") {
+                SupportResistanceHomeWidget()
+            }
         case .liquidationHeatmap:
-            LiquidationHeatmapSection(embedded: true)
+            ProLocked(title: "Liquidation Heatmap") {
+                LiquidationHeatmapSection(embedded: true)
+            }
         case .spotDerivativesFlows:
-            SpotDerivativesFlowsSection(embedded: true)
+            ProLocked(title: "Spot vs Derivatives") {
+                SpotDerivativesFlowsSection(embedded: true)
+            }
         }
     }
 }
