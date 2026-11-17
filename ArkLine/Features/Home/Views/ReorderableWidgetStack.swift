@@ -256,10 +256,12 @@ struct ReorderableWidgetStack: View {
             .id("widget_assetRiskLevel")
 
         case .stockRiskLevel:
-            StockRiskLevelSection(
-                riskLevels: viewModel.stockSelectedRiskLevels,
-                size: appState.widgetSize(.stockRiskLevel)
-            )
+            ProLocked(title: "Stock Risk Levels") {
+                StockRiskLevelSection(
+                    riskLevels: viewModel.stockSelectedRiskLevels,
+                    size: appState.widgetSize(.stockRiskLevel)
+                )
+            }
             .id("widget_stockRiskLevel")
 
         case .vixIndicator:
