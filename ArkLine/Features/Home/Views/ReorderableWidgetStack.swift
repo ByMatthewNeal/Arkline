@@ -316,11 +316,11 @@ struct ReorderableWidgetStack: View {
                 userName: "there",
                 size: appState.widgetSize(.aiMarketSummary),
                 isAdmin: appState.currentUser?.isAdmin == true,
-                isPro: appState.isPro,
                 onFeedback: appState.currentUser?.isAdmin == true ? { rating, note in
                     guard let userId = appState.currentUser?.id else { return }
                     Task { await viewModel.submitBriefingFeedback(rating: rating, note: note, userId: userId) }
-                } : nil
+                } : nil,
+                isPro: appState.isPro
             )
 
         case .flashIntel:
