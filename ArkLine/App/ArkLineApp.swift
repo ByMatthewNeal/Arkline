@@ -365,7 +365,7 @@ class AppState: ObservableObject {
     /// Debug-only preview switch. Flip to true in a debug build to see the free
     /// (locked) experience regardless of real subscription or paidModeEnabled, so
     /// the locked teasers can be eyeballed on the simulator. Never affects release.
-    var debugForceFree = true
+    var debugForceFree = false
     #endif
 
     /// The app-wide access gate. Reflects the real subscription once paid mode is
