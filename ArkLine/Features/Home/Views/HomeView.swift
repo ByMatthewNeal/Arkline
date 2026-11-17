@@ -112,7 +112,8 @@ struct HomeView: View {
                                 forceExpand: Binding(
                                     get: { appState.shouldExpandBriefing },
                                     set: { appState.shouldExpandBriefing = $0 }
-                                )
+                                ),
+                                isPro: appState.isPro
                             )
                             .padding(.horizontal, 20)
                         }
