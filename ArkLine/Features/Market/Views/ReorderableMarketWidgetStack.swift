@@ -176,7 +176,9 @@ struct ReorderableMarketWidgetStack: View {
             LiquidityCycleSection(refreshId: widgetRefreshId)
 
         case .cycleScorecard:
-            CycleScorecardSection(refreshId: widgetRefreshId)
+            ProLocked(title: "Cycle Scorecard") {
+                CycleScorecardSection(refreshId: widgetRefreshId)
+            }
 
         case .qpsGrid:
             QPSGridSection(
@@ -185,13 +187,17 @@ struct ReorderableMarketWidgetStack: View {
             )
 
         case .marketBreadth:
-            MarketBreadthSection(refreshId: widgetRefreshId)
+            ProLocked(title: "Market Breadth") {
+                MarketBreadthSection(refreshId: widgetRefreshId)
+            }
 
         case .mindset:
             MindsetMarketSection()
 
         case .metalsSupportResistance:
-            MetalsSupportResistanceSection(refreshId: widgetRefreshId)
+            ProLocked(title: "Support & Resistance") {
+                MetalsSupportResistanceSection(refreshId: widgetRefreshId)
+            }
 
         case .liquidationHeatmap:
             ProLocked(title: "Liquidation Heatmap") {
