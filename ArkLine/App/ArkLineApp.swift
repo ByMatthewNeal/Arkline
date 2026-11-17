@@ -365,7 +365,7 @@ class AppState: ObservableObject {
     /// Debug-only preview switch. Flip to true in a debug build to see the free
     /// (locked) experience regardless of real subscription or paidModeEnabled, so
     /// the locked teasers can be eyeballed on the simulator. Never affects release.
-    var debugForceFree = false
+    var debugForceFree = true
     #endif
 
     /// The app-wide access gate. Reflects the real subscription once paid mode is
@@ -374,6 +374,10 @@ class AppState: ObservableObject {
         #if DEBUG
         if debugForceFree { return false }
         #endif
+        // Admins always have full access — they run the app and shouldn't have to
+        // subscribe to see their own content. (debugForceFree above still wins so
+        // the free experience can be previewed.)
+        if currentUser?.isAdmin == true { return true }
         return paidModeEnabled ? subscriptionActive : true
     }
 
