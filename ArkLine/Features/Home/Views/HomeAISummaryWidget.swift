@@ -11,6 +11,11 @@ struct HomeAISummaryWidget: View {
     var onFeedback: ((Bool, String?) -> Void)? = nil
     var audioService: BriefingAudioService = .shared
     var forceExpand: Binding<Bool>? = nil
+    /// When false, the briefing is gated: free users see only the TLDR preview,
+    /// and any attempt to expand opens the paywall. Defaults to true so admin and
+    /// other callers are unaffected.
+    var isPro: Bool = true
+    @State private var showPaywall = false
     @State private var showNoteField = false
     @State private var selectedRating: Bool?
     @State private var feedbackNote = ""
@@ -110,7 +115,7 @@ struct HomeAISummaryWidget: View {
                 }
                 shimmerPlaceholder
             } else if let summary {
-                if isExpanded {
+                if isExpanded && isPro {
                     structuredSummary(summary.summary)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 } else {
@@ -193,10 +198,11 @@ struct HomeAISummaryWidget: View {
         }
         .onChange(of: forceExpand?.wrappedValue) { _, shouldExpand in
             if shouldExpand == true {
-                withAnimation(.arkSpring) { isExpanded = true }
+                if isPro { withAnimation(.arkSpring) { isExpanded = true } } else { showPaywall = true }
                 forceExpand?.wrappedValue = false
             }
         }
+        .paywallSheet(isPresented: $showPaywall)
     }
 
     // MARK: - Header Row
@@ -204,7 +210,7 @@ struct HomeAISummaryWidget: View {
     private var headerRow: some View {
         HStack {
             Button {
-                withAnimation(.arkSpring) { isExpanded.toggle() }
+                if isPro { withAnimation(.arkSpring) { isExpanded.toggle() } } else { showPaywall = true }
             } label: {
                 HStack(spacing: 8) {
                     Text("Daily Briefing")
@@ -249,7 +255,7 @@ struct HomeAISummaryWidget: View {
 
             if summary != nil {
                 Button {
-                    withAnimation(.arkSpring) { isExpanded.toggle() }
+                    if isPro { withAnimation(.arkSpring) { isExpanded.toggle() } } else { showPaywall = true }
                 } label: {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12, weight: .medium))
@@ -264,6 +270,8 @@ struct HomeAISummaryWidget: View {
 
     private func audioButton(for summary: MarketSummary) -> some View {
         Button {
+            // Briefing audio is a Pro feature; free users get the paywall.
+            guard isPro else { showPaywall = true; return }
             switch audioService.playbackState {
             case .idle:
                 Task { await audioService.play(summary: summary) }
@@ -341,14 +349,16 @@ struct HomeAISummaryWidget: View {
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
 
-                // See more — expands to the full briefing
+                // See more — expands to the full briefing (or opens the paywall
+                // for free users, who get the TLDR only).
                 Button {
-                    withAnimation(.arkSpring) { isExpanded = true }
+                    if isPro { withAnimation(.arkSpring) { isExpanded = true } }
+                    else { showPaywall = true }
                 } label: {
                     HStack(spacing: 3) {
-                        Text("See more")
+                        Text(isPro ? "See more" : "Unlock full briefing")
                             .font(AppFonts.caption12Medium)
-                        Image(systemName: "chevron.down")
+                        Image(systemName: isPro ? "chevron.down" : "lock.fill")
                             .font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundColor(AppColors.accent)
