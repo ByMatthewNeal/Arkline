@@ -158,16 +158,20 @@ struct ReorderableMarketWidgetStack: View {
             TopCoinsSection(viewModel: viewModel)
 
         case .sentiment:
-            SentimentSummarySection(
-                viewModel: sentimentViewModel,
-                isPro: appState.isPro
-            )
+            ProLocked(title: "Market Sentiment") {
+                SentimentSummarySection(
+                    viewModel: sentimentViewModel,
+                    isPro: appState.isPro
+                )
+            }
 
         case .altcoinScreener:
             AltcoinScreenerSection(refreshId: widgetRefreshId)
 
         case .swingSetups:
-            SwingSetupsSummarySection(isPro: appState.isPro, refreshId: widgetRefreshId)
+            ProLocked(title: "Trade Signals") {
+                SwingSetupsSummarySection(isPro: appState.isPro, refreshId: widgetRefreshId)
+            }
 
         case .globalLiquidity:
             GlobalLiquiditySection(refreshId: widgetRefreshId)
