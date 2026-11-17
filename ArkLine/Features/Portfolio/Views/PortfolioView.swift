@@ -6,6 +6,8 @@ struct PortfolioView: View {
     @State private var viewModel = PortfolioViewModel()
     @State private var activeSheet: PortfolioSheet?
     @State private var navigationPath = NavigationPath()
+    /// Presented when a free user tries to create a second portfolio (free = one).
+    @State private var showPaywall = false
 
     private enum PortfolioSheet: Identifiable {
         case addTransaction
@@ -173,7 +175,12 @@ struct PortfolioView: View {
                         ),
                         viewModel: viewModel,
                         onCreatePortfolio: {
-                            activeSheet = .createPortfolio
+                            // Free users get one portfolio; a second requires Pro.
+                            if appState.isPro || viewModel.portfolios.isEmpty {
+                                activeSheet = .createPortfolio
+                            } else {
+                                showPaywall = true
+                            }
                         }
                     )
                 case .addTransaction:
@@ -224,6 +231,7 @@ struct PortfolioView: View {
         // stack is the only reliable reset. View model is cached @State outside
         // the stack, so no reload.
         .id(appState.portfolioNavigationReset)
+        .paywallSheet(isPresented: $showPaywall)
     }
 }
 
