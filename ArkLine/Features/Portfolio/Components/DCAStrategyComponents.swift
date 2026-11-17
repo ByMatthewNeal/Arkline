@@ -21,9 +21,16 @@ struct DCAStepIndicator: View {
 struct DCAStrategyTypeCard: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedStrategy: DCAStrategyType
+    /// The Risk-Based (dynamic) strategy is Pro. Time-Based and Budget-Based stay free.
+    var isPro: Bool = true
+    var onLocked: () -> Void = {}
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
+    }
+
+    private func isLocked(_ strategy: DCAStrategyType) -> Bool {
+        !isPro && strategy == .riskBased
     }
 
     var body: some View {
@@ -41,7 +48,10 @@ struct DCAStrategyTypeCard: View {
                     DCAStrategyOptionCard(
                         strategy: strategy,
                         isSelected: selectedStrategy == strategy,
-                        onSelect: { selectedStrategy = strategy }
+                        locked: isLocked(strategy),
+                        onSelect: {
+                            if isLocked(strategy) { onLocked() } else { selectedStrategy = strategy }
+                        }
                     )
                 }
             }
@@ -55,6 +65,7 @@ struct DCAStrategyTypeCard: View {
 struct DCAStrategyOptionCard: View {
     let strategy: DCAStrategyType
     let isSelected: Bool
+    var locked: Bool = false
     let onSelect: () -> Void
     @Environment(\.colorScheme) var colorScheme
 
@@ -77,9 +88,19 @@ struct DCAStrategyOptionCard: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(strategy.rawValue)
-                        .font(AppFonts.body14Bold)
-                        .foregroundColor(textPrimary)
+                    HStack(spacing: 6) {
+                        Text(strategy.rawValue)
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(textPrimary)
+                        if locked {
+                            Text("PRO")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(AppColors.accent))
+                        }
+                    }
 
                     Text(strategy.description)
                         .font(AppFonts.caption12)
@@ -89,15 +110,21 @@ struct DCAStrategyOptionCard: View {
 
                 Spacer()
 
-                ZStack {
-                    Circle()
-                        .stroke(isSelected ? AppColors.accent : AppColors.textSecondary.opacity(0.3), lineWidth: 2)
-                        .frame(width: 22, height: 22)
-
-                    if isSelected {
+                if locked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                } else {
+                    ZStack {
                         Circle()
-                            .fill(AppColors.accent)
-                            .frame(width: 12, height: 12)
+                            .stroke(isSelected ? AppColors.accent : AppColors.textSecondary.opacity(0.3), lineWidth: 2)
+                            .frame(width: 22, height: 22)
+
+                        if isSelected {
+                            Circle()
+                                .fill(AppColors.accent)
+                                .frame(width: 12, height: 12)
+                        }
                     }
                 }
             }

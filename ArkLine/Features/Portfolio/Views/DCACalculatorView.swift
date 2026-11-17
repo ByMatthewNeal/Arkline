@@ -8,6 +8,9 @@ struct DCACalculatorView: View {
     @State private var reminderCreated = false
     @State private var errorMessage: String?
     @State private var showError = false
+    @EnvironmentObject private var appState: AppState
+    /// Presented when a free user selects the Risk-Based (dynamic) DCA strategy.
+    @State private var showPaywall = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -71,6 +74,7 @@ struct DCACalculatorView: View {
                 calculatorState.selectedPortfolioName = selected.name
             }
         }
+        .paywallSheet(isPresented: $showPaywall)
     }
 
     // MARK: - Step Content
@@ -86,7 +90,9 @@ struct DCACalculatorView: View {
         case 2:
             // Step 2: Strategy Type
             DCAStrategyTypeCard(
-                selectedStrategy: $calculatorState.strategyType
+                selectedStrategy: $calculatorState.strategyType,
+                isPro: appState.isPro,
+                onLocked: { showPaywall = true }
             )
             .padding(.horizontal, 20)
 
