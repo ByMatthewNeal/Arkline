@@ -817,6 +817,7 @@ struct BroadcastFeedView: View {
         BroadcastCardView(
             broadcast: broadcast,
             isAdmin: effectiveIsAdmin,
+            isPro: appState.isPro && !isUserPreview,
             isUnread: !viewModel.isRead(broadcast.id),
             hasReacted: viewModel.userHeartedBroadcastIds.contains(broadcast.id),
             isBookmarked: viewModel.isBookmarked(broadcast.id),

@@ -6,6 +6,8 @@ import Kingfisher
 struct BroadcastCardView: View {
     let broadcast: Broadcast
     var isAdmin: Bool = false
+    /// Free users get a teaser: title and first line, the rest blurred.
+    var isPro: Bool = true
     var isUnread: Bool = false
     var hasReacted: Bool = false
     var isBookmarked: Bool = false
@@ -84,11 +86,36 @@ struct BroadcastCardView: View {
                     .foregroundColor(AppColors.textPrimary(colorScheme))
                     .lineLimit(2)
 
-                // Preview
-                Text(broadcast.contentPreview)
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
-                    .lineLimit(3)
+                // Preview — Pro users see the full snippet; free users get the
+                // first line, then a blurred tease and an Unlock hint.
+                if isPro {
+                    Text(broadcast.contentPreview)
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(3)
+                } else {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(broadcast.contentPreview)
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineLimit(1)
+                        Text(broadcast.contentPreview)
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineLimit(2)
+                            .blur(radius: 5)
+                            .opacity(0.5)
+                            .allowsHitTesting(false)
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 10, weight: .semibold))
+                            Text("Unlock with Pro")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(AppColors.accent)
+                        .padding(.top, 1)
+                    }
+                }
 
                 // Tags
                 if !broadcast.tags.isEmpty {
