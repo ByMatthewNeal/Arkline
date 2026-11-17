@@ -39,6 +39,8 @@ struct ArkLineApp: App {
                         if appState.isAuthenticated, let userId = appState.currentUser?.id {
                             await RevenueCatService.shared.logIn(userId: userId)
                         }
+                        // Warm the authoritative subscription gate on launch.
+                        await appState.refreshSubscriptionStatus()
                         // Restore cloud-synced dashboard layout + settings on launch.
                         await appState.restorePreferencesFromCloud()
                     }
@@ -346,8 +348,47 @@ class AppState: ObservableObject {
     @Published var insightsNavigationReset = UUID()
     @Published var profileNavigationReset = UUID()
 
-    // All users get full access (invite-only app, no subscription)
-    var isPro: Bool { true }
+    // MARK: - Subscription gate
+    //
+    // Master switch for the paid relaunch. While false, every authenticated user
+    // is treated as Pro (the current free-for-all behavior). At relaunch, once
+    // gating, teasers, the paywall, and products are all in place, flip this to
+    // true and `isPro` starts reflecting the real subscription.
+    private let paidModeEnabled = false
+
+    // Authoritative subscription state, backed by the Supabase `is_user_subscribed`
+    // RPC, with RevenueCat's local entitlement as a fast positive signal. Kept
+    // warm even while paidModeEnabled is false so the launch flip is instant.
+    @Published private(set) var subscriptionActive = false
+
+    /// The app-wide access gate. Reflects the real subscription once paid mode is
+    /// on; until then everyone with an account has full access.
+    var isPro: Bool { paidModeEnabled ? subscriptionActive : true }
+
+    /// Refresh the authoritative subscription state. Safe to call on launch,
+    /// after sign-in, and on RevenueCat subscription-change events. On a transient
+    /// error it keeps the prior value rather than locking the user out.
+    @MainActor
+    func refreshSubscriptionStatus() async {
+        guard isAuthenticated, let userId = currentUser?.id else {
+            subscriptionActive = false
+            return
+        }
+        // Fast local signal first (an active Apple entitlement is definitive).
+        if RevenueCatService.shared.isPro {
+            subscriptionActive = true
+            return
+        }
+        do {
+            let subscribed: Bool = try await SupabaseManager.shared.database
+                .rpc("is_user_subscribed", params: ["check_user_id": userId.uuidString])
+                .execute()
+                .value
+            subscriptionActive = subscribed
+        } catch {
+            logError("is_user_subscribed check failed: \(error.localizedDescription)", category: .network)
+        }
+    }
 
     // Deep link pending navigation (from notification tap or URL scheme)
     @Published var pendingBroadcastId: String?
@@ -403,6 +444,16 @@ class AppState: ObservableObject {
 
     init() {
         loadPersistedState()
+        // Re-check the subscription gate whenever RevenueCat reports a change
+        // (purchase, restore, login, logout). A no-op on behavior while paid mode
+        // is off, but it keeps subscriptionActive current for the flip.
+        NotificationCenter.default.addObserver(
+            forName: Constants.Notifications.subscriptionStatusChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { await self?.refreshSubscriptionStatus() }
+        }
     }
 
     private func loadPersistedState() {
