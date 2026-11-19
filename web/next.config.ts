@@ -50,6 +50,13 @@ const nextConfig: NextConfig = {
         destination: 'https://arkline.io/:path*',
         permanent: true,
       },
+      {
+        // Retired pre-launch waitlist page. Send any lingering ad/email links to
+        // the live homepage instead of a 404.
+        source: '/early-access',
+        destination: '/',
+        permanent: true,
+      },
     ];
   },
 };
