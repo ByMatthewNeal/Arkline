@@ -6,8 +6,8 @@ import { FadeIn } from '@/components/marketing/fade-in';
 const steps = [
   {
     icon: UserPlus,
-    title: 'Download & Start Free',
-    description: 'Grab ArkLine from the App Store — free, no card, ready in seconds. iOS 17+.',
+    title: 'Download & Start',
+    description: 'Grab ArkLine from the App Store — 14-day free trial, ready in seconds. iOS 17+.',
     color: 'var(--ark-primary)',
   },
   {

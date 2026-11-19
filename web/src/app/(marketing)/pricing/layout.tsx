@@ -10,20 +10,20 @@ import type { Metadata } from 'next';
  * rank for pricing or free-trial queries.
  */
 export const metadata: Metadata = {
-  title: 'Pricing — Free to Use | Arkline',
+  title: 'Pricing — $69.99/mo, 14-Day Free Trial | Arkline',
   description:
-    'Arkline is free. Everything included: multi-factor risk scoring, macro dashboard, AI briefings, and portfolio tracking across crypto and traditional markets. No tiers, no trial clock, no card — on iOS and the web.',
+    'Arkline Pro is $69.99/month or $699/year, with a 14-day free trial. Everything included: multi-factor risk scoring, macro dashboard, AI briefings, and portfolio tracking across crypto and traditional markets. No tiers, no add-ons — on iOS and the web.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Arkline — Free to Use',
+    title: 'Arkline Pro — 14-Day Free Trial',
     description:
-      'Every tool included, free while we grow Arkline. Multi-factor risk scoring, macro dashboard, and AI briefings on iPhone and the web. No card required.',
+      'Every tool in one subscription: multi-factor risk scoring, macro dashboard, and AI briefings on iPhone and the web. $69.99/month, start with a 14-day free trial.',
     url: 'https://arkline.io/pricing',
   },
   twitter: {
-    title: 'Arkline — Free to Use',
+    title: 'Arkline Pro — 14-Day Free Trial',
     description:
-      'Every tool included, free. Risk scoring, macro dashboard, and AI briefings on iPhone and the web. No card required.',
+      'Every tool in one subscription. Risk scoring, macro dashboard, and AI briefings on iPhone and the web. $69.99/month, 14-day free trial.',
   },
 };
 

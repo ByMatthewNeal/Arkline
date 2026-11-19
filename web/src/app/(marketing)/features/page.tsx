@@ -278,13 +278,13 @@ export default function FeaturesPage() {
               See ArkLine in action.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Every feature above is included &mdash; free. No tiers, no trial clock, no card.
+              Every feature above is included in one subscription. No tiers, no add-ons &mdash; start with a 14-day free trial.
             </p>
             <div className="mt-8 flex justify-center">
               <AppStoreCTA />
             </div>
             <div className="mt-6 text-xs text-ark-text-disabled">
-              Now on iOS and the web · Free to use
+              Now on iOS and the web · 14-day free trial
             </div>
           </FadeIn>
         </div>

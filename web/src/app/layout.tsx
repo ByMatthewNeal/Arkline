@@ -92,9 +92,9 @@ const jsonLd = {
         'Market intelligence platform combining multi-factor risk scoring, macro dashboard, AI briefings, and positioning signals for crypto and traditional markets.',
       offers: {
         '@type': 'Offer',
-        price: '0',
+        price: '69.99',
         priceCurrency: 'USD',
-        description: 'Free to use. Every tool included, on iOS and the web.',
+        description: 'Arkline Pro — $69.99/month (or $699/year) with a 14-day free trial. Every tool included, on iOS and the web.',
       },
       publisher: { '@id': 'https://arkline.io/#organization' },
     },

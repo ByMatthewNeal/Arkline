@@ -68,7 +68,7 @@ export default function AboutPage() {
               ArkLine is my answer to that. The same systematic approach I had to learn the hard way &mdash; multi-factor risk scoring, macro regime detection, sentiment signals, AI briefings that pull it together &mdash; built for people with jobs and portfolios. Not for day traders. Not for institutions. For the version of me that spent years and tens of thousands of dollars figuring this out without a guide.
             </p>
             <p>
-              You don&apos;t have to be that person. You don&apos;t have to take the risk, because I&apos;ve taken it for you &mdash; I&apos;ve paid the tuition to the market so you don&apos;t have to. ArkLine is me giving that back: institutional-level data and the exact tools I had to pay to learn, in your pocket, free. No paywall, no catch. Right now I care more about earning your trust than charging you at the door. Use everything I&apos;ve curated, invest with more confidence, and put yourself in a better position &mdash; and if it helps you, tell someone who needs it.
+              You don&apos;t have to be that person. You don&apos;t have to take the risk, because I&apos;ve taken it for you &mdash; I&apos;ve paid the tuition to the market so you don&apos;t have to. ArkLine is me giving that back: institutional-level data and the exact tools I had to pay to learn, in your pocket &mdash; for a small fraction of what those paywalls charge. I&apos;d rather earn your trust before you spend a dollar, so you get a 14-day free trial to feel the value first; after that it&apos;s $69.99 a month, not the hundreds the institutional tools cost. Use everything I&apos;ve curated, invest with more confidence, and put yourself in a better position &mdash; and if it helps you, tell someone who needs it.
             </p>
             <p>
               I&apos;m a solo founder, in New York. No outside funding. I read every email at matt@arkline.io. If any of this sounded like you, I&apos;d like to hear from you. &mdash; Matt
@@ -162,10 +162,10 @@ export default function AboutPage() {
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
           <FadeIn>
             <h2 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold text-ark-text sm:text-4xl">
-              ArkLine is free
+              Try ArkLine free for 14 days
             </h2>
             <p className="mt-4 text-base leading-relaxed text-ark-text-secondary sm:text-lg">
-              Every tool, every signal, every briefing &mdash; free while I build this. Download it and see for yourself.
+              Every tool, every signal, every briefing &mdash; in one subscription. Start with a 14-day free trial and see for yourself.
             </p>
           </FadeIn>
           <FadeIn delay={0.1} className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -174,12 +174,12 @@ export default function AboutPage() {
               href="/signup"
               className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
             >
-              Start free on the web &rarr;
+              Start your free trial &rarr;
             </Link>
           </FadeIn>
           <FadeIn delay={0.15}>
             <p className="mt-4 text-sm text-ark-text-tertiary">
-              No card, no trial clock &middot; just sign up with your email and you&apos;re in.
+              14-day free trial &middot; cancel anytime before it ends and you won&apos;t be charged.
             </p>
           </FadeIn>
         </div>
