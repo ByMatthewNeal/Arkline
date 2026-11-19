@@ -27,7 +27,7 @@ import { HowItWorks } from '@/components/marketing/how-it-works';
 import { SocialProof } from '@/components/marketing/social-proof';
 import { FadeIn } from '@/components/marketing/fade-in';
 
-import { PRO_FEATURES } from '@/lib/pricing';
+import { PRO_FEATURES, PRICING, TRIAL_DAYS } from '@/lib/pricing';
 
 const proFeatures = PRO_FEATURES;
 
@@ -39,7 +39,7 @@ export default function LandingPage() {
         <AnimatedBackground />
 
         <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          {/* Badge — now-live + free */}
+          {/* Badge — now-live + free trial */}
           <FadeIn variant="scale" onMount className="mb-10 inline-flex items-center gap-2.5 rounded-full border border-ark-primary/20 bg-ark-primary/5 px-4 py-1.5 transition-colors hover:border-ark-primary/30 hover:bg-ark-primary/8">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ark-primary opacity-60" />
@@ -47,7 +47,7 @@ export default function LandingPage() {
             </span>
             <span className="text-xs font-medium text-ark-primary">Now live on iOS &amp; web</span>
             <span className="h-3 w-px bg-ark-primary/30" />
-            <span className="text-xs font-semibold text-ark-primary">Free to use</span>
+            <span className="text-xs font-semibold text-ark-primary">{TRIAL_DAYS}-day free trial</span>
           </FadeIn>
 
           <FadeIn onMount className="font-[family-name:var(--font-urbanist)] text-4xl font-semibold tracking-tight text-ark-text sm:text-5xl md:text-7xl" as="h1" delay={0.05}>
@@ -99,7 +99,7 @@ export default function LandingPage() {
               <div className="h-3 w-px bg-ark-divider" />
               <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
                 <Shield className="h-3 w-3" />
-                Free, no card required
+                {TRIAL_DAYS}-day free trial
               </div>
               <div className="hidden h-3 w-px bg-ark-divider sm:block" />
               <div className="hidden items-center gap-1.5 text-xs text-ark-text-tertiary sm:flex">
@@ -123,7 +123,7 @@ export default function LandingPage() {
               What You Get
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              Free to use. Every tool ArkLine has to offer.
+              One subscription. Every tool ArkLine has to offer.
             </p>
           </FadeIn>
 
@@ -136,8 +136,8 @@ export default function LandingPage() {
               },
               {
                 icon: Tag,
-                title: 'Completely Free',
-                description: 'No tiers, no upsells, no trial clock. Every tool included, free while I build this.',
+                title: 'One Simple Plan',
+                description: `No tiers, no add-ons. One subscription unlocks every tool. Start with a ${TRIAL_DAYS}-day free trial.`,
               },
               {
                 icon: MessageSquare,
@@ -279,10 +279,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn className="text-center">
             <h2 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold text-ark-text sm:text-4xl">
-              Free. All of it.
+              One plan. Everything included.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              Every signal, every briefing, every macro read &mdash; free while I grow ArkLine. No tiers, no trial clock, no card. Just sign up and use it.
+              Every signal, every briefing, every macro read &mdash; in one subscription. No tiers, no add-ons. Try it free for {TRIAL_DAYS} days, then {PRICING.standard.monthly}/month. Cancel anytime.
             </p>
           </FadeIn>
 
@@ -294,24 +294,25 @@ export default function LandingPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary to-transparent" />
 
               <div className="inline-flex items-center gap-1.5 rounded-full bg-ark-primary/10 px-2.5 py-1 text-[11px] font-semibold text-ark-primary">
-                Free while I build this
+                {TRIAL_DAYS}-day free trial
               </div>
 
               <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-ark-text">Everything included</h3>
+                  <h3 className="text-xl font-semibold text-ark-text">Arkline Pro</h3>
                   <p className="mt-1 text-sm text-ark-text-tertiary">
-                    The full toolkit &mdash; the same tools I paid to learn, curated into one app. Yours to use, free.
+                    The full toolkit &mdash; the same tools I paid to learn, curated into one app. Or save ~17% with annual at {PRICING.standard.annual}/year.
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="flex items-baseline gap-1 sm:justify-end">
                     <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                      Free
+                      {PRICING.standard.monthly}
                     </span>
+                    <span className="text-sm text-ark-text-tertiary">/month</span>
                   </div>
                   <p className="mt-1 text-xs font-semibold text-ark-success">
-                    No card required
+                    {TRIAL_DAYS} days free, then billed monthly
                   </p>
                 </div>
               </div>
@@ -331,11 +332,11 @@ export default function LandingPage() {
                   href="/signup"
                   className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
                 >
-                  Start free on the web →
+                  Start your free trial →
                 </Link>
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                iPhone or web. Same tools, same access, no cost.
+                iPhone or web. Same tools, same access. Cancel anytime during your trial.
               </p>
               <p className="mt-2 text-center text-[11px] text-ark-text-disabled">
                 Your portfolio data is encrypted and never shared.
@@ -364,7 +365,7 @@ export default function LandingPage() {
               the data-driven edge to manage your portfolio with confidence.
             </p>
             <p className="mt-3 text-sm font-medium text-ark-primary">
-              Free to use. Download it, sign up with your email, and you&apos;re in.
+              Start with a {TRIAL_DAYS}-day free trial. Cancel anytime.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <AppStoreCTA />
@@ -372,7 +373,7 @@ export default function LandingPage() {
                 href="/signup"
                 className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
               >
-                Start free on the web →
+                Start your free trial →
               </Link>
             </div>
           </FadeIn>

@@ -17,20 +17,37 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2024-12-18.acacia",
 })
 
-// Founding member price IDs (live mode) — same as create-checkout-session.
-const ALLOWED_PRICE_IDS = new Set([
-  "price_1TXCJyPHuageZ7zbIGTJCHPl", // founding monthly ($39.99/mo)
-  "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr)
+// Standard (new-user) price IDs (live mode) — the post-relaunch pricing.
+const STANDARD_PRICE_IDS = new Set([
+  "price_1TXCPTPHuageZ7zbCrDoFlRO", // standard monthly ($69.99/mo)
+  "price_1UdUlxPHuageZ7zbkgyVJ7f5", // standard annual ($699/yr)
 ])
 
-// Free-trial length for WEB (Stripe) checkout, mirroring the Apple
-// introductory offer on com.arkline.app.founding.monthly so both storefronts
-// make the same promise.
+// Founding member price IDs (live mode) — same as create-checkout-session.
+// NOTE: founding annual is the $399.99 price (price_1UdUnGPHuageZ7zbdLqwrlkW).
+// The legacy $400 price (price_1TXCOPPHuageZ7zb7d2HyeHc) is archived at relaunch.
+const FOUNDING_PRICE_IDS = new Set([
+  "price_1TXCJyPHuageZ7zbIGTJCHPl", // founding monthly ($39.99/mo)
+  "price_1UdUnGPHuageZ7zbdLqwrlkW", // founding annual ($399.99/yr)
+])
+
+// Every price the self-serve flow will accept.
+const ALLOWED_PRICE_IDS = new Set([
+  ...STANDARD_PRICE_IDS,
+  ...FOUNDING_PRICE_IDS,
+])
+
+// Free-trial length for WEB (Stripe) checkout, mirroring the Apple introductory
+// offer on the standard products so both storefronts make the same promise.
 //
 // Deliberately a server constant and NOT a request field: a client-supplied
 // trial length could be tampered with to mint an arbitrarily long free
 // subscription. The web never sends it.
-const TRIAL_DAYS = 7
+//
+// The trial is for STANDARD (new-user) plans only. Founding members are
+// existing users being grandfathered into discounted pricing, so they do not
+// get an additional free trial.
+const TRIAL_DAYS = 14
 
 const corsHeaders = {
   "Content-Type": "application/json",
@@ -111,7 +128,13 @@ Deno.serve(async (req) => {
 
   // On lookup failure, fall back to NO trial. Wrongly withholding a trial is a
   // support ticket; wrongly granting one is unbilled revenue.
-  const grantTrial = !priorErr && (priorSubs?.length ?? 0) === 0
+  //
+  // The trial applies to STANDARD (new-user) plans only — founding members are
+  // existing users on grandfathered pricing and do not get an extra free trial.
+  const grantTrial =
+    !priorErr &&
+    (priorSubs?.length ?? 0) === 0 &&
+    STANDARD_PRICE_IDS.has(body.price_id)
 
   try {
     const session = await stripe.checkout.sessions.create({

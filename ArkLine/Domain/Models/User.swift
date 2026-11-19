@@ -62,6 +62,10 @@ struct User: Codable, Identifiable, Equatable {
     var currentPeriodEnd: Date?
     var createdAt: Date
     var updatedAt: Date
+    /// Grandfathered founding cohort flag, set server-side on the profile for
+    /// users who were recently active at the paid relaunch. Drives founding vs
+    /// standard paywall pricing. Defaults to false (new/dormant users).
+    var isFoundingMember: Bool
 
     // MARK: - Coding Keys
     enum CodingKeys: String, CodingKey {
@@ -87,6 +91,7 @@ struct User: Codable, Identifiable, Equatable {
         case currentPeriodEnd = "current_period_end"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case isFoundingMember = "is_founding_member"
     }
 
     // MARK: - Decodable (backwards-compatible)
@@ -115,6 +120,7 @@ struct User: Codable, Identifiable, Equatable {
         currentPeriodEnd = try container.decodeIfPresent(Date.self, forKey: .currentPeriodEnd)
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+        isFoundingMember = try container.decodeIfPresent(Bool.self, forKey: .isFoundingMember) ?? false
     }
 
     // MARK: - Encodable (exclude passcodeHash)
@@ -142,6 +148,7 @@ struct User: Codable, Identifiable, Equatable {
         try container.encodeIfPresent(currentPeriodEnd, forKey: .currentPeriodEnd)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encode(isFoundingMember, forKey: .isFoundingMember)
     }
 
     // MARK: - Default Values
@@ -167,7 +174,8 @@ struct User: Codable, Identifiable, Equatable {
         trialEnd: Date? = nil,
         currentPeriodEnd: Date? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        isFoundingMember: Bool = false
     ) {
         self.id = id
         self.username = username
@@ -191,6 +199,7 @@ struct User: Codable, Identifiable, Equatable {
         self.currentPeriodEnd = currentPeriodEnd
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.isFoundingMember = isFoundingMember
     }
 }
 

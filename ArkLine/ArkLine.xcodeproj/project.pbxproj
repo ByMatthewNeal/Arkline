@@ -354,6 +354,7 @@
 		98CEA03E857EB2C3B42432C2 /* APIITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */; };
 		98FB888D352DDC8FB8127057 /* MarketBreadth.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55E2BE73F737377E2E4A202 /* MarketBreadth.swift */; };
 		9917FA19D9A6EA6D8736BDAC /* ExtremeMoveAlertManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F34DF542B4C3DC9CD299F2 /* ExtremeMoveAlertManager.swift */; };
+		999072C107FA31E2C4BF24EE /* ProGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 842AAB6DB1465B7B1999ADEC /* ProGate.swift */; };
 		99A3CCAB99144752332CC86D /* ResourceAdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2CC8DFD5BFB97A940865409 /* ResourceAdminView.swift */; };
 		9A587B37CA7F4159349EAEB2 /* ResearchNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2570FEEE4F67E9CAF379AC7 /* ResearchNote.swift */; };
 		9BD583B0D704BDA411DCC474 /* NewsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2435855BCB0DC6452F414E3A /* NewsServiceProtocol.swift */; };
@@ -863,6 +864,7 @@
 		8211881D0E93D5D3A6F14B9B /* ContentGenerateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentGenerateSheet.swift; sourceTree = "<group>"; };
 		82C2CF2970C7B180D45DC91E /* PerformanceMetricsCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMetricsCalculator.swift; sourceTree = "<group>"; };
 		82D30A48AF5A8E952C86ABB4 /* PortfolioViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioViewModel.swift; sourceTree = "<group>"; };
+		842AAB6DB1465B7B1999ADEC /* ProGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGate.swift; sourceTree = "<group>"; };
 		84C317D6360C8236ADFE1646 /* QPSDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSDetailView.swift; sourceTree = "<group>"; };
 		84F937A30AE7DE4FF691DC82 /* RiskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskModels.swift; sourceTree = "<group>"; };
 		85801D58A2ACF5B8943E09DC /* SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineView.swift; sourceTree = "<group>"; };
@@ -2279,6 +2281,7 @@
 				F78845800D59A83C7C923898 /* PercentageChangeView.swift */,
 				6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */,
 				BE0E8CCBD0004E1E4DB73EBD /* PrivacyOverlayView.swift */,
+				842AAB6DB1465B7B1999ADEC /* ProGate.swift */,
 				F0F01012E7049C0FCF27924C /* QRScannerSheet.swift */,
 				3955BF6DF07E7F6439EDEE56 /* QRScannerView.swift */,
 				DD12A8397A4AF92D483F1F7D /* SubscriptionBannerView.swift */,
@@ -2960,6 +2963,7 @@
 				D7D307C982406666E744909B /* PrivacyFilterSelector.swift in Sources */,
 				F65C271D3E1094F59CABB755 /* PrivacyOverlayView.swift in Sources */,
 				3E7B354C4A5EB73EEAD24B52 /* PrivacyState.swift in Sources */,
+				999072C107FA31E2C4BF24EE /* ProGate.swift in Sources */,
 				694A69E8517A3F475FE4E35E /* ProfileComponents.swift in Sources */,
 				466D283EE26005651F716BD9 /* ProfilePictureView.swift in Sources */,
 				D753B579F81758E62F04E4B9 /* ProfileView.swift in Sources */,
@@ -3161,7 +3165,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 114;
+				CURRENT_PROJECT_VERSION = 115;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -3183,7 +3187,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = ArkLine;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.3.2;
+				MARKETING_VERSION = 1.4.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -3269,7 +3273,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 114;
+				CURRENT_PROJECT_VERSION = 115;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -3285,7 +3289,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = ArkLine;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.3.2;
+				MARKETING_VERSION = 1.4.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

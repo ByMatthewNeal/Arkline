@@ -8,22 +8,22 @@ import { AppStoreCTA } from '@/components/marketing/app-store-cta';
 import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { FadeIn } from '@/components/marketing/fade-in';
 
-import { PRO_FEATURES } from '@/lib/pricing';
+import { PRO_FEATURES, PRICING, TRIAL_DAYS } from '@/lib/pricing';
 
 const proFeatures = PRO_FEATURES;
 
 const faqs = [
   {
-    q: 'Is ArkLine really free?',
-    a: 'Yes. Every tool, signal, briefing, and macro read is free right now — the full app, nothing held back and no tiers. I built ArkLine to help people invest more confidently with the tools I paid to learn, so for now there is no price on it.',
+    q: 'How much does Arkline cost?',
+    a: `${PRICING.standard.monthly}/month, or ${PRICING.standard.annual}/year if you pay annually (about 17% off). One subscription unlocks every tool — no tiers, no add-ons, nothing held back.`,
   },
   {
-    q: 'Do I need a credit card?',
-    a: 'No. There is no card, no trial clock, and no checkout. Download the app or sign up on the web with your email and you are in.',
+    q: 'Is there a free trial?',
+    a: `Yes. Every new member gets a ${TRIAL_DAYS}-day free trial. You add a card to start it, get the full app, and can cancel anytime during the trial — if you cancel before it ends, you won't be charged.`,
   },
   {
-    q: 'Will it always be free?',
-    a: 'It is free while I grow ArkLine and gather feedback. If a paid plan is introduced later, I will give plenty of notice — and the early users who helped build this will always be looked after.',
+    q: 'What happens after the free trial?',
+    a: `When your ${TRIAL_DAYS}-day trial ends, your subscription begins automatically at ${PRICING.standard.monthly}/month (or ${PRICING.standard.annual}/year if you chose annual). You can cancel anytime from your account settings or the App Store.`,
   },
   {
     q: 'What data sources does Arkline use?',
@@ -69,18 +69,18 @@ export default function PricingPage() {
         <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <FadeIn onMount>
             <h1 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold tracking-tight text-ark-text sm:text-5xl md:text-6xl">
-              It&apos;s{' '}
+              One plan.{' '}
               <span className="bg-gradient-to-r from-ark-primary via-ark-purple to-ark-cyan bg-clip-text text-transparent">
-                free.
+                Everything.
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-lg text-ark-text-secondary">
-              One app, every tool included — no tiers, no trial, no card. Free on iOS and the web while I grow ArkLine.
+              One app, every tool included — no tiers, no add-ons. Try it free for {TRIAL_DAYS} days, then {PRICING.standard.monthly}/month. On iOS and the web.
             </p>
             <div className="mt-5 flex items-center justify-center gap-4 text-xs text-ark-text-tertiary">
               <div className="flex items-center gap-1">
                 <Shield className="h-3 w-3" />
-                Free to use
+                {TRIAL_DAYS}-day free trial
               </div>
               <div className="h-3 w-px bg-ark-divider" />
               <div className="flex items-center gap-1">
@@ -92,7 +92,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Free card */}
+      {/* Pricing card */}
       <section className="pt-8 pb-20 sm:pt-12 sm:pb-28">
         <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
           <FadeIn onMount delay={0.1}>
@@ -103,21 +103,22 @@ export default function PricingPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary to-transparent" />
 
               <div className="inline-flex items-center gap-1.5 rounded-full bg-ark-primary/10 px-2.5 py-1 text-[11px] font-semibold text-ark-primary">
-                Free while I build this
+                {TRIAL_DAYS}-day free trial
               </div>
 
-              <h3 className="mt-3 text-lg font-semibold text-ark-text">Everything included</h3>
+              <h3 className="mt-3 text-lg font-semibold text-ark-text">Arkline Pro</h3>
               <p className="mt-1 text-sm text-ark-text-secondary">
-                The same tools I paid to learn, curated into one app. No tiers, no upsells — the full toolkit, free.
+                The same tools I paid to learn, curated into one app. No tiers, no add-ons — the full toolkit in one subscription.
               </p>
 
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                  Free
+                  {PRICING.standard.monthly}
                 </span>
+                <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
               <p className="mt-1 text-xs font-semibold text-ark-success">
-                No card, no trial clock — just sign up.
+                {TRIAL_DAYS} days free, then {PRICING.standard.monthly}/mo · or {PRICING.standard.annual}/year (save ~17%)
               </p>
 
               <ul className="mt-6 space-y-2.5">
@@ -140,11 +141,11 @@ export default function PricingPage() {
                   href="/signup"
                   className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
                 >
-                  Start free on the web →
+                  Start your free trial →
                 </Link>
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                iPhone or web. Same tools, same access, no cost.
+                iPhone or web. Same tools, same access. Cancel anytime during your trial.
               </p>
             </div>
           </FadeIn>
@@ -194,7 +195,7 @@ export default function PricingPage() {
               Your edge starts here.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Risk scoring. Macro intelligence. AI briefings. Free to use — see why investors choose ArkLine.
+              Risk scoring. Macro intelligence. AI briefings. Start with a {TRIAL_DAYS}-day free trial — see why investors choose ArkLine.
             </p>
             <div className="mt-8 flex justify-center">
               <AppStoreCTA />

@@ -5,10 +5,15 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2024-12-18.acacia",
 })
 
-// Founding member price IDs (live mode)
+// Founding member price IDs (live mode). Used only to label the invite's tier.
+// NOTE: founding annual is the $399.99 price (price_1UdUnGPHuageZ7zbdLqwrlkW);
+// the legacy $400 price (price_1TXCOPPHuageZ7zb7d2HyeHc) is archived at relaunch.
+// Standard prices (price_1TXCPTPHuageZ7zbCrDoFlRO monthly $69.99,
+// price_1UdUlxPHuageZ7zbkgyVJ7f5 annual $699) are not listed here, so any
+// price_id not in this set is treated as the "standard" tier.
 const FOUNDING_PRICE_IDS = new Set([
   "price_1TXCJyPHuageZ7zbIGTJCHPl", // founding monthly ($39.99/mo)
-  "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr)
+  "price_1UdUnGPHuageZ7zbdLqwrlkW", // founding annual ($399.99/yr)
 ])
 
 // Matches iOS InviteCode.generateCode()

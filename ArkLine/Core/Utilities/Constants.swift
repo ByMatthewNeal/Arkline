@@ -64,6 +64,15 @@ enum Constants {
         /// fetching Offerings. Cosmetic — matches "Arkline Pro" subscription
         /// group ID 22175777 in App Store Connect.
         static let offeringIdentifier = "default"
+
+        /// Offering shown to founding members — the recently-active cohort
+        /// grandfathered at the paid relaunch. Matches the "founding" offering in
+        /// RevenueCat, which serves the discounted founding products
+        /// ($39.99/mo, $399.99/yr). Membership is the server-side
+        /// `profiles.is_founding_member` flag (see `User.isFoundingMember`); the
+        /// free-access grace window for that cohort is enforced server-side in the
+        /// `is_user_subscribed` RPC (free through 2027-01-01).
+        static let foundingOfferingIdentifier = "founding"
     }
 
     // MARK: - API Endpoints

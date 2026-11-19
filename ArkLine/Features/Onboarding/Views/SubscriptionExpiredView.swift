@@ -95,7 +95,9 @@ struct SubscriptionExpiredView: View {
             Haptics.warning()
         }
         .sheet(isPresented: $showPaywall) {
-            ArkPaywallSheet { outcome in
+            ArkPaywallSheet(
+                isFoundingMember: appState.currentUser?.isFoundingMember ?? false
+            ) { outcome in
                 showPaywall = false
                 switch outcome {
                 case .purchased, .restored:

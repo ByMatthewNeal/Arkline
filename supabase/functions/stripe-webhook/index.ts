@@ -10,10 +10,14 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 )
 
-// Founding member price IDs (live mode)
+// Founding member price IDs (live mode). Used to label a subscription's tier;
+// any price not in this set is treated as "standard". Both the current $399.99
+// annual and the legacy $400 annual are listed so historical subs on the old
+// price are still labeled "founding".
 const FOUNDING_PRICE_IDS = new Set([
   "price_1TXCJyPHuageZ7zbIGTJCHPl", // founding monthly ($39.99/mo)
-  "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr)
+  "price_1UdUnGPHuageZ7zbdLqwrlkW", // founding annual ($399.99/yr)
+  "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr, legacy)
 ])
 
 Deno.serve(async (req) => {

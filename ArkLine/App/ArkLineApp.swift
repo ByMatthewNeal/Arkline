@@ -1060,6 +1060,7 @@ class AppState: ObservableObject {
             }
             updatedUser.trialEnd = profile.trialEnd
             updatedUser.currentPeriodEnd = profile.currentPeriodEnd
+            updatedUser.isFoundingMember = profile.isFoundingMember ?? false
             if let fullName = profile.fullName {
                 updatedUser.fullName = fullName
             }

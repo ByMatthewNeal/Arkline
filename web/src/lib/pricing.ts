@@ -13,29 +13,34 @@
  */
 
 /** Free-trial length, identical on Apple and Stripe. */
-export const TRIAL_DAYS = 7;
+export const TRIAL_DAYS = 14;
 
 export const PRICING = {
-  founding: {
-    monthly: '$39.99',
-    annual: '$400',
-    annualSavings: '~17%',
-  },
+  // Standard is the public offer for all new users (iOS + web).
   standard: {
     monthly: '$69.99',
+    annual: '$699',
+    annualSavings: '~17%',
   },
-  foundingSpots: 150,
+  // Founding is a grandfathered rate for users from before the paid relaunch.
+  // It is NOT offered to new users — kept here only for internal reference and
+  // any existing-member copy.
+  founding: {
+    monthly: '$39.99',
+    annual: '$399.99',
+    annualSavings: '~17%',
+  },
 } as const;
 
 /**
- * Short trial phrases. Both storefronts now offer the same 7 days, so no copy
+ * Short trial phrases. Both storefronts offer the same 14 days, so no copy
  * needs to qualify by platform.
  */
 export const TRIAL_COPY = {
   /** Headline / badge use. */
   short: `${TRIAL_DAYS}-day free trial`,
   /** Under a CTA, where the price must also appear. */
-  withPrice: `Free for ${TRIAL_DAYS} days, then ${PRICING.founding.monthly}/month`,
+  withPrice: `Free for ${TRIAL_DAYS} days, then ${PRICING.standard.monthly}/month`,
   /** Reassurance line — the two questions people actually have. */
   reassurance: 'Cancel anytime during the trial and you will not be charged.',
 } as const;

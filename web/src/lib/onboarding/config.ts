@@ -68,17 +68,21 @@ export const PORTFOLIO_GOALS = [
   { id: 'macro_analysis', label: 'Macro Analysis', description: 'VIX, DXY, liquidity cycles', icon: 'globe' },
 ] as const;
 
-// Stripe price IDs (founding tier — live mode, from create-checkout-session).
+// Stripe price IDs (live mode). New web signups get Standard; Founding is
+// reserved for existing users (not shown in the new-user onboarding flow).
 export const PRICE_IDS = {
-  foundingMonthly: 'price_1TXCJyPHuageZ7zbIGTJCHPl', // $39.99/mo
-  foundingAnnual: 'price_1TXCOPPHuageZ7zb7d2HyeHc',  // $400/yr
+  standardMonthly: 'price_1TXCPTPHuageZ7zbCrDoFlRO', // $69.99/mo
+  standardAnnual: 'price_1UdUlxPHuageZ7zbkgyVJ7f5',  // $699/yr
+  foundingMonthly: 'price_1TXCJyPHuageZ7zbIGTJCHPl', // $39.99/mo (existing users only)
+  foundingAnnual: 'price_1UdUnGPHuageZ7zbdLqwrlkW',  // $399.99/yr (existing users only)
 } as const;
 
 // Self-serve payment plans shown in the onboarding payment step (when the user
-// did not arrive with a pre-paid invite code).
+// did not arrive with a pre-paid invite code). New signups see Standard pricing;
+// founding is grandfathered to existing users and intentionally not listed here.
 export const PAYMENT_PLANS = [
-  { id: PRICE_IDS.foundingAnnual, label: 'Annual', price: '$400', cadence: 'per year', note: 'Save ~17% · founding rate', highlight: true },
-  { id: PRICE_IDS.foundingMonthly, label: 'Monthly', price: '$39.99', cadence: 'per month', note: 'Founding rate', highlight: false },
+  { id: PRICE_IDS.standardAnnual, label: 'Annual', price: '$699', cadence: 'per year', note: 'Save ~17% · 14-day free trial', highlight: true },
+  { id: PRICE_IDS.standardMonthly, label: 'Monthly', price: '$69.99', cadence: 'per month', note: '14-day free trial', highlight: false },
 ] as const;
 
 // ── Collected onboarding data ────────────────────────────────────────────────

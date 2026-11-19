@@ -10,7 +10,9 @@ private struct PaywallSheetModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content.sheet(isPresented: $isPresented) {
-            ArkPaywallSheet { _ in
+            ArkPaywallSheet(
+                isFoundingMember: appState.currentUser?.isFoundingMember ?? false
+            ) { _ in
                 isPresented = false
                 Task { await appState.refreshSubscriptionStatus() }
             }

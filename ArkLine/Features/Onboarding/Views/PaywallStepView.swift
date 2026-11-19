@@ -40,7 +40,7 @@ struct PaywallStepView: View {
                         Text("Unlock Arkline Pro")
                             .font(AppFonts.title24)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
-                        Text("Full access to every signal, briefing, and macro read. Start with a 7-day free trial. Cancel anytime.")
+                        Text("Full access to every signal, briefing, and macro read. Start with a 2-week free trial. Cancel anytime.")
                             .font(AppFonts.body14)
                             .foregroundColor(AppColors.textSecondary)
                             .multilineTextAlignment(.center)
@@ -69,7 +69,10 @@ struct PaywallStepView: View {
         .navigationBarBackButtonHidden()
         .task { await evaluateAccess() }
         .sheet(isPresented: $showPaywall) {
-            ArkPaywallSheet { outcome in
+            // A brand-new signup is never a founding member — the founding cohort
+            // was snapshotted at the relaunch (server-side is_founding_member
+            // flag). New users get standard pricing.
+            ArkPaywallSheet(isFoundingMember: false) { outcome in
                 showPaywall = false
                 switch outcome {
                 case .purchased, .restored:

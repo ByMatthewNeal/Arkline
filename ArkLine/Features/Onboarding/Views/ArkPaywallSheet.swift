@@ -27,11 +27,45 @@ struct ArkPaywallSheet: View {
         case dismissed
     }
 
+    /// When true, present the discounted "founding" offering (existing users
+    /// from before the paid relaunch) instead of the standard "default" offering
+    /// (new users). The appropriate offering is resolved asynchronously on
+    /// appear; defaults to standard pricing.
+    var isFoundingMember: Bool = false
+
     /// Called when the paywall flow ends — purchase, restore, or dismissal.
     let onCompletion: (Outcome) -> Void
 
+    /// Resolved offering to present. nil while loading, then either the founding
+    /// or default offering (or stays nil if the fetch failed, in which case we
+    /// fall back to RevenueCatUI's default PaywallView).
+    @State private var offering: Offering?
+    @State private var didResolveOffering = false
+
     var body: some View {
-        PaywallView()
+        Group {
+            if let offering {
+                configured(PaywallView(offering: offering))
+            } else if didResolveOffering {
+                // Offering fetch failed — fall back to the SDK's current offering
+                // so the paywall still works rather than showing nothing.
+                configured(PaywallView())
+            } else {
+                ProgressView()
+                    .controlSize(.large)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task {
+            offering = await RevenueCatService.shared.paywallOffering(foundingMember: isFoundingMember)
+            didResolveOffering = true
+        }
+    }
+
+    /// Attach the purchase/restore completion handlers shared by both the
+    /// offering-specific and fallback paywalls.
+    private func configured(_ paywall: PaywallView) -> some View {
+        paywall
             .onPurchaseCompleted { customerInfo in
                 onCompletion(.purchased(customerInfo))
             }

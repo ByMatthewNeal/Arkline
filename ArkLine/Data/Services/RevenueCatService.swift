@@ -125,6 +125,30 @@ final class RevenueCatService {
         }
     }
 
+    // MARK: - Offerings
+
+    /// Fetch the offering to present on the paywall.
+    ///
+    /// Founding members (existing users from before the paid relaunch) are shown
+    /// the discounted "founding" offering; everyone else gets the standard
+    /// current/default offering ($69.99/mo, $699/yr). Returns `nil` if offerings
+    /// can't be fetched, in which case the caller falls back to RevenueCatUI's
+    /// default `PaywallView()` (which uses the current offering).
+    func paywallOffering(foundingMember: Bool) async -> Offering? {
+        do {
+            let offerings = try await Purchases.shared.offerings()
+            if foundingMember,
+               let founding = offerings.all[Constants.RevenueCat.foundingOfferingIdentifier] {
+                return founding
+            }
+            return offerings.current
+                ?? offerings.all[Constants.RevenueCat.offeringIdentifier]
+        } catch {
+            logError(error, context: "RevenueCat offerings", category: .data)
+            return nil
+        }
+    }
+
     // MARK: - Restore Purchases (required by App Review)
 
     /// Restore prior purchases for the signed-in Apple ID. Required to be

@@ -485,6 +485,7 @@ class OnboardingViewModel {
                 user.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? .none
             }
             user.trialEnd = profile.trialEnd
+            user.isFoundingMember = profile.isFoundingMember ?? false
 
             createdUser = user
             Haptics.success()
@@ -704,6 +705,7 @@ class OnboardingViewModel {
                         finalUser.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? .none
                     }
                     finalUser.trialEnd = profile.trialEnd
+                    finalUser.isFoundingMember = profile.isFoundingMember ?? false
                 }
 
                 createdUser = finalUser

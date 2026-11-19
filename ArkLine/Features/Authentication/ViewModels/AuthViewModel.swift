@@ -229,6 +229,7 @@ class AuthViewModel {
             }
             newUser.trialEnd = profile.trialEnd
             newUser.currentPeriodEnd = profile.currentPeriodEnd
+            newUser.isFoundingMember = profile.isFoundingMember ?? false
 
             self.user = newUser
             self.authState = .authenticated
