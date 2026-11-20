@@ -5,7 +5,7 @@ import { AppStoreCTA } from '@/components/marketing/app-store-cta';
 import { FadeIn } from '@/components/marketing/fade-in';
 
 export const metadata = {
-  title: 'About ArkLine — Built by Matt Neal',
+  title: 'About ArkLine | Built by Matt Neal',
   description: 'Why I\'m building ArkLine, and how to reach me.',
   alternates: { canonical: '/about' },
   robots: { index: true, follow: true },
@@ -56,22 +56,22 @@ export default function AboutPage() {
               The thing that actually changed my life wasn&apos;t a winning trade, it was switching to spot. Holding longer. Trading less. The moment I stopped trying to catch every move, my lifestyle came back. Less worry. More time. Less of my mood held hostage to a candle. And the strange thing is: my results got better, not worse.
             </p>
             <p>
-              But the noise didn&apos;t stop. Crypto Twitter is a casino with a megaphone. YouTube is worse &mdash; algorithmic incentives that reward confidence, not accuracy. If you&apos;re a retail investor trying to figure out who to actually listen to, the honest answer is that most days, you can&apos;t. I&apos;ve been in this long enough to know which voices are signal and which ones are selling something.
+              But the noise didn&apos;t stop. Crypto Twitter is a casino with a megaphone. YouTube is worse: algorithmic incentives that reward confidence, not accuracy. If you&apos;re a retail investor trying to figure out who to actually listen to, the honest answer is that most days, you can&apos;t. I&apos;ve been in this long enough to know which voices are signal and which ones are selling something.
             </p>
             <p>
-              I went looking for help the same way most people do. I joined the Telegram groups. I joined the Discord servers. I paid tens of thousands of dollars to learn from people who said they knew. Some of it worked. A lot of it didn&apos;t. I got scammed more than once. I sat in rooms I&apos;d paid five figures to be in and walked out knowing less than when I arrived. I&apos;m not bitter about any of it &mdash; those were the lessons that taught me what to actually look for &mdash; but they were expensive lessons, and most retail investors can&apos;t afford to pay them twice.
+              I went looking for help the same way most people do. I joined the Telegram groups. I joined the Discord servers. I paid tens of thousands of dollars to learn from people who said they knew. Some of it worked. A lot of it didn&apos;t. I got scammed more than once. I sat in rooms I&apos;d paid five figures to be in and walked out knowing less than when I arrived. I&apos;m not bitter about any of it. Those were the lessons that taught me what to actually look for. But they were expensive lessons, and most retail investors can&apos;t afford to pay them twice.
             </p>
             <p>
               What I figured out along the way is that the people who don&apos;t get caught in the noise aren&apos;t smarter. They have different tools. Institutions have risk models. Sentiment data. Macro regime detection. Positioning data. They invest systematically because they have the inputs to invest systematically. Retail has CoinGecko and a group chat. The tools that would let you make decisions the way professionals do exist, but they sit behind paywalls that start at hundreds of dollars a month and go up from there. Most people don&apos;t even know what to ask for, let alone how to pay for it.
             </p>
             <p>
-              ArkLine is my answer to that. The same systematic approach I had to learn the hard way &mdash; multi-factor risk scoring, macro regime detection, sentiment signals, AI briefings that pull it together &mdash; built for people with jobs and portfolios. Not for day traders. Not for institutions. For the version of me that spent years and tens of thousands of dollars figuring this out without a guide.
+              ArkLine is my answer to that. The same systematic approach I had to learn the hard way: multi-factor risk scoring, macro regime detection, sentiment signals, and AI briefings that pull it together, built for people with jobs and portfolios. Not for day traders. Not for institutions. For the version of me that spent years and tens of thousands of dollars figuring this out without a guide.
             </p>
             <p>
-              You don&apos;t have to be that person. You don&apos;t have to take the risk, because I&apos;ve taken it for you &mdash; I&apos;ve paid the tuition to the market so you don&apos;t have to. ArkLine is me giving that back: institutional-level data and the exact tools I had to pay to learn, in your pocket &mdash; for a small fraction of what those paywalls charge. I&apos;d rather earn your trust before you spend a dollar, so you get a 14-day free trial to feel the value first; after that it&apos;s $69.99 a month, not the hundreds the institutional tools cost. Use everything I&apos;ve curated, invest with more confidence, and put yourself in a better position &mdash; and if it helps you, tell someone who needs it.
+              You don&apos;t have to be that person. You don&apos;t have to take the risk, because I&apos;ve taken it for you. I&apos;ve paid the tuition to the market so you don&apos;t have to. ArkLine is me giving that back: institutional-level data and the exact tools I had to pay to learn, in your pocket, for a small fraction of what those paywalls charge. I&apos;d rather earn your trust before you spend a dollar, so you get a 14-day free trial to feel the value first; after that it&apos;s $69.99 a month, not the hundreds the institutional tools cost. Use everything I&apos;ve curated, invest with more confidence, and put yourself in a better position. And if it helps you, tell someone who needs it.
             </p>
             <p>
-              I&apos;m a solo founder, in New York. No outside funding. I read every email at matt@arkline.io. If any of this sounded like you, I&apos;d like to hear from you. &mdash; Matt
+              I&apos;m a solo founder, in New York. No outside funding. I read every email at matt@arkline.io. If any of this sounded like you, I&apos;d like to hear from you.
             </p>
           </FadeIn>
         </div>
@@ -89,7 +89,7 @@ export default function AboutPage() {
           <FadeIn delay={0.1} className="mt-8 text-base leading-relaxed text-ark-text-secondary sm:text-lg">
             {/* FOUNDER_BACKGROUND_INTRO */}
             <p>
-              I&apos;m an investor and project leader based in New York. I&apos;ve spent my career driving complex initiatives across global teams — and investing in crypto and traditional markets since 2017.
+              I&apos;m an investor and project leader based in New York. I&apos;ve spent my career driving complex initiatives across global teams, and investing in crypto and traditional markets since 2017.
             </p>
           </FadeIn>
           <FadeIn delay={0.15} className="mt-6">
@@ -109,7 +109,7 @@ export default function AboutPage() {
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary/60" />
-                <span>Arkline Technologies LLC — Wyoming-formed, New York-operated</span>
+                <span>Arkline Technologies LLC · Wyoming-formed, New York-operated</span>
               </li>
             </ul>
           </FadeIn>
@@ -165,7 +165,7 @@ export default function AboutPage() {
               Try ArkLine free for 14 days
             </h2>
             <p className="mt-4 text-base leading-relaxed text-ark-text-secondary sm:text-lg">
-              Every tool, every signal, every briefing &mdash; in one subscription. Start with a 14-day free trial and see for yourself.
+              Every tool, every signal, every briefing, in one subscription. Start with a 14-day free trial and see for yourself.
             </p>
           </FadeIn>
           <FadeIn delay={0.1} className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

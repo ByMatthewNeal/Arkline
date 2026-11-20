@@ -7,7 +7,7 @@ const steps = [
   {
     icon: UserPlus,
     title: 'Download & Start',
-    description: 'Grab ArkLine from the App Store — 14-day free trial, ready in seconds. iOS 17+.',
+    description: 'Grab ArkLine from the App Store. 14-day free trial, ready in seconds. iOS 17+.',
     color: 'var(--ark-primary)',
   },
   {

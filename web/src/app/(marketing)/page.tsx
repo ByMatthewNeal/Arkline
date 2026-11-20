@@ -236,7 +236,6 @@ export default function LandingPage() {
                   <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
                     {/* FOUNDER_BIO */}
                     I spent years looking for a tool that combined risk models, macro data, and positioning signals in one place, without the noise. It didn&apos;t exist, so I built it. ArkLine is the app I wanted as an investor.
-                    <span className="ml-1 text-ark-text-tertiary">&mdash; Matt</span>
                   </p>
 
                   {/* Social links */}
@@ -282,7 +281,7 @@ export default function LandingPage() {
               One plan. Everything included.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              Every signal, every briefing, every macro read &mdash; in one subscription. No tiers, no add-ons. Try it free for {TRIAL_DAYS} days, then {PRICING.standard.monthly}/month. Cancel anytime.
+              Every signal, every briefing, every macro read, all in one subscription. No tiers, no add-ons. Try it free for {TRIAL_DAYS} days, then {PRICING.standard.monthly}/month. Cancel anytime.
             </p>
           </FadeIn>
 
@@ -301,7 +300,7 @@ export default function LandingPage() {
                 <div>
                   <h3 className="text-xl font-semibold text-ark-text">Arkline Pro</h3>
                   <p className="mt-1 text-sm text-ark-text-tertiary">
-                    The full toolkit &mdash; the same tools I paid to learn, curated into one app. Or save ~17% with annual at {PRICING.standard.annual}/year.
+                    The full toolkit: the same tools I paid to learn, curated into one app. Or save ~17% with annual at {PRICING.standard.annual}/year.
                   </p>
                 </div>
                 <div className="shrink-0 text-right">

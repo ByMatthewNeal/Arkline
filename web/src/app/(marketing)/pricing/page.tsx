@@ -15,11 +15,11 @@ const proFeatures = PRO_FEATURES;
 const faqs = [
   {
     q: 'How much does Arkline cost?',
-    a: `${PRICING.standard.monthly}/month, or ${PRICING.standard.annual}/year if you pay annually (about 17% off). One subscription unlocks every tool — no tiers, no add-ons, nothing held back.`,
+    a: `${PRICING.standard.monthly}/month, or ${PRICING.standard.annual}/year if you pay annually (about 17% off). One subscription unlocks every tool. No tiers, no add-ons, nothing held back.`,
   },
   {
     q: 'Is there a free trial?',
-    a: `Yes. Every new member gets a ${TRIAL_DAYS}-day free trial. You add a card to start it, get the full app, and can cancel anytime during the trial — if you cancel before it ends, you won't be charged.`,
+    a: `Yes. Every new member gets a ${TRIAL_DAYS}-day free trial. You add a card to start it, get the full app, and can cancel anytime during the trial. If you cancel before it ends, you won't be charged.`,
   },
   {
     q: 'What happens after the free trial?',
@@ -43,7 +43,7 @@ const faqs = [
   },
   {
     q: 'Do you support Android?',
-    a: 'Arkline is on iOS and the web today — you can use the full web app on any device, including Android, right now. A native Android app is on the roadmap.',
+    a: 'Arkline is on iOS and the web today. You can use the full web app on any device, including Android, right now. A native Android app is on the roadmap.',
   },
   {
     q: 'What makes Arkline different from other portfolio trackers?',
@@ -75,7 +75,7 @@ export default function PricingPage() {
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-lg text-ark-text-secondary">
-              One app, every tool included — no tiers, no add-ons. Try it free for {TRIAL_DAYS} days, then {PRICING.standard.monthly}/month. On iOS and the web.
+              One app, every tool included. No tiers, no add-ons. Try it free for {TRIAL_DAYS} days, then {PRICING.standard.monthly}/month. On iOS and the web.
             </p>
             <div className="mt-5 flex items-center justify-center gap-4 text-xs text-ark-text-tertiary">
               <div className="flex items-center gap-1">
@@ -108,7 +108,7 @@ export default function PricingPage() {
 
               <h3 className="mt-3 text-lg font-semibold text-ark-text">Arkline Pro</h3>
               <p className="mt-1 text-sm text-ark-text-secondary">
-                The same tools I paid to learn, curated into one app. No tiers, no add-ons — the full toolkit in one subscription.
+                The same tools I paid to learn, curated into one app. No tiers, no add-ons, just the full toolkit in one subscription.
               </p>
 
               <div className="mt-5 flex items-baseline gap-1">
@@ -195,7 +195,7 @@ export default function PricingPage() {
               Your edge starts here.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Risk scoring. Macro intelligence. AI briefings. Start with a {TRIAL_DAYS}-day free trial — see why investors choose ArkLine.
+              Risk scoring. Macro intelligence. AI briefings. Start with a {TRIAL_DAYS}-day free trial and see why investors choose ArkLine.
             </p>
             <div className="mt-8 flex justify-center">
               <AppStoreCTA />
